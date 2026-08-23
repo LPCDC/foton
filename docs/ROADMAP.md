@@ -6,7 +6,8 @@
 ---
 
 ## Estado atual
-**Fase: S0 — Feasibility Gauntlet.** Ambiente inventariado (LAB). Documentos reescritos para o modelo nuvem. **Sem código de produção.** Aguardando aprovação dos pré-requisitos para iniciar os experimentos.
+**Fase: S0 — Feasibility Gauntlet — PARCIAL / PAUSADO (2026-08-23).**
+Compute provado sem câmera (EXP-04/05/06 ✅ — ver `docs/BENCHMARKS.md` §0): processar+reconhecer+casar < 0,6s/foto em CPU, facial 97,2%. **Pausado aguardando as câmeras R8/T6 + hotspot** para medir o risco restante (upload/rede, EXP-01/02/03/08). Sem código de produção.
 
 ---
 

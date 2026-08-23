@@ -6,6 +6,25 @@
 
 ---
 
+## 0. Status do S0 — PARCIAL / PAUSADO (2026-08-23)
+
+**Provado sem câmera (compute, CPU-only, LAB Ryzen 7800X3D):**
+- ✅ EXP-04 processing (watermark+otimização): P95 **533 ms**.
+- ✅ EXP-05 facial self-hosted (YuNet+SFace): **97,2%** no LFW, **~6 ms/rosto** P95.
+- ✅ EXP-06 match (busca vetorial): **<1 ms** até 100k rostos.
+- → Compute total **< 0,6 s/foto**, sem GPU, sem API paga. Facial self-hosted escolhido (confiável, ~R$0).
+
+**Bloqueado — aguarda câmeras R8/T6 + hotspot 4G/5G:**
+- ⛔ EXP-01/02 (upload câmera→nuvem) · EXP-03 (throughput rede) · EXP-08 (E2E <10s) · EXP-07 (concorrência) · EXP-09 (resiliência).
+
+**Pendente de credencial do dono (opcional):** comparação com face API gerenciada.
+
+**Risco principal em aberto:** o upload domina o orçamento. JPEG full-res 24MP (~10 MB) num 4G ~10 Mbps ≈ **~8 s** → pode estourar. **Mitigação a testar com a câmera:** disparar JPEG menor (M/S ~3 MB) ou reduzir antes de subir. Sobra de orçamento pós-compute: **~9,4 s**.
+
+**Para retomar:** R8 e T6 fisicamente + um hotspot 4G/5G. Rodar EXP-01→03, depois EXP-08.
+
+---
+
 ## 1. Latência por estágio (caminho de nuvem)
 
 | # | Métrica | Estágio | Unid. | P50 | P95 | P99 | Amostras | Condições | Status |
