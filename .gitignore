@@ -1,0 +1,65 @@
+# === Foto na Hora — .gitignore ===
+
+# --- Dados sensíveis (biometria / PII) — NUNCA versionar ---
+**/selfies/
+**/faces/
+**/embeddings/
+*.embedding
+*.npy
+guests/
+sessions/
+
+# --- Segredos / credenciais ---
+.env
+.env.*
+*.key
+*.pem
+secrets/
+credentials*.json
+service-account*.json
+
+# --- Dados de experimento / mídia pesada ---
+experiments/**/data/
+experiments/**/out/
+experiments/**/results/*.raw
+samples/
+*.CR3
+*.cr3
+*.RAW
+*.raw
+*.mp4
+# JPEGs de teste ficam fora do repo (pesados); guarde localmente
+test-images/
+
+# --- Modelos / pesos ---
+models/
+*.onnx
+*.pt
+*.pth
+*.engine
+*.trt
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+env/
+.ipynb_checkpoints/
+
+# --- Node ---
+node_modules/
+dist/
+build/
+.next/
+.cache/
+
+# --- SO / editor ---
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# --- Logs ---
+*.log
+logs/
