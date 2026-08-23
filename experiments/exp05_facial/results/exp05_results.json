@@ -1,0 +1,33 @@
+{
+  "experiment": "S0-EXP-05 facial self-hosted (YuNet+SFace, ONNX/OpenCV)",
+  "engine": "OpenCV 5.0.0 · YuNet 2023mar + SFace 2021dec · CPU-only",
+  "dataset": "LFW pairs subset=test (1000 pares)",
+  "coverage": {
+    "pairs_total": 1000,
+    "pairs_usados": 1000,
+    "deteccao_falhou": 0
+  },
+  "precisao": {
+    "acuracia_threshold_padrao_0.363": 0.972,
+    "melhor_acuracia": 0.972,
+    "melhor_threshold_cos": 0.3444,
+    "cos_medio_iguais": 0.6446,
+    "cos_medio_diferentes": 0.0834
+  },
+  "latencia_ms": {
+    "deteccao": {
+      "p50": 1.379,
+      "p95": 1.686,
+      "p99": 2.012,
+      "mean": 1.41
+    },
+    "embedding": {
+      "p50": 3.833,
+      "p95": 4.504,
+      "p99": 5.071,
+      "mean": 3.92
+    }
+  },
+  "throughput_rostos_por_s_1thread": 174.5,
+  "nota": "CPU-only (wheel OpenCV sem CUDA). GPU exigiria onnxruntime-gpu ou OpenCV com CUDA — pendente."
+}

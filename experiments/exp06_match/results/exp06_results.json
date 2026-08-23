@@ -1,0 +1,32 @@
+{
+  "experiment": "S0-EXP-06 selfie->match (cosine brute-force, CPU)",
+  "dim": 128,
+  "iters": 200,
+  "threshold_cos": 0.363,
+  "por_galeria": [
+    {
+      "galeria": 1000,
+      "p50_ms": 0.015,
+      "p95_ms": 0.019,
+      "p99_ms": 0.04,
+      "mean_ms": 0.017,
+      "mem_galeria_mb": 0.5
+    },
+    {
+      "galeria": 10000,
+      "p50_ms": 0.127,
+      "p95_ms": 0.151,
+      "p99_ms": 0.176,
+      "mean_ms": 0.129,
+      "mem_galeria_mb": 5.1
+    },
+    {
+      "galeria": 100000,
+      "p50_ms": 0.608,
+      "p95_ms": 0.724,
+      "p99_ms": 0.926,
+      "mean_ms": 0.628,
+      "mem_galeria_mb": 51.2
+    }
+  ]
+}
