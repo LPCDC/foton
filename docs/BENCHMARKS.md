@@ -12,7 +12,7 @@
 |---|---------|---------|-------|-----|-----|-----|----------|-----------|--------|
 | 1 | Upload latency (shutter → arquivo na nuvem) | Uploader | ms | — | — | — | — | — | UNKNOWN — REQUIRES EXPERIMENT |
 | 2 | Ingest/validação | (1) | ms | — | — | — | — | — | UNKNOWN — REQUIRES EXPERIMENT |
-| 3 | Processing (watermark + otimização) | (2) | ms | — | — | — | — | — | UNKNOWN — REQUIRES EXPERIMENT |
+| 3 | Processing (watermark + otimização) | (2) | ms | 502 | 533 | 542 | 30 | **PROXY** 24MP sintético · CPU-only (Ryzen 7800X3D) · long-edge 2048 · q82 · 1 img | MEASURED (proxy) |
 | 4 | Detecção + embedding | (3) | ms | — | — | — | — | — | UNKNOWN — REQUIRES EXPERIMENT |
 | 5 | Match c/ selfies | (4) | ms | — | — | — | — | — | UNKNOWN — REQUIRES EXPERIMENT |
 | 6 | Entrega / feed no navegador | (6) | ms | — | — | — | — | — | UNKNOWN — REQUIRES EXPERIMENT |
@@ -80,4 +80,11 @@ Todos `UNKNOWN` até o S0.
 ---
 
 ### Histórico de execuções
-_(vazio — nenhum benchmark executado ainda; S0 não iniciado)_
+
+**2026-08-23 · S0-EXP-04 (processing)** — `experiments/exp04_processing/`
+- **Proxy:** imagem sintética 24MP (6000×4000, 15,5MB); câmeras indisponíveis. Mede latência, não qualidade.
+- **Ambiente:** LAB, CPU-only (Ryzen 7 7800X3D), Pillow 12.3.0, Python 3.12, 30 iters + 3 warmup.
+- **Pipeline:** decode → resize(long-edge 2048, LANCZOS) → watermark → encode JPEG q82 optimize+progressive.
+- **Resultado:** total P50 **502ms** / P95 **533ms** / P99 542ms. Saída 2048×1365, ~403KB.
+- **Dono do estágio:** resize domina (~282ms) e decode (~186ms); watermark é desprezível (~1,5ms).
+- **Conclusão:** processamento de 1 foto cabe folgado nos 10s. Otimização futura possível (paralelizar nos 16 threads, decode mais rápido), mas **não é prioridade** — medir antes upload e facial. `ACCEPT` provisório para o orçamento de latência.

@@ -1,0 +1,75 @@
+{
+  "experiment": "S0-EXP-04 processing (watermark + otimizacao)",
+  "note": "PROXY: imagem sintetica 24MP (cameras indisponiveis). Mede latencia de processamento, nao qualidade.",
+  "env": {
+    "lab_gpu": "N/A (CPU-only)",
+    "iters": 30,
+    "warmup": 3
+  },
+  "input": {
+    "path": "camera_r8_synth.jpg",
+    "bytes": 15466464,
+    "dims": [
+      6000,
+      4000
+    ]
+  },
+  "params": {
+    "long_edge": 2048,
+    "quality": 82
+  },
+  "output": {
+    "dims": [
+      2048,
+      1365
+    ],
+    "bytes_p50": 403379
+  },
+  "latency": {
+    "decode": {
+      "stage": "decode_ms",
+      "p50_ms": 185.55,
+      "p95_ms": 196.41,
+      "p99_ms": 196.98,
+      "min_ms": 156.43,
+      "max_ms": 196.98,
+      "mean_ms": 180.79
+    },
+    "resize": {
+      "stage": "resize_ms",
+      "p50_ms": 282.43,
+      "p95_ms": 301.86,
+      "p99_ms": 305.34,
+      "min_ms": 254.35,
+      "max_ms": 305.34,
+      "mean_ms": 280.37
+    },
+    "watermark": {
+      "stage": "watermark_ms",
+      "p50_ms": 1.54,
+      "p95_ms": 2.22,
+      "p99_ms": 2.26,
+      "min_ms": 1.04,
+      "max_ms": 2.26,
+      "mean_ms": 1.47
+    },
+    "encode": {
+      "stage": "encode_ms",
+      "p50_ms": 36.35,
+      "p95_ms": 44.19,
+      "p99_ms": 44.26,
+      "min_ms": 28.57,
+      "max_ms": 44.26,
+      "mean_ms": 36.81
+    },
+    "total": {
+      "stage": "total_ms",
+      "p50_ms": 502.16,
+      "p95_ms": 532.8,
+      "p99_ms": 542.41,
+      "min_ms": 441.1,
+      "max_ms": 542.41,
+      "mean_ms": 499.44
+    }
+  }
+}
