@@ -73,12 +73,19 @@
 
 ## 6. Custo por evento (economics)
 
+> **Premissa de referência:** 1 evento = ~500 fotos processadas (~400KB cada = ~200MB) · ~150 convidados · egress de entrega ~10-20GB (cada convidado vê/baixa suas fotos). Valores abaixo são **ESTIMATED — de preços públicos 2026** (pesquisa, não medição). EXP-10 confirma com uso real.
+
 | Item | Unid. | Valor | Premissa | Status |
 |------|-------|-------|----------|--------|
-| Compute (processing + backend) | R$/evento | — | N fotos, M convidados | UNKNOWN — REQUIRES EXPERIMENT |
-| Face API (se gerenciado) | R$/evento | — | — | UNKNOWN — REQUIRES EXPERIMENT |
-| Storage + CDN (banda) | R$/evento | — | — | UNKNOWN — REQUIRES EXPERIMENT |
-| **Custo total por evento** | R$/evento | — | — | **UNKNOWN — REQUIRES EXPERIMENT** |
+| Face API (self-hosted, ADR-0009) | R$/evento | **~0** | roda em CPU no nosso worker, sem custo por chamada | ESTIMATED (EXP-05) |
+| Storage R2 (ADR-0011) | R$/evento | **~0,02** | 200MB × US$0,015/GB/mês ≈ US$0,003 | ESTIMATED |
+| **Egress / entrega (R2)** | R$/evento | **~0** | R2 **não cobra egress** — mesmo servindo 20GB | ESTIMATED |
+| Compute (processing) | R$/evento | **~0** (free tier) / marginal desprezível | Render web free 750h/mês; 500 fotos × 0,5s = ~4min de CPU | ESTIMATED |
+| Supabase (DB+Auth+Realtime) | R$/evento | **~0** (free tier) | 150 convidados « 50k MAU; « 200 conexões realtime | ESTIMATED |
+| **Custo marginal por evento** | R$/evento | **~R$0,05-0,30** | dominado por storage; egress zero é o pulo do gato | **ESTIMATED — confirmar em EXP-10** |
+| Custo **fixo** de infra | R$/mês | **~0** (free) → **~R$35** (Render US$7 quando houver clientes) | acordar worker antes do evento evita cold start | ESTIMATED |
+
+**Conclusão de economics:** o custo **marginal** por evento é ~centavos (egress zero + facial self-hosted). O único custo relevante é o **fixo mensal baixo** de hospedagem. → **Pagamento único é sustentável** (ADR-0012): mesmo um pacote de 20 eventos custa <R$6 de infra marginal. Fontes: [Supabase free tier](https://uibakery.io/blog/supabase-pricing), [Cloudflare R2 egress $0](https://egresscost.com/cloudflare/), [Render free tier](https://www.saaspricepulse.com/tools/render).
 
 ## 7. Orçamento de latência (a validar contra 10s)
 

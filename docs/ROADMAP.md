@@ -6,8 +6,10 @@
 ---
 
 ## Estado atual
-**Fase: S0 — Feasibility Gauntlet — PARCIAL / PAUSADO (2026-08-23).**
-Compute provado sem câmera (EXP-04/05/06 ✅ — ver `docs/BENCHMARKS.md` §0): processar+reconhecer+casar < 0,6s/foto em CPU, facial 97,2%. **Pausado aguardando as câmeras R8/T6 + hotspot** para medir o risco restante (upload/rede, EXP-01/02/03/08). Sem código de produção.
+**Fase: S0 (viabilidade) PARCIAL/PAUSADO + início da construção da camada não-dependente de câmera (2026-08-24).**
+Compute provado sem câmera (EXP-04/05/06 ✅): processar+reconhecer+casar < 0,6s/foto em CPU, facial 97,2%. Upload/rede (EXP-01/02/03/08) segue **aguardando câmeras R8/T6s + hotspot** — teste externo com a fotógrafa em andamento.
+
+**Decisão do dono (2026-08-24):** começar a construir **agora** a parte que não depende das câmeras — plataforma web (login/senha, painel, app do convidado, feed) + stack (ADR-0010/0011) + modelo one-time payment (ADR-0012). O pipeline de upload real pluga quando as câmeras chegarem. Isso não fura o Gauntlet: a camada de front/auth é independente do benchmark de upload, e nada de custo/latência foi inventado — economics usa estimativas de preço público (marcadas `ESTIMATED`) até EXP-10.
 
 ---
 
