@@ -43,10 +43,17 @@ input{font-family:inherit}
 
 /* ---------- wordmark / header ---------- */
 .head{display:flex;align-items:center;gap:12px;margin-bottom:26px}
-.mark{width:40px;height:40px;border-radius:12px;background:var(--grad);display:grid;place-items:center;
-  box-shadow:0 8px 22px -6px rgba(255,106,69,.55);flex-shrink:0;position:relative}
-.mark::after{content:"";position:absolute;inset:0;border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
-.mark svg{width:21px;height:21px}
+/* logo Fóton — o fóton: ponto de luz + lampejo, dentro de placa escura (sem ícone) */
+.mark{width:40px;height:40px;border-radius:12px;flex-shrink:0;position:relative;overflow:hidden;
+  background:radial-gradient(130% 130% at 50% 38%,#241a26,#131017);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05),inset 0 0 16px rgba(255,120,70,.16)}
+.mark::before{content:"";position:absolute;left:5px;right:5px;top:50%;height:1px;transform:translateY(-50%);
+  background:linear-gradient(90deg,transparent,rgba(255,171,84,.7),transparent)}
+.mark::after{content:"";position:absolute;left:50%;top:50%;width:9px;height:9px;border-radius:50%;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,#fff 0%,#ffe0b0 26%,var(--accent) 66%,rgba(255,106,69,0) 72%);
+  box-shadow:0 0 12px 2px rgba(255,120,70,.75),0 0 4px rgba(255,255,255,.9)}
+.mark.lg{width:60px;height:60px;border-radius:17px}
+.mark.lg::after{width:13px;height:13px;box-shadow:0 0 18px 3px rgba(255,120,70,.8),0 0 6px rgba(255,255,255,.95)}
 .word{font-family:var(--serif);font-weight:600;font-size:20px;letter-spacing:-.02em;line-height:1}
 .word small{display:block;font-family:var(--sans);font-weight:600;font-size:9.5px;color:var(--dim);
   letter-spacing:.16em;text-transform:uppercase;margin-top:4px}
@@ -229,14 +236,14 @@ input{font-family:inherit}
 .sheet .grab{width:38px;height:4px;border-radius:999px;background:var(--line);margin:0 auto 16px}
 .sheet h3{font-family:var(--serif);font-weight:500;font-size:19px;letter-spacing:-.01em}
 .sheet .ss{color:var(--muted);font-size:12.5px;margin-top:3px}
-.share{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0 6px}
-.share .opt{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:11px;color:var(--muted);font-weight:600}
-.share .opt .ci{width:54px;height:54px;border-radius:17px;background:var(--surface-2);border:1px solid var(--line);
-  display:grid;place-items:center;color:var(--text);transition:.15s}
-.share .opt .ci svg{width:23px;height:23px}
-.share .opt:active .ci{transform:scale(.9)}
-.share .opt.soon{opacity:.4}
-.share .opt.soon small{font-size:8px}
+.share-list{display:flex;flex-direction:column;margin:16px 0 4px}
+.share-list button,.share-list .soon{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+  padding:15px 4px;border-bottom:1px solid var(--line-soft);font-size:15.5px;font-weight:600;color:var(--text);
+  text-align:left;width:100%;letter-spacing:-.01em}
+.share-list .soon{color:var(--dim);font-weight:500}
+.share-list .sub{color:var(--muted);font-size:12.5px;font-weight:500;white-space:nowrap}
+.share-list .soon .sub{color:var(--dim)}
+.share-list button:active{opacity:.55}
 
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
@@ -248,8 +255,8 @@ input{font-family:inherit}
   <!-- ================= LANDING ================= -->
   <section class="screen active" id="s-landing">
     <div class="head">
-      <div class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8a2 2 0 0 1 2-2h1.2l.9-1.4A1 1 0 0 1 9 4h6a1 1 0 0 1 .9.6l.9 1.4H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" stroke="#1a0c06" stroke-width="1.6"/><circle cx="12" cy="12" r="3.2" stroke="#1a0c06" stroke-width="1.6"/></svg></div>
-      <div class="word">Foto na Hora<small>entrega ao vivo</small></div>
+      <div class="mark" role="img" aria-label="Fóton"></div>
+      <div class="word">Fóton<small>fotos na hora</small></div>
     </div>
 
     <div class="hero">
@@ -263,8 +270,8 @@ input{font-family:inherit}
         <h1 class="display">A foto no celular do convidado, <em>na hora.</em></h1>
         <p class="lede">O fotógrafo clica, a imagem é tratada e cai sozinha na galeria de quem aparece nela — ao vivo, sem instalar nada.</p>
         <div class="actions">
-          <button class="btn primary block" onclick="go('login')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-1.6h7l1 1.6h2A1.5 1.5 0 0 1 20 8.5V17a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17z"/><circle cx="12" cy="12.5" r="3.2"/></svg> Entrar como fotógrafo</button>
-          <button class="btn ghost block" onclick="openGuestDemo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3"/><path d="M3.8 19a5.2 5.2 0 0 1 10.4 0"/><path d="M16 6.3a3 3 0 0 1 0 5.4"/><path d="M17.6 19a5.2 5.2 0 0 0-2.6-4.5"/></svg> Ver como o convidado recebe</button>
+          <button class="btn primary block" onclick="go('login')">Entrar como fotógrafo</button>
+          <button class="btn ghost block" onclick="openGuestDemo()">Ver como o convidado recebe</button>
         </div>
         <p class="note"><b>Demonstração interativa.</b> Nenhuma foto real é enviada.<br>Feita para rodar no seu celular e mostrar para a cliente.</p>
       </div>
@@ -288,7 +295,7 @@ input{font-family:inherit}
   <!-- ================= DASHBOARD ================= -->
   <section class="screen" id="s-dash">
     <div class="head">
-      <div class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8a2 2 0 0 1 2-2h1.2l.9-1.4A1 1 0 0 1 9 4h6a1 1 0 0 1 .9.6l.9 1.4H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" stroke="#1a0c06" stroke-width="1.6"/><circle cx="12" cy="12" r="3.2" stroke="#1a0c06" stroke-width="1.6"/></svg></div>
+      <div class="mark" role="img" aria-label="Fóton"></div>
       <div class="word">Patrícia<small>painel do fotógrafo</small></div>
       <div class="grow"></div>
       <button class="tag-btn" onclick="logout()">sair</button>
@@ -335,7 +342,7 @@ input{font-family:inherit}
       <div class="code" id="ev-code">— — — —</div>
       <span class="codelbl">código do evento</span>
     </div>
-    <button class="btn ghost sm block" style="margin-top:12px" onclick="openGuestDemo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></svg> Ver como o convidado vê</button>
+    <button class="btn ghost sm block" style="margin-top:12px" onclick="openGuestDemo()">Ver como o convidado vê</button>
 
     <div class="stats">
       <div class="stat"><div class="n" id="ev-nphotos">0</div><div class="l">Fotos no evento</div></div>
@@ -344,7 +351,7 @@ input{font-family:inherit}
 
     <div class="live-head">
       <span class="l">Feed ao vivo</span>
-      <button class="btn ghost sm" onclick="shootPhoto()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-1.6h7l1 1.6h2A1.5 1.5 0 0 1 20 8.5V17a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17z"/><circle cx="12" cy="12.5" r="3.2"/></svg> Simular disparo</button>
+      <button class="btn ghost sm" onclick="shootPhoto()">Simular disparo</button>
     </div>
     <div class="grid" id="ev-grid">
       <div class="empty" id="ev-empty">Nenhuma foto ainda.<br>Toque em <b>Simular disparo</b> para ver o feed encher — no produto, é a câmera que dispara.</div>
@@ -354,7 +361,7 @@ input{font-family:inherit}
   <!-- ================= GUEST · CONSENT ================= -->
   <section class="screen" id="s-g-consent">
     <div class="head">
-      <div class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8a2 2 0 0 1 2-2h1.2l.9-1.4A1 1 0 0 1 9 4h6a1 1 0 0 1 .9.6l.9 1.4H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" stroke="#1a0c06" stroke-width="1.6"/><circle cx="12" cy="12" r="3.2" stroke="#1a0c06" stroke-width="1.6"/></svg></div>
+      <div class="mark" role="img" aria-label="Fóton"></div>
       <div class="word" id="g-evtname">Evento</div>
     </div>
     <div class="pill livepill" style="align-self:flex-start;margin-bottom:20px"><span class="livedot"></span> você é convidado deste evento</div>
@@ -390,7 +397,7 @@ input{font-family:inherit}
   <!-- ================= GUEST · SEARCHING ================= -->
   <section class="screen" id="s-g-search">
     <div class="head">
-      <div class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8a2 2 0 0 1 2-2h1.2l.9-1.4A1 1 0 0 1 9 4h6a1 1 0 0 1 .9.6l.9 1.4H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" stroke="#1a0c06" stroke-width="1.6"/><circle cx="12" cy="12" r="3.2" stroke="#1a0c06" stroke-width="1.6"/></svg></div>
+      <div class="mark" role="img" aria-label="Fóton"></div>
       <div class="word" id="g-evtname2">Evento</div>
     </div>
     <div class="selfie-chip"><img id="g-selfie-thumb" alt=""><span><span class="ok">✓</span> Selfie registrada</span></div>
@@ -405,14 +412,14 @@ input{font-family:inherit}
   <!-- ================= GUEST · GALLERY ================= -->
   <section class="screen" id="s-g-gallery">
     <div class="head">
-      <div class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8a2 2 0 0 1 2-2h1.2l.9-1.4A1 1 0 0 1 9 4h6a1 1 0 0 1 .9.6l.9 1.4H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" stroke="#1a0c06" stroke-width="1.6"/><circle cx="12" cy="12" r="3.2" stroke="#1a0c06" stroke-width="1.6"/></svg></div>
+      <div class="mark" role="img" aria-label="Fóton"></div>
       <div class="word">Suas fotos<small id="g-count">0 fotos</small></div>
       <div class="grow"></div>
       <span class="pill livepill"><span class="livedot" id="g-live-dot"></span> ao vivo</span>
     </div>
     <p class="subtitle" style="margin-top:0">Novas fotos entram sozinhas enquanto a festa acontece.</p>
     <div class="grid" id="g-grid2"></div>
-    <div class="sticky"><button class="btn primary block" onclick="shareSheet('todas')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M8 11l4 4 4-4M5 19h14"/></svg> Baixar todas</button></div>
+    <div class="sticky"><button class="btn primary block" onclick="shareSheet('todas')">Baixar todas as fotos</button></div>
   </section>
 
 </div>
@@ -424,16 +431,16 @@ input{font-family:inherit}
     <div class="grab"></div>
     <h3 id="sheet-title">Compartilhar foto</h3>
     <div class="ss">Escolha como entregar ao convidado.</div>
-    <div class="share">
-      <button class="opt" onclick="shareVia('WhatsApp')"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 16H9l-4 3.5V6.5A1.5 1.5 0 0 1 6.5 5z"/></svg></span>WhatsApp</button>
-      <button class="opt" onclick="shareVia('QR na tela')"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14.5h2.5M20 14v3M15.5 20h4.5M20 20v.01"/></svg></span>QR na tela</button>
-      <button class="opt" onclick="shareVia('Link copiado')"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 14.5l5-5"/><path d="M10.5 6.8l1.6-1.6a3.4 3.4 0 0 1 4.8 4.8l-1.6 1.6"/><path d="M13.5 17.2l-1.6 1.6a3.4 3.4 0 0 1-4.8-4.8l1.6-1.6"/></svg></span>Link</button>
-      <button class="opt" onclick="shareVia('Download')"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M8 11l4 4 4-4M5 19h14"/></svg></span>Baixar</button>
-      <div class="opt soon"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6" width="17" height="12" rx="1.6"/><path d="M4.2 7.2l7.8 5.6 7.8-5.6"/></svg></span>E-mail<small>em breve</small></div>
-      <div class="opt soon"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5a7 7 0 0 1 0 7"/><path d="M10 6a11 11 0 0 1 0 12"/><path d="M13.5 4.5a15 15 0 0 1 0 15"/></svg></span>NFC<small>em breve</small></div>
-      <div class="opt soon"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V4.5h10V9"/><rect x="4.5" y="9" width="15" height="7" rx="1.4"/><path d="M7 14h10v5.5H7z"/></svg></span>Imprimir<small>em breve</small></div>
-      <button class="opt" onclick="closeSheet()"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></span>Fechar</button>
+    <div class="share-list">
+      <button onclick="shareVia('WhatsApp')">WhatsApp <span class="sub">enviar agora</span></button>
+      <button onclick="shareVia('QR na tela')">QR na tela <span class="sub">o convidado escaneia</span></button>
+      <button onclick="shareVia('Link copiado')">Copiar link <span class="sub">manda onde quiser</span></button>
+      <button onclick="shareVia('Download')">Baixar <span class="sub">salvar no aparelho</span></button>
+      <div class="soon">E-mail <span class="sub">em breve</span></div>
+      <div class="soon">NFC — toque <span class="sub">em breve</span></div>
+      <div class="soon">Imprimir <span class="sub">em breve</span></div>
     </div>
+    <button class="btn ghost block" style="margin-top:16px" onclick="closeSheet()">Fechar</button>
   </div>
 </div>
 
@@ -536,7 +543,7 @@ function renderEventGrid(){
   g.innerHTML='';
   ev._photos.slice().reverse().forEach(p=>{
     const d=document.createElement('div');d.className='ph';d.onclick=()=>shareSheet('foto');
-    d.innerHTML=`<img src="${p.src}" alt=""><span class="tag">✓ ${p.faces} rosto${p.faces>1?'s':''}</span><span class="wm">FOTO NA HORA</span>`;
+    d.innerHTML=`<img src="${p.src}" alt=""><span class="tag">✓ ${p.faces} rosto${p.faces>1?'s':''}</span><span class="wm">FÓTON</span>`;
     g.appendChild(d);
   });
 }
@@ -616,7 +623,7 @@ function pushToGuest(p){
 function renderGuestGrid(){
   const wrap=id=>{const g=document.getElementById(id);if(!g)return;g.innerHTML='';
     guestState.photos.slice().reverse().forEach(p=>{const d=document.createElement('div');d.className='ph';d.onclick=()=>shareSheet('minha foto');
-      d.innerHTML=`<img src="${p.src}" alt=""><span class="wm">FOTO NA HORA</span>`;g.appendChild(d);});};
+      d.innerHTML=`<img src="${p.src}" alt=""><span class="wm">FÓTON</span>`;g.appendChild(d);});};
   wrap('g-grid');wrap('g-grid2');
   const c=guestState.photos.length;document.getElementById('g-count').textContent=c+(c===1?' foto':' fotos');
 }

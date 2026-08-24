@@ -109,6 +109,15 @@ Formato para copiar:
 ## ADRs aposentadas pelo pivô para nuvem (2026-08-23)
 - **ADR-0002** (CUDA/`nvidia-smi` no Edge Server), **ADR-0003** (toolchain CV local), **ADR-0004** (env Python isolado — agora só do LAB), e o desenho de **entrega híbrida / Cloudflare Tunnel / appliance**: `SUPERSEDED` por **ADR-0006**. A GPU do LAB permanece relevante só para medir o facial self-hosted (EXP-05).
 
+## ADR-0013 — Nome/marca do produto: "Fóton" (tagline "fotos na hora")
+- **Status:** ACCEPTED — **pendente clearance final** (INPI + domínio + @Instagram)
+- **Data:** 2026-08-24
+- **Decisão:** a marca é **Fóton**; "fotos na hora" vira **tagline** descritiva. Logo = o próprio fóton (ponto de luz + lampejo), **sem ícone de câmera**.
+- **Contexto:** "Foto na Hora" é termo **genérico/descritivo**, amplamente usado no mercado BR (Fuzuê Fotos na Hora, "foto impressa na hora", Media Pix, etc.) → não registrável no INPI, domínio/Instagram saturados, invisível na busca.
+- **Alternativas:** Faísca, Lampejo, Confete (todas apresentadas). Dono escolheu **Fóton** — premium, moderno, raiz "foto" (fóton = partícula de luz), *ownable*.
+- **Justificativa:** marca distintiva e protegível; separa **marca** (Fóton) de **categoria** (fotos na hora).
+- **Consequências:** antes de investir pesado, **clearance obrigatório**: busca INPI + registrar domínio (ex.: foton.com.br / getfoton) + @ no Instagram. Propagar o nome nos docs/README (ainda citam "Foto na Hora"). Watermark e UI já atualizados.
+
 ## Decisões resolvidas (2026-08-24)
 Provider de nuvem, linguagem do backend, storage/CDN e feed ao vivo saíram de "adiadas" e viraram ADR-0010/0011: **Supabase + Netlify + Cloudflare R2 + FastAPI (Python)**, feed via **Supabase Realtime**. Match = brute-force cosine (EXP-06), sem índice dedicado nessa escala.
 
