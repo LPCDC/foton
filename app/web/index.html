@@ -7,7 +7,7 @@
 <title>Fóton</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Instrument+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Satisfy&family=Instrument+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
    Foto na Hora — identidade "premium escuro / fotografia"
@@ -50,17 +50,18 @@ input{font-family:inherit}
 
 /* ---------- wordmark / header ---------- */
 .head{display:flex;align-items:center;gap:12px;margin-bottom:26px}
-/* logo Fóton — o fóton: ponto de luz + lampejo, dentro de placa escura (sem ícone) */
-.mark{width:40px;height:40px;border-radius:12px;flex-shrink:0;position:relative;overflow:hidden;
-  background:radial-gradient(130% 130% at 50% 38%,#241a26,#131017);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),inset 0 0 16px rgba(232,217,176,.16)}
-.mark::before{content:"";position:absolute;left:5px;right:5px;top:50%;height:1px;transform:translateY(-50%);
-  background:linear-gradient(90deg,transparent,rgba(232,217,176,.8),transparent)}
-.mark::after{content:"";position:absolute;left:50%;top:50%;width:9px;height:9px;border-radius:50%;transform:translate(-50%,-50%);
-  background:radial-gradient(circle,#fff 0%,#fff3d6 26%,var(--accent) 66%,rgba(232,217,176,0) 72%);
-  box-shadow:0 0 12px 2px rgba(232,217,176,.75),0 0 4px rgba(255,255,255,.95)}
-.mark.lg{width:60px;height:60px;border-radius:17px}
-.mark.lg::after{width:13px;height:13px;box-shadow:0 0 18px 3px rgba(232,217,176,.8),0 0 6px rgba(255,255,255,.95)}
+/* logo Foton — selo circular (Foton + pontos de luz), adaptável a qualquer fundo; clique = home */
+.mark{width:44px;height:44px;flex-shrink:0;cursor:pointer;display:grid;place-items:center;background:none;
+  border-radius:50%;transition:transform .14s,opacity .2s}
+.mark svg{width:44px;height:44px;display:block}
+.mark:hover{opacity:.85}
+.mark:active{transform:scale(.93)}
+.mark:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.brand-badge{width:112px;height:112px;background:none;border:none;padding:0;cursor:pointer;display:block;
+  margin:0 0 22px;transition:transform .16s}
+.brand-badge svg{width:112px;height:112px;display:block}
+.brand-badge:active{transform:scale(.97)}
+.brand-badge:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:50%}
 .word{font-family:var(--serif);font-weight:600;font-size:20px;letter-spacing:-.02em;line-height:1}
 .word small{display:block;font-family:var(--sans);font-weight:600;font-size:9.5px;color:var(--dim);
   letter-spacing:.16em;text-transform:uppercase;margin-top:4px}
@@ -262,11 +263,6 @@ input{font-family:inherit}
 
   <!-- ================= LANDING ================= -->
   <section class="screen active" id="s-landing">
-    <div class="head">
-      <div class="mark" role="img" aria-label="Fóton"></div>
-      <div class="word">Fóton<small>fotos na hora</small></div>
-    </div>
-
     <div class="hero">
       <div class="collage" aria-hidden="true">
         <div class="c c1"><img id="col1" alt=""></div>
@@ -274,6 +270,7 @@ input{font-family:inherit}
         <div class="c c3"><img id="col3" alt=""></div>
       </div>
       <div class="hero-body">
+        <button class="brand-badge" onclick="home()" aria-label="Fóton — início"></button>
         <div class="eyebrow"><span class="dot"></span>durante a festa · não depois</div>
         <h1 class="display">A foto no celular do convidado, <em>na hora.</em></h1>
         <p class="lede">O fotógrafo clica, a imagem é tratada e cai sozinha na galeria de quem aparece nela — ao vivo, sem instalar nada.</p>
@@ -460,8 +457,10 @@ input{font-family:inherit}
    ========================================================================= */
 const DEMO = true;
 /* fotos reais de evento (CC0/uso comercial, ver assets/CREDITS.txt) — trocar pelas da fotografa no produto */
-const PHOTOS = Array.from({length:12},(_,i)=>`assets/p${String(i+1).padStart(2,'0')}.jpg`);
-const photo = i => PHOTOS[((i%PHOTOS.length)+PHOTOS.length)%PHOTOS.length];
+const PHOTOS = Array.from({length:11},(_,i)=>`assets/p${String(i+1).padStart(2,'0')}.jpg`);
+const pick = i => PHOTOS[((i%PHOTOS.length)+PHOTOS.length)%PHOTOS.length];
+let _bag=[];                        // saco embaralhado: nao repete ate esgotar
+function photoNext(){ if(!_bag.length) _bag=[...PHOTOS].sort(()=>Math.random()-.5); return _bag.pop(); }
 
 /* ---- imagens sintéticas (sem rede) que parecem foto de festa: gradiente + bokeh + grão + silhueta ---- */
 function stockPhoto(seed){
@@ -518,7 +517,7 @@ function renderDash(){
   state.events.forEach((ev,i)=>{
     const live=ev.status==='live';
     const b=document.createElement('button');b.className='evt';b.onclick=()=>openEvent(ev);
-    const thumb=live?`<div class="dotlive">🔴</div>`:`<img src="${photo(i+4)}" alt="" loading="lazy">`;
+    const thumb=live?`<div class="dotlive">🔴</div>`:`<img src="${pick(i+4)}" alt="" loading="lazy">`;
     b.innerHTML=`<div class="thumb">${thumb}</div>
       <div class="meta"><b>${ev.name}</b>
       <span>${live?'<span class="livedot"></span><span class="live-txt">ao vivo agora</span>':fmtDate(ev.date)+' · '+ev.photos+' fotos · '+ev.guests+' convidados'}</span></div>
@@ -560,7 +559,7 @@ function renderEventGrid(){
 }
 function shootPhoto(){
   const ev=state.live;if(!ev)return;
-  const p={src:photo(state.seed++),faces:1+Math.floor(Math.random()*3)};
+  const p={src:photoNext(),faces:1+Math.floor(Math.random()*3)};
   ev._photos.push(p);ev.photos++;state.totPhotos++;
   document.getElementById('ev-nphotos').textContent=ev.photos;
   renderEventGrid();
@@ -618,14 +617,14 @@ function startGuestSearch(){
   clearTimeout(state.guestTimer);
   state.guestTimer=setTimeout(()=>{
     const n=state.live?Math.min(2,(state.live._photos||[]).length):3;
-    for(let i=0;i<Math.max(n,3);i++)pushToGuest({src:photo(state.seed++),faces:1});
+    for(let i=0;i<Math.max(n,3);i++)pushToGuest({src:photoNext(),faces:1});
     goGallery();
   },2500);
 }
 function goGallery(){
   go('g-gallery');renderGuestGrid();
   if(!state.live){clearInterval(state._gfeed);let k=0;
-    state._gfeed=setInterval(()=>{if(k++>6){clearInterval(state._gfeed);return;}pushToGuest({src:photo(state.seed++),faces:1});},3200);}
+    state._gfeed=setInterval(()=>{if(k++>6){clearInterval(state._gfeed);return;}pushToGuest({src:photoNext(),faces:1});},3200);}
 }
 function pushToGuest(p){
   guestState.photos.push(p);renderGuestGrid();
@@ -642,6 +641,21 @@ function renderGuestGrid(){
 function shareSheet(what){what=what||'foto';document.getElementById('sheet-title').textContent=what==='todas'?'Baixar todas as fotos':'Compartilhar '+what;document.getElementById('sheet').classList.add('show');}
 function closeSheet(){document.getElementById('sheet').classList.remove('show');}
 function shareVia(m){closeSheet();toast('✓ '+m+' — no produto, entrega a foto do R2 na hora.');}
+
+/* home (voltar pra home de qualquer subpagina) */
+function home(){ if(typeof stopEvent==='function') stopEvent(); clearInterval(state._gfeed); go('landing'); }
+
+/* logo Foton — selo desenhado (Foton + pontos de luz), champagne, adaptavel */
+function badgeSVG(full){
+  const dotsFull=[[70,55,2.2,.9],[150,60,1.6,.7],[60,150,2,.8],[160,150,1.4,.6],[110,38,2.6,1],[45,95,1.4,.6],[176,106,1.8,.7],[95,172,1.5,.6],[132,176,1.3,.5],[34,132,1.2,.5],[186,140,1.3,.5],[80,186,1.2,.5],[150,30,1.5,.7],[30,72,1.4,.6]];
+  const dotsMini=[[20,16,1.5,.9],[46,20,1.1,.7],[16,44,1.3,.7],[48,44,1,.55],[32,11,1.6,1],[12,31,1,.6],[52,33,1.1,.6],[40,52,1,.5]];
+  const dots=(full?dotsFull:dotsMini).map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="${p[2]}" fill="#e8d9b0" opacity="${p[3]}"/>`).join('');
+  if(full) return `<svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg"><defs><filter id="frough"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="4"/></filter></defs><circle cx="110" cy="110" r="100" fill="none" stroke="#e8d9b0" stroke-opacity=".45" stroke-width="2.4" filter="url(#frough)"/><circle cx="110" cy="110" r="94" fill="none" stroke="#e8d9b0" stroke-opacity=".22" stroke-width="1.2" filter="url(#frough)"/>${dots}<text x="110" y="120" text-anchor="middle" font-family="'Satisfy',cursive" font-size="52" fill="#f4ecd8">Foton</text><text x="110" y="150" text-anchor="middle" font-family="'Jost',sans-serif" font-size="14" letter-spacing="2.5" fill="#e8d9b0">sua foto on</text></svg>`;
+  return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="29" fill="none" stroke="#e8d9b0" stroke-opacity=".5" stroke-width="1.6"/><circle cx="32" cy="32" r="26" fill="none" stroke="#e8d9b0" stroke-opacity=".25" stroke-width="1"/>${dots}<text x="32" y="42" text-anchor="middle" font-family="'Satisfy',cursive" font-size="30" fill="#f4ecd8">F</text></svg>`;
+}
+document.querySelectorAll('.mark').forEach(m=>{m.innerHTML=badgeSVG(false);m.onclick=home;m.setAttribute('role','button');m.setAttribute('tabindex','0');m.setAttribute('aria-label','Início — Fóton');
+  m.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();home();}});});
+const _bb=document.querySelector('.brand-badge'); if(_bb) _bb.innerHTML=badgeSVG(true);
 
 /* collage da landing — fotos reais */
 ['col1','col2','col3'].forEach((id,i)=>document.getElementById(id).src=PHOTOS[i]);
