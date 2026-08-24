@@ -459,6 +459,9 @@ input{font-family:inherit}
    feed=Supabase Realtime, pipeline=FastAPI (ver app/README.md, ADR-0010).
    ========================================================================= */
 const DEMO = true;
+/* fotos reais de evento (CC0/uso comercial, ver assets/CREDITS.txt) — trocar pelas da fotografa no produto */
+const PHOTOS = Array.from({length:12},(_,i)=>`assets/p${String(i+1).padStart(2,'0')}.jpg`);
+const photo = i => PHOTOS[((i%PHOTOS.length)+PHOTOS.length)%PHOTOS.length];
 
 /* ---- imagens sintéticas (sem rede) que parecem foto de festa: gradiente + bokeh + grão + silhueta ---- */
 function stockPhoto(seed){
@@ -515,7 +518,7 @@ function renderDash(){
   state.events.forEach((ev,i)=>{
     const live=ev.status==='live';
     const b=document.createElement('button');b.className='evt';b.onclick=()=>openEvent(ev);
-    const thumb=live?`<div class="dotlive">🔴</div>`:`<img src="${stockPhoto(70+i)}" alt="">`;
+    const thumb=live?`<div class="dotlive">🔴</div>`:`<img src="${photo(i+4)}" alt="" loading="lazy">`;
     b.innerHTML=`<div class="thumb">${thumb}</div>
       <div class="meta"><b>${ev.name}</b>
       <span>${live?'<span class="livedot"></span><span class="live-txt">ao vivo agora</span>':fmtDate(ev.date)+' · '+ev.photos+' fotos · '+ev.guests+' convidados'}</span></div>
@@ -551,13 +554,13 @@ function renderEventGrid(){
   g.innerHTML='';
   ev._photos.slice().reverse().forEach(p=>{
     const d=document.createElement('div');d.className='ph';d.onclick=()=>shareSheet('foto');
-    d.innerHTML=`<img src="${p.src}" alt=""><span class="tag">✓ ${p.faces} rosto${p.faces>1?'s':''}</span><span class="wm">FÓTON</span>`;
+    d.innerHTML=`<img src="${p.src}" alt="" loading="lazy"><span class="tag">✓ ${p.faces} rosto${p.faces>1?'s':''}</span><span class="wm">FÓTON</span>`;
     g.appendChild(d);
   });
 }
 function shootPhoto(){
   const ev=state.live;if(!ev)return;
-  const p={src:stockPhoto(state.seed++),faces:1+Math.floor(Math.random()*3)};
+  const p={src:photo(state.seed++),faces:1+Math.floor(Math.random()*3)};
   ev._photos.push(p);ev.photos++;state.totPhotos++;
   document.getElementById('ev-nphotos').textContent=ev.photos;
   renderEventGrid();
@@ -615,14 +618,14 @@ function startGuestSearch(){
   clearTimeout(state.guestTimer);
   state.guestTimer=setTimeout(()=>{
     const n=state.live?Math.min(2,(state.live._photos||[]).length):3;
-    for(let i=0;i<Math.max(n,3);i++)pushToGuest({src:stockPhoto(500+i),faces:1});
+    for(let i=0;i<Math.max(n,3);i++)pushToGuest({src:photo(state.seed++),faces:1});
     goGallery();
   },2500);
 }
 function goGallery(){
   go('g-gallery');renderGuestGrid();
   if(!state.live){clearInterval(state._gfeed);let k=0;
-    state._gfeed=setInterval(()=>{if(k++>6){clearInterval(state._gfeed);return;}pushToGuest({src:stockPhoto(600+k),faces:1});},3200);}
+    state._gfeed=setInterval(()=>{if(k++>6){clearInterval(state._gfeed);return;}pushToGuest({src:photo(state.seed++),faces:1});},3200);}
 }
 function pushToGuest(p){
   guestState.photos.push(p);renderGuestGrid();
@@ -631,7 +634,7 @@ function pushToGuest(p){
 function renderGuestGrid(){
   const wrap=id=>{const g=document.getElementById(id);if(!g)return;g.innerHTML='';
     guestState.photos.slice().reverse().forEach(p=>{const d=document.createElement('div');d.className='ph';d.onclick=()=>shareSheet('minha foto');
-      d.innerHTML=`<img src="${p.src}" alt=""><span class="wm">FÓTON</span>`;g.appendChild(d);});};
+      d.innerHTML=`<img src="${p.src}" alt="" loading="lazy"><span class="wm">FÓTON</span>`;g.appendChild(d);});};
   wrap('g-grid');wrap('g-grid2');
   const c=guestState.photos.length;document.getElementById('g-count').textContent=c+(c===1?' foto':' fotos');
 }
@@ -640,8 +643,8 @@ function shareSheet(what){what=what||'foto';document.getElementById('sheet-title
 function closeSheet(){document.getElementById('sheet').classList.remove('show');}
 function shareVia(m){closeSheet();toast('✓ '+m+' — no produto, entrega a foto do R2 na hora.');}
 
-/* collage da landing */
-['col1','col2','col3'].forEach((id,i)=>document.getElementById(id).src=stockPhoto(11+i*4));
+/* collage da landing — fotos reais */
+['col1','col2','col3'].forEach((id,i)=>document.getElementById(id).src=PHOTOS[i]);
 
 /* deep-link ?evento=CODE abre como convidado (o que o QR faz) */
 if(new URLSearchParams(location.search).get('evento'))openGuestDemo();
