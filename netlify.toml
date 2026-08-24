@@ -1,0 +1,10 @@
+# Fóton — deploy estático da demo (front-end puro). Publica só app/web.
+[build]
+  publish = "app/web"
+  command = ""
+
+# SPA: tudo cai no index.html (o app roteia por hash/JS)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
