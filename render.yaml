@@ -1,0 +1,12 @@
+# Fóton — blueprint do TEST-RIG na Render (teste ao vivo). NÃO é o produto (ADR-0010).
+# Deploy: conectar este repo (GitHub) na Render → ela lê este arquivo.
+services:
+  - type: web
+    name: foton-rig
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r app/test_rig/requirements.txt
+    startCommand: uvicorn rig:app --host 0.0.0.0 --port $PORT --app-dir app/test_rig
+    healthCheckPath: /health
+    autoDeploy: true

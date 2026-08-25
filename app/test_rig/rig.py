@@ -8,15 +8,35 @@ Segurança (ADR-0005): a selfie do convidado NUNCA é armazenada nem servida —
 embedding em memória e é descartada com o /reset ou ao encerrar o processo. Logs sem
 PII (só id de rastreio, contagem, latência). Acesso com código de evento.
 """
-import io, os, time, uuid, logging
+import io, os, time, uuid, logging, shutil, urllib.request
 import cv2, numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 
-BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MODELS = os.path.join(BASE, "experiments", "exp05_facial", "models")
+HERE = os.path.dirname(os.path.abspath(__file__))
+BASE = os.path.dirname(os.path.dirname(HERE))
+MODELS = os.path.join(HERE, "models")
+_ZOO = "https://github.com/opencv/opencv_zoo/raw/main/models"
+_FILES = {
+    "face_detection_yunet_2023mar.onnx": _ZOO + "/face_detection_yunet/face_detection_yunet_2023mar.onnx",
+    "face_recognition_sface_2021dec.onnx": _ZOO + "/face_recognition_sface/face_recognition_sface_2021dec.onnx",
+}
+def ensure_models():
+    """Garante os ONNX localmente: usa os do LAB se existirem, senao baixa do OpenCV Zoo
+    (assim o Render nao precisa dos 37MB no git)."""
+    os.makedirs(MODELS, exist_ok=True)
+    exp = os.path.join(BASE, "experiments", "exp05_facial", "models")
+    for fn, url in _FILES.items():
+        dst = os.path.join(MODELS, fn)
+        if os.path.exists(dst) and os.path.getsize(dst) > 1000:
+            continue
+        src = os.path.join(exp, fn)
+        if os.path.exists(src):
+            shutil.copy(src, dst); continue
+        log.info('{"stage":"models","file":"%s","status":"downloading"}' % fn)
+        urllib.request.urlretrieve(url, dst)
 DET = os.path.join(MODELS, "face_detection_yunet_2023mar.onnx")
 REC = os.path.join(MODELS, "face_recognition_sface_2021dec.onnx")
 THRESH = 0.363          # SFace (EXP-05)
@@ -30,6 +50,7 @@ _det = _rec = None
 def _models():
     global _det, _rec
     if _det is None:
+        ensure_models()
         _det = cv2.FaceDetectorYN_create(DET, "", (320, 320), 0.6, 0.3, 5000)
         _rec = cv2.FaceRecognizerSF_create(REC, "")
     return _det, _rec
