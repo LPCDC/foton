@@ -63,3 +63,8 @@ Desktop.ini
 # --- Logs ---
 *.log
 logs/
+
+# modelos do test-rig (buffalo_s, ~16MB) sao versionados de proposito
+!app/test_rig/models/
+!app/test_rig/models/buffalo_s/
+!app/test_rig/models/buffalo_s/*.onnx

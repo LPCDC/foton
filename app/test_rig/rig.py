@@ -16,19 +16,10 @@ from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-# Render free = CPU compartilhada: onnxruntime multi-thread trava/crasha (502).
-# Forca 1 thread ANTES do insightface criar qualquer sessao.
-os.environ.setdefault("OMP_NUM_THREADS", "1")
-os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
-os.environ.setdefault("MKL_NUM_THREADS", "1")
-import onnxruntime as _ort
-_ort_orig = _ort.InferenceSession
-def _ort_1thread(*a, **k):
-    so = k.pop("sess_options", None) or _ort.SessionOptions()
-    so.intra_op_num_threads = 1
-    so.inter_op_num_threads = 1
-    return _ort_orig(*a, sess_options=so, **k)
-_ort.InferenceSession = _ort_1thread
+# Render free = CPU compartilhada: limita threads via env (nao thrashar). A causa real
+# do 502 era carregar o modelo DENTRO do request -> agora carrega no startup (abaixo).
+os.environ.setdefault("OMP_NUM_THREADS", "2")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "2")
 from insightface.app import FaceAnalysis
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -46,8 +37,8 @@ def _face():
     Modelos baixam sozinhos (~/.insightface) na 1a chamada."""
     global _fa
     if _fa is None:
-        _fa = FaceAnalysis(name="buffalo_s", allowed_modules=["detection", "recognition"],
-                           providers=["CPUExecutionProvider"])
+        _fa = FaceAnalysis(name="buffalo_s", root=HERE, allowed_modules=["detection", "recognition"],
+                           providers=["CPUExecutionProvider"])   # root=HERE -> models/buffalo_s/ (empacotado, sem download)
         _fa.prepare(ctx_id=-1, det_size=(320, 320))
     return _fa
 
@@ -96,6 +87,14 @@ def _ev(code, create=False):
 
 app = FastAPI(title="Fóton test-rig", version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+@app.on_event("startup")
+def _startup():
+    """Carrega o ArcFace no BOOT (nao no request) — evita bloquear o event-loop e o 502."""
+    try:
+        _face(); log.info('{"stage":"warm","status":"ready"}')
+    except Exception as e:
+        log.info('{"stage":"warm","status":"fail","err":"%s"}' % str(e)[:140])
 
 @app.get("/health")
 def health():
