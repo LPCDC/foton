@@ -267,10 +267,10 @@ input{font-family:inherit}
         <h1 class="display">A foto no celular do convidado, <em>na hora.</em></h1>
         <p class="lede">O fotógrafo clica, a imagem é tratada e cai sozinha na galeria de quem aparece nela — ao vivo, sem instalar nada.</p>
         <div class="actions">
-          <button class="btn primary block" onclick="go('login')">Entrar como fotógrafo</button>
-          <button class="btn ghost block" onclick="openGuestDemo()">Ver como o convidado recebe</button>
+          <button class="btn primary block" onclick="go('login')">Fotógrafo</button>
+          <button class="btn ghost block" onclick="entrarConvidado()">Convidado</button>
         </div>
-        <p class="note"><b>Demonstração interativa.</b> Nenhuma foto real é enviada.<br>Feita para rodar no seu celular e mostrar para a cliente.</p>
+        <p class="note" id="landing-note">O <b>fotógrafo</b> cria o evento e fotografa. O <b>convidado</b> tira 1 selfie e recebe as fotos dele — na hora.</p>
       </div>
     </div>
   </section>
@@ -342,7 +342,7 @@ input{font-family:inherit}
     </div>
     <a id="ev-guestlink" class="link" target="_blank" rel="noopener" style="display:none;text-align:center;font-size:11px;margin-top:8px;word-break:break-all"></a>
     <input type="file" id="live-upload" accept="image/*" style="display:none" onchange="uploadPhoto(event)">
-    <button class="btn ghost sm block" style="margin-top:12px" onclick="openGuestDemo()">Ver como o convidado vê</button>
+    <button class="btn ghost sm block" id="btn-preview" style="margin-top:12px" onclick="openGuest(state.live?state.live.code:'DEMO')">Ver como o convidado vê</button>
 
     <div class="stats">
       <div class="stat"><div class="n" id="ev-nphotos">0</div><div class="l">Fotos no evento</div></div>
@@ -356,6 +356,24 @@ input{font-family:inherit}
     <div class="grid" id="ev-grid">
       <div class="empty" id="ev-empty">Nenhuma foto ainda.<br>Toque em <b>Simular disparo</b> para ver o feed encher — no produto, é a câmera que dispara.</div>
     </div>
+  </section>
+
+  <!-- ================= GUEST · ENTRAR (código) ================= -->
+  <section class="screen" id="s-g-code">
+    <button class="back" onclick="home()">←&nbsp; início</button>
+    <div class="head" style="margin-bottom:18px">
+      <div class="mark" role="img" aria-label="Fóton"></div>
+      <div class="word">Convidado<small>entrar no evento</small></div>
+    </div>
+    <h1 class="title">Entrar no evento</h1>
+    <p class="subtitle">Escaneie o QR do fotógrafo — ou digite o código que aparece na tela dele.</p>
+    <div class="card">
+      <div class="field"><label>Código do evento</label>
+        <input id="g-code-input" placeholder="ABCD" maxlength="4" autocapitalize="characters" autocomplete="off"
+          style="text-transform:uppercase;letter-spacing:.35em;font-family:var(--mono);text-align:center;font-size:22px"></div>
+      <button class="btn primary block" onclick="entrarNoEvento()">Entrar no evento</button>
+    </div>
+    <p class="note" style="margin-top:20px">Sem instalar app. Sem cadastro. Só a sua selfie.</p>
   </section>
 
   <!-- ================= GUEST · CONSENT ================= -->
@@ -419,7 +437,7 @@ input{font-family:inherit}
     </div>
     <p class="subtitle" style="margin-top:0">Novas fotos entram sozinhas enquanto a festa acontece.</p>
     <div class="grid" id="g-grid2"></div>
-    <div class="sticky"><button class="btn primary block" onclick="shareSheet('todas')">Baixar todas as fotos</button></div>
+    <div class="sticky"><button class="btn primary block" id="g-download" onclick="shareSheet('todas')">Baixar todas as fotos</button></div>
   </section>
 
 </div>
@@ -534,7 +552,7 @@ function criarEvento(){
   const date=document.getElementById('ev-date').value||new Date().toISOString().slice(0,10);
   if(state.credits<=0){toast('Sem créditos. Compre um novo pacote.');return;}
   const ev={id:'e'+Date.now(),name,date,photos:0,guests:0,status:'live',code:genCode()};
-  state.events.unshift(ev);state.credits--;openEvent(ev);   // abre a tela do QR NA HORA (não trava)
+  state.events.unshift(ev);state.credits--;saveEvents();openEvent(ev);   // abre a tela do QR NA HORA (não trava) e persiste
   if(LIVE) registerEvent(ev.code);                          // registra no servidor em 2º plano (com retry no cold start)
 }
 async function registerEvent(code,tries=8){
@@ -557,11 +575,22 @@ async function uploadPhoto(e){
     if(!r.ok){ toast('Falha no upload ('+r.status+')'); return; }
     const j=await r.json();
     ev._photos.push({src:`${API}/img/${ev.code}/${j.photo_id}.jpg`, faces:j.n_faces});
-    ev.photos++; document.getElementById('ev-nphotos').textContent=ev.photos; renderEventGrid();
-    toast(`Foto tratada em ${Math.round(performance.now()-t0)}ms · ${j.n_faces} rosto(s) ⚡`);
+    ev.photos++; document.getElementById('ev-nphotos').textContent=ev.photos; renderEventGrid(); saveEvents();
+    toast(j.n_faces ? `Foto publicada · ${j.n_faces} rosto(s) reconhecido(s) ⚡`
+                    : 'Foto enviada, mas nenhum rosto claro — use um retrato nítido de frente');
   }catch(err){ toast('Backend offline'); }
 }
 function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<4;i++)r+=c[Math.floor(Math.random()*c.length)];return r;}
+/* persistencia dos eventos do fotografo (sobrevive a sair/voltar/recarregar) */
+function saveEvents(){ if(!LIVE)return; try{ localStorage.setItem('foton_ev', JSON.stringify(state.events.map(e=>({id:e.id,name:e.name,date:e.date,code:e.code,status:e.status,photos:e.photos||0})))); }catch(e){} }
+function loadEvents(){ if(!LIVE)return; try{ const s=localStorage.getItem('foton_ev'); state.events = s ? JSON.parse(s) : []; }catch(e){ state.events=[]; } }
+/* reabrir evento: recarrega do servidor as fotos ja enviadas */
+async function syncEventPhotos(ev){
+  try{ const r=await fetch(`${API}/photos?event=${encodeURIComponent(ev.code)}`); if(!r.ok)return; const j=await r.json();
+    ev._photos=(j.photos||[]).map(p=>({src:`${API}/img/${ev.code}/${p.id}.jpg`, faces:p.n_faces}));
+    ev.photos=ev._photos.length; document.getElementById('ev-nphotos').textContent=ev.photos; renderEventGrid(); saveEvents();
+  }catch(e){}
+}
 
 function openEvent(ev){
   state.live=ev;ev.status='live';ev._photos=ev._photos||[];
@@ -572,6 +601,7 @@ function openEvent(ev){
   document.getElementById('ev-nguests').textContent=ev.guests;
   drawQR(ev.code||'DEMO');renderEventGrid();go('event');
   const sb=document.getElementById('ev-shoot'); if(sb) sb.textContent=LIVE?'Enviar foto da câmera':'Simular disparo';
+  const bp=document.getElementById('btn-preview'); if(bp) bp.style.display=LIVE?'none':'';
   if(LIVE){
     const gurl=`${API}/?evento=${ev.code}`;
     const qi=document.getElementById('qr-img');
@@ -579,13 +609,14 @@ function openEvent(ev){
     qi.onerror=()=>{qi.style.display='none';document.getElementById('qr').style.display='none';};
     qi.style.display='block'; qi.src=`${API}/qr?data=${encodeURIComponent(gurl)}`;
     const gl=document.getElementById('ev-guestlink'); gl.textContent='🔗 '+gurl; gl.href=gurl; gl.style.display='block';
+    syncEventPhotos(ev);   // reabrir evento: recarrega as fotos ja enviadas
   }
   clearInterval(state.liveTimer);
   if(!LIVE) state.liveTimer=setInterval(()=>{if(Math.random()<.5){ev.guests++;document.getElementById('ev-nguests').textContent=ev.guests;}},2600);
 }
 function renderEventGrid(){
   const g=document.getElementById('ev-grid'),ev=state.live;
-  if(!ev._photos.length){g.innerHTML='<div class="empty" id="ev-empty">Nenhuma foto ainda.<br>Toque em <b>Simular disparo</b> para ver o feed encher — no produto, é a câmera que dispara.</div>';return;}
+  if(!ev._photos.length){g.innerHTML=`<div class="empty">${LIVE?'Nenhuma foto ainda.<br>Toque em <b>Enviar foto da câmera</b> e escolha um retrato nítido.':'Nenhuma foto ainda.<br>Toque em <b>Simular disparo</b> para ver o feed encher.'}</div>`;return;}
   g.innerHTML='';
   ev._photos.slice().reverse().forEach(p=>{
     const d=document.createElement('div');d.className='ph';d.onclick=()=>shareSheet('foto');
@@ -617,9 +648,19 @@ function drawQR(code){
 
 /* =================== GUEST =================== */
 const guestState={active:false,selfie:null,photos:[]};
-function openGuestDemo(){
-  const code=_params.get('evento') || (state.live&&state.live.code) || 'DEMO';
-  guestState.event=code;
+function entrarConvidado(){
+  const code=_params.get('evento');
+  if(code) return openGuest(code);
+  const inp=document.getElementById('g-code-input'); if(inp) inp.value='';
+  go('g-code');
+}
+function entrarNoEvento(){
+  const code=(document.getElementById('g-code-input').value||'').trim().toUpperCase();
+  if(code.length<3){ toast('Digite o código do evento (ex.: MRN7).'); return; }
+  openGuest(code);
+}
+function openGuest(code){
+  guestState.event=code; guestState.photos=[]; guestState.id=null; guestState.active=false;
   const nm=(state.live&&state.live.code===code)?state.live.name:(LIVE?('Evento '+code):'Casamento Ana & Léo');
   document.getElementById('g-evtname').textContent=nm;
   document.getElementById('g-evtname2').textContent=nm;
@@ -699,11 +740,15 @@ function pushToGuest(p){
   if(document.getElementById('s-g-gallery').classList.contains('active'))toast('📸 Nova foto sua chegou!');
 }
 function renderGuestGrid(){
-  const wrap=id=>{const g=document.getElementById(id);if(!g)return;g.innerHTML='';
+  const empty='<div class="empty" style="grid-column:1/-1">Você está no evento ✓<br>Suas fotos aparecem aqui <b>sozinhas</b> assim que o fotógrafo clicar em você.<br>Deixe esta tela aberta.</div>';
+  const wrap=id=>{const g=document.getElementById(id);if(!g)return;
+    if(!guestState.photos.length){g.innerHTML=empty;return;}
+    g.innerHTML='';
     guestState.photos.slice().reverse().forEach(p=>{const d=document.createElement('div');d.className='ph';d.onclick=()=>shareSheet('minha foto');
       d.innerHTML=`<img src="${p.src}" alt="" loading="lazy"><span class="wm">FÓTON</span>`;g.appendChild(d);});};
   wrap('g-grid');wrap('g-grid2');
   const c=guestState.photos.length;document.getElementById('g-count').textContent=c+(c===1?' foto':' fotos');
+  const dl=document.getElementById('g-download'); if(dl) dl.style.display=c?'':'none';
 }
 
 function shareSheet(what){what=what||'foto';document.getElementById('sheet-title').textContent=what==='todas'?'Baixar todas as fotos':'Compartilhar '+what;document.getElementById('sheet').classList.add('show');}
@@ -728,6 +773,8 @@ const _bb=document.querySelector('.brand-badge'); if(_bb) _bb.innerHTML=badgeSVG
 /* collage da landing — fotos reais */
 ['col1','col2','col3'].forEach((id,i)=>document.getElementById(id).src=PHOTOS[i]);
 
+/* carrega eventos persistidos do fotografo (sobrevive a sair/voltar) */
+loadEvents();
 /* deep-link ?evento=CODE abre como convidado (o que o QR faz) */
-if(new URLSearchParams(location.search).get('evento'))openGuestDemo();
+if(_params.get('evento')) openGuest(_params.get('evento'));
 </script>

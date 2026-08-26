@@ -174,6 +174,12 @@ def img(event: str, photo_id: str):
     return Response(p["bytes"], media_type="image/jpeg",
                     headers={"Cache-Control": "public, max-age=86400"})
 
+@app.get("/photos")
+def photos(event: str):
+    """Lista as fotos de um evento (p/ o fotografo reabrir e ver o que ja subiu)."""
+    e = _ev(event, create=True)
+    return {"event": event, "photos": [{"id": pid, "n_faces": len(p["faces"])} for pid, p in e["photos"].items()]}
+
 @app.get("/qr")
 def qr(data: str):
     img = qrcode.make(data)
