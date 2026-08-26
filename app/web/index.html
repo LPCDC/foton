@@ -467,7 +467,8 @@ function photoNext(){ if(!_bag.length) _bag=[...PHOTOS].sort(()=>Math.random()-.
 
 /* ===== MODO AO VIVO — fala com o test-rig (?live=1). Sem ?live=1 = demo simulada ===== */
 const _params = new URLSearchParams(location.search);
-const LIVE = _params.get('live') === '1';
+/* AO VIVO sempre que servido pela Render/rig (ou ?live=1). Só é demo no Netlify. */
+const LIVE = _params.get('live') === '1' || /onrender\.com$/i.test(location.hostname) || location.port === '8770';
 const API = (_params.get('api') || location.origin).replace(/\/$/,'');
 
 /* ---- imagens sintéticas (sem rede) que parecem foto de festa: gradiente + bokeh + grão + silhueta ---- */
@@ -535,13 +536,22 @@ function renderDash(){
 }
 function fmtDate(s){if(!s)return'';const[y,m,d]=s.split('-');return `${d}/${m}/${y}`;}
 
-async function createEvent(){
+function createEvent(){
   const name=document.getElementById('ev-name').value.trim()||'Evento sem nome';
   const date=document.getElementById('ev-date').value||new Date().toISOString().slice(0,10);
   if(state.credits<=0){toast('Sem créditos. Compre um novo pacote.');return;}
   const ev={id:'e'+Date.now(),name,date,photos:0,guests:0,status:'live',code:genCode()};
-  if(LIVE){ try{ const fd=new FormData(); fd.append('code',ev.code); const r=await fetch(API+'/event',{method:'POST',body:fd}); if(!r.ok)throw 0; }catch(e){ toast('Backend offline — confira o link/servidor'); } }
-  state.events.unshift(ev);state.credits--;openEvent(ev);
+  state.events.unshift(ev);state.credits--;openEvent(ev);   // abre a tela do QR NA HORA (não trava)
+  if(LIVE) registerEvent(ev.code);                          // registra no servidor em 2º plano (com retry no cold start)
+}
+async function registerEvent(code,tries=8){
+  for(let i=0;i<tries;i++){
+    try{ const fd=new FormData(); fd.append('code',code);
+      const r=await fetch(API+'/event',{method:'POST',body:fd}); if(r.ok) return; }catch(e){}
+    if(i===0) toast('Acordando o servidor…');
+    await new Promise(r=>setTimeout(r,2500));
+  }
+  toast('Servidor demorou — se a foto não subir, recarregue e tente de novo');
 }
 /* upload REAL da foto (modo ao vivo): camera -> celular -> /ingest */
 async function uploadPhoto(e){

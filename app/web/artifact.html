@@ -336,9 +336,12 @@ input{font-family:inherit}
     <div class="ticket">
       <span class="klbl">Convidado · aponte a câmera</span>
       <canvas id="qr" width="176" height="176"></canvas>
+      <img id="qr-img" width="176" height="176" alt="QR do evento" style="display:none;border-radius:10px">
       <div class="code" id="ev-code">— — — —</div>
       <span class="codelbl">código do evento</span>
     </div>
+    <a id="ev-guestlink" class="link" target="_blank" rel="noopener" style="display:none;text-align:center;font-size:11px;margin-top:8px;word-break:break-all"></a>
+    <input type="file" id="live-upload" accept="image/*" style="display:none" onchange="uploadPhoto(event)">
     <button class="btn ghost sm block" style="margin-top:12px" onclick="openGuestDemo()">Ver como o convidado vê</button>
 
     <div class="stats">
@@ -348,7 +351,7 @@ input{font-family:inherit}
 
     <div class="live-head">
       <span class="l">Feed ao vivo</span>
-      <button class="btn ghost sm" onclick="shootPhoto()">Simular disparo</button>
+      <button class="btn ghost sm" id="ev-shoot" onclick="shootPhoto()">Simular disparo</button>
     </div>
     <div class="grid" id="ev-grid">
       <div class="empty" id="ev-empty">Nenhuma foto ainda.<br>Toque em <b>Simular disparo</b> para ver o feed encher — no produto, é a câmera que dispara.</div>
@@ -454,6 +457,12 @@ const pick = i => PHOTOS[((i%PHOTOS.length)+PHOTOS.length)%PHOTOS.length];
 let _bag=[];                        // saco embaralhado: nao repete ate esgotar
 function photoNext(){ if(!_bag.length) _bag=[...PHOTOS].sort(()=>Math.random()-.5); return _bag.pop(); }
 
+/* ===== MODO AO VIVO — fala com o test-rig (?live=1). Sem ?live=1 = demo simulada ===== */
+const _params = new URLSearchParams(location.search);
+/* AO VIVO sempre que servido pela Render/rig (ou ?live=1). Só é demo no Netlify. */
+const LIVE = _params.get('live') === '1' || /onrender\.com$/i.test(location.hostname) || location.port === '8770';
+const API = (_params.get('api') || location.origin).replace(/\/$/,'');
+
 /* ---- imagens sintéticas (sem rede) que parecem foto de festa: gradiente + bokeh + grão + silhueta ---- */
 function stockPhoto(seed){
   const duos=[['#ff9a6b','#c94f7c'],['#6b8cff','#3b4d9e'],['#5fd6a0','#2b8f7a'],
@@ -524,7 +533,32 @@ function createEvent(){
   const date=document.getElementById('ev-date').value||new Date().toISOString().slice(0,10);
   if(state.credits<=0){toast('Sem créditos. Compre um novo pacote.');return;}
   const ev={id:'e'+Date.now(),name,date,photos:0,guests:0,status:'live',code:genCode()};
-  state.events.unshift(ev);state.credits--;openEvent(ev);
+  state.events.unshift(ev);state.credits--;openEvent(ev);   // abre a tela do QR NA HORA (não trava)
+  if(LIVE) registerEvent(ev.code);                          // registra no servidor em 2º plano (com retry no cold start)
+}
+async function registerEvent(code,tries=8){
+  for(let i=0;i<tries;i++){
+    try{ const fd=new FormData(); fd.append('code',code);
+      const r=await fetch(API+'/event',{method:'POST',body:fd}); if(r.ok) return; }catch(e){}
+    if(i===0) toast('Acordando o servidor…');
+    await new Promise(r=>setTimeout(r,2500));
+  }
+  toast('Servidor demorou — se a foto não subir, recarregue e tente de novo');
+}
+/* upload REAL da foto (modo ao vivo): camera -> celular -> /ingest */
+async function uploadPhoto(e){
+  const file=e.target.files[0]; if(!file)return; e.target.value='';
+  const ev=state.live; if(!ev)return;
+  toast('Enviando foto…'); const t0=performance.now();
+  try{
+    const fd=new FormData(); fd.append('event',ev.code); fd.append('file',file);
+    const r=await fetch(API+'/ingest',{method:'POST',body:fd});
+    if(!r.ok){ toast('Falha no upload ('+r.status+')'); return; }
+    const j=await r.json();
+    ev._photos.push({src:`${API}/img/${ev.code}/${j.photo_id}.jpg`, faces:j.n_faces});
+    ev.photos++; document.getElementById('ev-nphotos').textContent=ev.photos; renderEventGrid();
+    toast(`Foto tratada em ${Math.round(performance.now()-t0)}ms · ${j.n_faces} rosto(s) ⚡`);
+  }catch(err){ toast('Backend offline'); }
 }
 function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<4;i++)r+=c[Math.floor(Math.random()*c.length)];return r;}
 
@@ -536,8 +570,16 @@ function openEvent(ev){
   document.getElementById('ev-nphotos').textContent=ev.photos;
   document.getElementById('ev-nguests').textContent=ev.guests;
   drawQR(ev.code||'DEMO');renderEventGrid();go('event');
+  const sb=document.getElementById('ev-shoot'); if(sb) sb.textContent=LIVE?'Enviar foto da câmera':'Simular disparo';
+  if(LIVE){
+    const gurl=`${API}/?live=1&evento=${ev.code}`;
+    const qi=document.getElementById('qr-img');
+    qi.src=`${API}/qr?data=${encodeURIComponent(gurl)}`; qi.style.display='block';
+    document.getElementById('qr').style.display='none';
+    const gl=document.getElementById('ev-guestlink'); gl.textContent=gurl; gl.href=gurl; gl.style.display='block';
+  }
   clearInterval(state.liveTimer);
-  state.liveTimer=setInterval(()=>{if(Math.random()<.5){ev.guests++;document.getElementById('ev-nguests').textContent=ev.guests;}},2600);
+  if(!LIVE) state.liveTimer=setInterval(()=>{if(Math.random()<.5){ev.guests++;document.getElementById('ev-nguests').textContent=ev.guests;}},2600);
 }
 function renderEventGrid(){
   const g=document.getElementById('ev-grid'),ev=state.live;
@@ -551,6 +593,7 @@ function renderEventGrid(){
 }
 function shootPhoto(){
   const ev=state.live;if(!ev)return;
+  if(LIVE){ document.getElementById('live-upload').click(); return; }   // ao vivo: escolhe a foto da camera
   const p={src:photoNext(),faces:1+Math.floor(Math.random()*3)};
   ev._photos.push(p);ev.photos++;state.totPhotos++;
   document.getElementById('ev-nphotos').textContent=ev.photos;
@@ -573,9 +616,11 @@ function drawQR(code){
 /* =================== GUEST =================== */
 const guestState={active:false,selfie:null,photos:[]};
 function openGuestDemo(){
-  const ev=state.live||{name:'Casamento Ana & Léo',code:'DEMO'};
-  document.getElementById('g-evtname').textContent=ev.name;
-  document.getElementById('g-evtname2').textContent=ev.name;
+  const code=_params.get('evento') || (state.live&&state.live.code) || 'DEMO';
+  guestState.event=code;
+  const nm=(state.live&&state.live.code===code)?state.live.name:(LIVE?('Evento '+code):'Casamento Ana & Léo');
+  document.getElementById('g-evtname').textContent=nm;
+  document.getElementById('g-evtname2').textContent=nm;
   document.getElementById('g-consent').checked=false;
   go('g-consent');
 }
@@ -599,7 +644,36 @@ function pickSelfie(e){const f=e.target.files[0];if(!f)return;const r=new FileRe
 function finishSelfie(src){
   guestState.selfie=src;
   if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
-  document.getElementById('g-selfie-thumb').src=src;startGuestSearch();
+  document.getElementById('g-selfie-thumb').src=src;
+  if(LIVE) liveSelfie(src); else startGuestSearch();
+}
+/* selfie REAL (modo ao vivo): envia ao /selfie, casa e passa a buscar no /feed */
+async function liveSelfie(src){
+  guestState.active=true; guestState.photos=[];
+  document.getElementById('g-grid').innerHTML='';
+  document.getElementById('search-txt').textContent='Procurando você nas fotos…';
+  go('g-search');
+  try{
+    const blob=await (await fetch(src)).blob();
+    const fd=new FormData(); fd.append('event',guestState.event); fd.append('consent','true'); fd.append('file',blob,'selfie.jpg');
+    const r=await fetch(API+'/selfie',{method:'POST',body:fd});
+    if(r.status===422){ toast('Não achei seu rosto — tente outra selfie'); go('g-selfie'); return; }
+    if(!r.ok){ toast('Erro no servidor ('+r.status+')'); go('g-selfie'); return; }
+    const j=await r.json(); guestState.id=j.guest_id; guestState.photos=[];
+    (j.matches||[]).forEach(id=>guestState.photos.push({src:`${API}/img/${guestState.event}/${id}.jpg`}));
+    goGallery(); startPolling();
+  }catch(e){ toast('Backend offline'); go('g-selfie'); }
+}
+function startPolling(){
+  clearInterval(state._poll);
+  state._poll=setInterval(async()=>{
+    try{
+      const r=await fetch(`${API}/feed?event=${encodeURIComponent(guestState.event)}&guest_id=${guestState.id}`);
+      if(!r.ok)return; const j=await r.json();
+      const have=new Set(guestState.photos.map(p=>p.src));
+      (j.photos||[]).forEach(id=>{ const s=`${API}/img/${guestState.event}/${id}.jpg`; if(!have.has(s)) pushToGuest({src:s}); });
+    }catch(e){}
+  },2500);
 }
 function startGuestSearch(){
   guestState.active=true;guestState.photos=[];
@@ -615,7 +689,7 @@ function startGuestSearch(){
 }
 function goGallery(){
   go('g-gallery');renderGuestGrid();
-  if(!state.live){clearInterval(state._gfeed);let k=0;
+  if(!LIVE && !state.live){clearInterval(state._gfeed);let k=0;
     state._gfeed=setInterval(()=>{if(k++>6){clearInterval(state._gfeed);return;}pushToGuest({src:photoNext(),faces:1});},3200);}
 }
 function pushToGuest(p){
@@ -635,7 +709,7 @@ function closeSheet(){document.getElementById('sheet').classList.remove('show');
 function shareVia(m){closeSheet();toast('✓ '+m+' — no produto, entrega a foto do R2 na hora.');}
 
 /* home (voltar pra home de qualquer subpagina) */
-function home(){ if(typeof stopEvent==='function') stopEvent(); clearInterval(state._gfeed); go('landing'); }
+function home(){ if(typeof stopEvent==='function') stopEvent(); clearInterval(state._gfeed); clearInterval(state._poll); go('landing'); }
 
 /* logo Foton — selo desenhado (Foton + pontos de luz), champagne, adaptavel */
 function badgeSVG(full){
