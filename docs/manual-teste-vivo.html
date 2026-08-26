@@ -1,0 +1,142 @@
+<title>Roteiro do Teste ao Vivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Satisfy&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b0a0d; --surface:#161419; --surface-2:#1f1b26; --line:#2c2733; --line-soft:#221e2b;
+  --text:#f5f1ee; --muted:#b4aec0; --dim:#8f8898; --accent:#e8d9b0; --accent-2:#cbb583;
+  --live:#ff5560; --ok:#5ad19b; --warn:#ffcf7a;
+  --serif:"Jost",system-ui,sans-serif; --sans:"Instrument Sans",system-ui,sans-serif; --mono:ui-monospace,monospace;
+}
+:root:not([data-theme="dark"]){ }
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--text);font-family:var(--sans);line-height:1.55;
+  -webkit-font-smoothing:antialiased;padding:0}
+.wrap{max-width:820px;margin:0 auto;padding:40px 22px 80px}
+.badge{width:64px;height:64px;position:relative;margin-bottom:18px}
+.badge .ring{position:absolute;inset:0;border:1.6px solid rgba(232,217,176,.5);border-radius:50%}
+.badge .ring.in{inset:4px;border-color:rgba(232,217,176,.25)}
+.badge .f{position:absolute;inset:0;display:grid;place-items:center;font-family:"Satisfy",cursive;font-size:30px;color:#f4ecd8}
+.badge .d{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--accent)}
+h1{font-family:var(--serif);font-weight:600;font-size:31px;letter-spacing:-.02em;line-height:1.1}
+.sub{color:var(--muted);font-size:15px;margin-top:8px;margin-bottom:6px}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 6px}
+.linkcard{flex:1;min-width:240px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.linkcard .l{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.linkcard .u{font-family:var(--mono);font-size:13px;color:var(--accent);word-break:break-all;margin-top:6px}
+.linkcard .who{font-size:12.5px;color:var(--muted);margin-top:6px}
+h2{font-family:var(--serif);font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);margin:34px 0 14px;display:flex;align-items:center;gap:10px}
+h2::after{content:"";flex:1;height:1px;background:var(--line-soft)}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:14px}
+.box.warn{border-color:rgba(255,207,122,.4);background:linear-gradient(0deg,rgba(255,207,122,.05),rgba(255,207,122,.05)),var(--surface)}
+.box.warn .tag{color:var(--warn)}
+.box.ok{border-color:rgba(90,209,155,.35)}
+.tag{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);margin-bottom:8px}
+ol.steps{list-style:none;counter-reset:s;padding:0}
+ol.steps>li{counter-increment:s;position:relative;padding:14px 0 14px 52px;border-bottom:1px solid var(--line-soft)}
+ol.steps>li:last-child{border-bottom:none}
+ol.steps>li::before{content:counter(s);position:absolute;left:0;top:12px;width:34px;height:34px;border-radius:10px;
+  background:linear-gradient(135deg,#efe3c2,#cbb583);color:#1a1608;font-family:var(--serif);font-weight:700;
+  display:grid;place-items:center;font-size:16px}
+ol.steps b{font-weight:600}
+.who-chip{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 8px;border-radius:999px;margin-left:8px;vertical-align:middle}
+.who-p{background:rgba(232,217,176,.14);color:var(--accent);border:1px solid rgba(232,217,176,.3)}
+.who-g{background:rgba(120,160,255,.12);color:#a9c0ff;border:1px solid rgba(120,160,255,.3)}
+.muted{color:var(--muted);font-size:14px}
+.small{font-size:13px;color:var(--muted);margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+td{padding:9px 4px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+td.q{color:var(--warn);font-weight:600;white-space:nowrap;padding-right:14px;width:38%}
+kbd{font-family:var(--sans);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;
+  padding:1px 7px;font-size:13px;font-weight:600;color:var(--text)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.foot{margin-top:34px;color:var(--dim);font-size:12px;line-height:1.7;text-align:center}
+@media print{body{background:#fff;color:#111}.box,.linkcard{border-color:#ccc}h2::after{background:#ddd}}
+</style>
+
+<div class="wrap">
+  <div class="badge">
+    <div class="ring"></div><div class="ring in"></div>
+    <div class="d" style="top:8px;left:22px"></div><div class="d" style="top:16px;left:46px"></div>
+    <div class="d" style="top:44px;left:14px"></div><div class="d" style="top:48px;left:44px"></div>
+    <div class="f">F</div>
+  </div>
+  <h1>Fóton — Roteiro do Teste ao Vivo</h1>
+  <p class="sub">Como você e a Patrícia rodam o teste na reunião: uma foto real da câmera → tratada na nuvem → aparece no celular por reconhecimento facial. ~5 minutos.</p>
+
+  <div class="links">
+    <div class="linkcard">
+      <div class="l">Painel (fotógrafo)</div>
+      <div class="u">https://foton-rig.onrender.com/?live=1</div>
+      <div class="who">Abre no celular da Patrícia</div>
+    </div>
+    <div class="linkcard">
+      <div class="l">Convidado</div>
+      <div class="u">o QR do evento (ou o link que ele mostra)</div>
+      <div class="who">Escaneado pelo seu celular</div>
+    </div>
+  </div>
+  <div class="legend">
+    <span><span class="who-chip who-p">Patrícia</span> fotógrafa — câmera + celular dela</span>
+    <span><span class="who-chip who-g">Você</span> convidado — seu celular</span>
+  </div>
+
+  <h2>Antes de começar · pré-voo</h2>
+  <div class="box warn">
+    <div class="tag">Faça isto ANTES da parte ao vivo — é a única coisa que ainda não testamos</div>
+    <ol class="steps">
+      <li><b>Acordar o servidor.</b> Em qualquer celular, abra <kbd>foton-rig.onrender.com/health</kbd>. Na 1ª vez pode levar ~30–60s até aparecer <span class="mono">{"ok":true...}</span>. Depois fica rápido.</li>
+      <li><b>Ensaiar a transferência da câmera</b> <span class="who-chip who-p">Patrícia</span>. No celular dela, instale o app grátis <b>Canon Camera Connect</b>. Tire 1 foto e transfira para o celular (passo a passo na seção "A ponte da câmera" abaixo). <b>Se isso funcionar, o resto é tranquilo.</b></li>
+      <li><b>Foto de rosto claro.</b> O reconhecimento só acha rosto <b>nítido e de frente</b>. No teste, a 1ª foto deve ser um <b>retrato</b> do rosto do convidado (não foto de longe/ângulo).</li>
+    </ol>
+  </div>
+
+  <h2>O teste ao vivo · 6 passos</h2>
+  <div class="box">
+    <ol class="steps">
+      <li><b>Abrir o painel</b> <span class="who-chip who-p">Patrícia</span> — no celular dela, abra <kbd>foton-rig.onrender.com/?live=1</kbd> → <b>Entrar</b> → <b>Criar evento</b> (dê um nome). Aparece um <b>QR grande</b> e o código do evento.</li>
+      <li><b>Entrar como convidado</b> <span class="who-chip who-g">Você</span> — aponte a câmera do seu celular para o QR na tela dela (ou digite o link do convidado). Marque o <b>consentimento</b> e toque <b>Continuar</b>.</li>
+      <li><b>Sua selfie</b> <span class="who-chip who-g">Você</span> — tire 1 selfie de rosto claro. A tela mostra "Procurando você nas fotos…". <span class="small">Sua selfie vira só um cálculo e é descartada — não fica guardada.</span></li>
+      <li><b>Fotografar</b> <span class="who-chip who-p">Patrícia</span> — tire um <b>retrato nítido do seu rosto</b> com a Canon.</li>
+      <li><b>Levar a foto pro painel</b> <span class="who-chip who-p">Patrícia</span> — transfira a foto da câmera pro celular (Canon Camera Connect) e, no painel, toque <b>Enviar foto da câmera</b> → escolha a foto. Ela é tratada (marca d'água + reconhecimento) em ~1s.</li>
+      <li><b>A mágica</b> <span class="who-chip who-g">Você</span> — em segundos, a foto <b>aparece sozinha</b> na sua galeria. 🎉 Cada nova foto que a Patrícia enviar cai sozinha aí.</li>
+    </ol>
+  </div>
+
+  <h2>A ponte da câmera · Canon Camera Connect</h2>
+  <div class="box">
+    <div class="tag">Canon R8 / T6s → celular da Patrícia</div>
+    <ol class="steps">
+      <li>Abra o <b>Canon Camera Connect</b> no celular e conecte ao <b>Wi-Fi da câmera</b> (o app guia; na câmera, ative Wi-Fi/conexão com smartphone).</li>
+      <li>No app, <b>baixe a foto</b> desejada para a galeria do celular.</li>
+      <li><b>Importante:</b> saia do Wi-Fi da câmera (ele não tem internet) e volte para os <b>dados móveis / 4G</b> — só então o upload funciona.</li>
+      <li>No painel Fóton, <b>Enviar foto da câmera</b> → escolha a foto baixada.</li>
+    </ol>
+    <p class="small">No Xiaomi: se o app fechar sozinho, desative a <b>otimização de bateria</b> só para o Canon Camera Connect. Faça a transferência primeiro, o upload depois — nunca os dois ao mesmo tempo.</p>
+  </div>
+
+  <h2>Se algo travar</h2>
+  <div class="box">
+    <table>
+      <tr><td class="q">Nada carrega / demora muito</td><td>Servidor "dormiu". Abra <kbd>/health</kbd> uma vez e espere ~1 min (cold start do plano grátis).</td></tr>
+      <tr><td class="q">"Não achei seu rosto"</td><td>Selfie ou foto sem rosto claro. Refaça com o rosto <b>de frente, bem iluminado e perto</b>.</td></tr>
+      <tr><td class="q">A foto não casou</td><td>É outra pessoa, ou rosto de ângulo/longe. Use um <b>retrato nítido</b> da mesma pessoa da selfie.</td></tr>
+      <tr><td class="q">Câmera não transfere</td><td>Confirme o Canon Camera Connect conectado ao Wi-Fi <b>da câmera</b>; no Xiaomi, desative otimização de bateria do app.</td></tr>
+      <tr><td class="q">Upload falha</td><td>Você ainda está no Wi-Fi da câmera (sem internet). Volte para os <b>dados móveis</b> antes de enviar.</td></tr>
+    </table>
+  </div>
+
+  <div class="box ok" style="margin-top:16px">
+    <div class="tag" style="color:var(--ok)">Privacidade — pode falar isso pra ela</div>
+    <p class="muted">A selfie do convidado <b>não é armazenada</b>: vira um cálculo, casa as fotos e é descartada. Nada de rosto/nome em registro. É teste, então tudo some ao encerrar.</p>
+  </div>
+
+  <div class="foot">
+    Fóton · roteiro de teste — não é o produto final, é a prova de que o pipeline roda ao vivo.<br>
+    Backend: foton-rig (Render) · pipeline provado ponta a ponta com rostos reais.
+  </div>
+</div>
