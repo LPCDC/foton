@@ -19,7 +19,7 @@ from insightface.app import FaceAnalysis
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BASE = os.path.dirname(os.path.dirname(HERE))
-THRESH = 0.28           # ArcFace/buffalo_l — validado (iguais ~0.65, diferentes ~0.00)
+THRESH = 0.25           # ArcFace/buffalo_s — validado (iguais ~0.61, diferentes ~0.01; 99.6% LFW)
 LONG_EDGE = 2048
 JPEG_Q = 82
 
@@ -32,7 +32,7 @@ def _face():
     Modelos baixam sozinhos (~/.insightface) na 1a chamada."""
     global _fa
     if _fa is None:
-        _fa = FaceAnalysis(name="buffalo_l", allowed_modules=["detection", "recognition"],
+        _fa = FaceAnalysis(name="buffalo_s", allowed_modules=["detection", "recognition"],
                            providers=["CPUExecutionProvider"])
         _fa.prepare(ctx_id=-1, det_size=(320, 320))
     return _fa
@@ -85,7 +85,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 
 @app.get("/health")
 def health():
-    return {"ok": True, "engine": "InsightFace buffalo_l (SCRFD+ArcFace) CPU", "events": len(EVENTS)}
+    return {"ok": True, "engine": "InsightFace buffalo_s (SCRFD+ArcFace) CPU", "events": len(EVENTS)}
 
 @app.post("/event")
 def create_event(code: str = Form(...)):
