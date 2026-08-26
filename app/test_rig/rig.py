@@ -101,10 +101,13 @@ def detect_embed(raw: bytes):
 
 # ---- store efêmero em memória ----
 EVENTS = {}   # code -> {"photos":{pid:{bytes,faces,ts}}, "guests":{gid:emb}, "matches":{gid:set(pid)}}
-def _ev(code):
+def _ev(code, create=False):
     e = EVENTS.get(code)
     if e is None:
-        raise HTTPException(404, "evento nao encontrado")
+        if not create:
+            raise HTTPException(404, "evento nao encontrado")
+        e = EVENTS[code] = {"photos": {}, "guests": {}, "matches": {}}
+        log.info('{"stage":"event","code":"%s","status":"auto-created"}' % code)
     return e
 
 app = FastAPI(title="Fóton test-rig", version="0.1.0")
@@ -122,7 +125,7 @@ def create_event(code: str = Form(...)):
 
 @app.post("/ingest")
 async def ingest(event: str = Form(...), file: UploadFile = File(...)):
-    e = _ev(event)
+    e = _ev(event, create=True)
     raw = await file.read()
     pid = uuid.uuid4().hex[:12]
     t0 = time.time()
@@ -141,7 +144,7 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...)):
 
 @app.post("/selfie")
 async def selfie(event: str = Form(...), consent: bool = Form(...), file: UploadFile = File(...)):
-    e = _ev(event)
+    e = _ev(event, create=True)
     if not consent:
         raise HTTPException(400, "consentimento obrigatorio (LGPD, ADR-0005)")
     raw = await file.read()                 # bytes da selfie: usados e descartados
@@ -159,7 +162,7 @@ async def selfie(event: str = Form(...), consent: bool = Form(...), file: Upload
 
 @app.get("/feed")
 def feed(event: str, guest_id: str):
-    e = _ev(event)
+    e = _ev(event, create=True)
     return {"guest_id": guest_id, "photos": sorted(e["matches"].get(guest_id, set()))}
 
 @app.get("/img/{event}/{photo_id}.jpg")

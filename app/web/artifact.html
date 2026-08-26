@@ -322,7 +322,7 @@ input{font-family:inherit}
     <div class="card">
       <div class="field"><label>Nome do evento</label><input id="ev-name" placeholder="Ex.: Casamento Ana &amp; Léo"></div>
       <div class="field"><label>Data</label><input id="ev-date" type="date"></div>
-      <button class="btn primary block" onclick="createEvent()">Criar e abrir o QR</button>
+      <button class="btn primary block" onclick="criarEvento()">Criar e abrir o QR</button>
     </div>
     <p class="note" style="margin-top:20px">O convidado escaneia o QR, tira 1 selfie e recebe automaticamente as fotos em que aparecer.</p>
   </section>
@@ -462,6 +462,7 @@ const _params = new URLSearchParams(location.search);
 /* AO VIVO sempre que servido pela Render/rig (ou ?live=1). Só é demo no Netlify. */
 const LIVE = _params.get('live') === '1' || /onrender\.com$/i.test(location.hostname) || location.port === '8770';
 const API = (_params.get('api') || location.origin).replace(/\/$/,'');
+if(LIVE) setInterval(()=>fetch(API+'/health').catch(()=>{}), 240000); // keep-alive: servidor nao dorme enquanto o painel esta aberto
 
 /* ---- imagens sintéticas (sem rede) que parecem foto de festa: gradiente + bokeh + grão + silhueta ---- */
 function stockPhoto(seed){
@@ -528,7 +529,7 @@ function renderDash(){
 }
 function fmtDate(s){if(!s)return'';const[y,m,d]=s.split('-');return `${d}/${m}/${y}`;}
 
-function createEvent(){
+function criarEvento(){
   const name=document.getElementById('ev-name').value.trim()||'Evento sem nome';
   const date=document.getElementById('ev-date').value||new Date().toISOString().slice(0,10);
   if(state.credits<=0){toast('Sem créditos. Compre um novo pacote.');return;}
@@ -572,11 +573,12 @@ function openEvent(ev){
   drawQR(ev.code||'DEMO');renderEventGrid();go('event');
   const sb=document.getElementById('ev-shoot'); if(sb) sb.textContent=LIVE?'Enviar foto da câmera':'Simular disparo';
   if(LIVE){
-    const gurl=`${API}/?live=1&evento=${ev.code}`;
+    const gurl=`${API}/?evento=${ev.code}`;
     const qi=document.getElementById('qr-img');
-    qi.src=`${API}/qr?data=${encodeURIComponent(gurl)}`; qi.style.display='block';
-    document.getElementById('qr').style.display='none';
-    const gl=document.getElementById('ev-guestlink'); gl.textContent=gurl; gl.href=gurl; gl.style.display='block';
+    qi.onload=()=>{document.getElementById('qr').style.display='none';};
+    qi.onerror=()=>{qi.style.display='none';document.getElementById('qr').style.display='none';};
+    qi.style.display='block'; qi.src=`${API}/qr?data=${encodeURIComponent(gurl)}`;
+    const gl=document.getElementById('ev-guestlink'); gl.textContent='🔗 '+gurl; gl.href=gurl; gl.style.display='block';
   }
   clearInterval(state.liveTimer);
   if(!LIVE) state.liveTimer=setInterval(()=>{if(Math.random()<.5){ev.guests++;document.getElementById('ev-nguests').textContent=ev.guests;}},2600);
