@@ -9,11 +9,12 @@ embedding em memória e é descartada com o /reset ou ao encerrar o processo. Lo
 PII (só id de rastreio, contagem, latência). Acesso com código de evento.
 """
 import io, os, time, uuid, logging, shutil, urllib.request
-import cv2, numpy as np
+import cv2, numpy as np, qrcode
 from PIL import Image, ImageDraw, ImageFont
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BASE = os.path.dirname(os.path.dirname(HERE))
@@ -170,7 +171,17 @@ def img(event: str, photo_id: str):
     return Response(p["bytes"], media_type="image/jpeg",
                     headers={"Cache-Control": "public, max-age=86400"})
 
+@app.get("/qr")
+def qr(data: str):
+    img = qrcode.make(data)
+    buf = io.BytesIO(); img.save(buf, "PNG")
+    return Response(buf.getvalue(), media_type="image/png",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
 @app.post("/reset")
 def reset():
     EVENTS.clear()
     return {"ok": True}
+
+# serve o front-end (uma URL só faz tudo). Rotas de API acima têm precedência.
+app.mount("/", StaticFiles(directory=os.path.join(BASE, "app", "web"), html=True), name="web")
