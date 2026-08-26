@@ -15,6 +15,20 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
+# Render free = CPU compartilhada: onnxruntime multi-thread trava/crasha (502).
+# Forca 1 thread ANTES do insightface criar qualquer sessao.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+import onnxruntime as _ort
+_ort_orig = _ort.InferenceSession
+def _ort_1thread(*a, **k):
+    so = k.pop("sess_options", None) or _ort.SessionOptions()
+    so.intra_op_num_threads = 1
+    so.inter_op_num_threads = 1
+    return _ort_orig(*a, sess_options=so, **k)
+_ort.InferenceSession = _ort_1thread
 from insightface.app import FaceAnalysis
 
 HERE = os.path.dirname(os.path.abspath(__file__))
