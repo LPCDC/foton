@@ -242,6 +242,9 @@ input{font-family:inherit}
 .ticket .klbl{font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5f574c}
 .ticket canvas{border-radius:10px;image-rendering:pixelated}
 .ticket .code{font-family:var(--mono);font-weight:600;font-size:24px;letter-spacing:.32em;color:#141018;padding-left:.32em}
+.code-btn{border:none;background:none;cursor:pointer;transition:.15s;border-radius:8px;padding:2px 6px 2px calc(.32em + 6px)}
+.code-btn:hover{background:rgba(20,16,24,.07)}
+.code-btn:active{transform:scale(.96)}
 .ticket .codelbl{font-size:10px;color:#5f574c;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-top:-6px}
 
 .live-head{display:flex;align-items:center;justify-content:space-between;margin:24px 2px 14px}
@@ -418,8 +421,8 @@ input{font-family:inherit}
       <span class="klbl">Convidado · aponte a câmera</span>
       <canvas id="qr" width="176" height="176"></canvas>
       <img id="qr-img" width="176" height="176" alt="QR do evento" style="display:none;border-radius:10px">
-      <div class="code" id="ev-code">— — — —</div>
-      <span class="codelbl">código do evento</span>
+      <button class="code code-btn" id="ev-code" onclick="copiarCodigo()" title="Tocar para copiar">— — — —</button>
+      <span class="codelbl">toque no código para copiar</span>
     </div>
     <a id="ev-guestlink" class="link" target="_blank" rel="noopener" style="display:none;text-align:center;font-size:11px;margin-top:8px;word-break:break-all"></a>
     <input type="file" id="live-upload" accept="image/*" multiple style="display:none" onchange="uploadPhoto(event)">
@@ -753,6 +756,17 @@ function compartilharConvite(){
   if(navigator.share){ navigator.share({title:'Fóton — '+ev.name, text:txt}).catch(()=>{}); }
   else window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
 }
+async function copiarCodigo(){
+  const ev=state.live; if(!ev)return;
+  try{ await navigator.clipboard.writeText(ev.code); toast(`Código ${ev.code} copiado ✓`); }
+  catch(e){
+    const t=document.createElement('textarea'); t.value=ev.code; t.style.position='fixed'; t.style.opacity='0';
+    document.body.appendChild(t); t.select();
+    try{ document.execCommand('copy'); toast(`Código ${ev.code} copiado ✓`); }
+    catch(_){ toast('Código: '+ev.code); }
+    t.remove();
+  }
+}
 async function copiarLink(){
   try{ await navigator.clipboard.writeText(guestURL()); toast('Link copiado ✓'); }
   catch(e){ toast(guestURL()); }
@@ -907,9 +921,19 @@ function openGuest(code){
 async function recarregarFeed(){
   try{ const r=await fetch(`${API}/feed?event=${encodeURIComponent(guestState.event)}&guest_id=${guestState.id}`);
     if(!r.ok)return; const j=await r.json();
+    if(j.known===false){ sessaoExpirou(); return; }        // servidor reiniciou: nao ficar em branco
     guestState.photos=(j.photos||[]).map(id=>({src:`${API}/img/${guestState.event}/${id}.jpg`}));
     renderGuestGrid();
   }catch(e){}
+}
+/* sessao perdida no servidor -> explica e pede a selfie de novo (nao deixa tela vazia) */
+function sessaoExpirou(){
+  clearInterval(state._poll); clearGuestSession(guestState.event);
+  guestState.id=null; guestState.photos=[]; guestState.todas=[];
+  toast('Precisamos da sua selfie de novo — o evento foi reiniciado');
+  const lb=document.getElementById('lead-box'); if(lb) lb.style.display=LIVE?'':'none';
+  document.getElementById('g-consent2').checked=true;
+  go('g-start');
 }
 /* camera da tela unica */
 let cam2Stream=null;
@@ -996,6 +1020,7 @@ function startPolling(){
     try{
       const r=await fetch(`${API}/feed?event=${encodeURIComponent(guestState.event)}&guest_id=${guestState.id}`);
       if(!r.ok)return; const j=await r.json();
+      if(j.known===false){ sessaoExpirou(); return; }
       const have=new Set(guestState.photos.map(p=>p.src));
       (j.photos||[]).forEach(id=>{ const s=`${API}/img/${guestState.event}/${id}.jpg`; if(!have.has(s)) pushToGuest({src:s}); });
     }catch(e){}

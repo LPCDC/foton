@@ -10,7 +10,7 @@ PII (só id de rastreio, contagem, latência). Acesso com código de evento.
 """
 import io, os, time, uuid, logging
 import cv2, numpy as np, qrcode
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -52,7 +52,8 @@ def _font(sz):
 
 def process_image(raw: bytes, marca: str = "FÓTON"):
     t0 = time.perf_counter()
-    img = Image.open(io.BytesIO(raw)).convert("RGB")
+    # exif_transpose: celular/camera gravam a rotacao no EXIF. Sem isso a foto sai deitada.
+    img = ImageOps.exif_transpose(Image.open(io.BytesIO(raw))).convert("RGB")
     w, h = img.size
     s = LONG_EDGE / max(w, h)
     if s < 1:
@@ -160,7 +161,10 @@ def contatos(event: str):
 @app.get("/feed")
 def feed(event: str, guest_id: str):
     e = _ev(event, create=True)
-    return {"guest_id": guest_id, "photos": sorted(e["matches"].get(guest_id, set()))}
+    # known=False => o servidor reiniciou (ou o evento foi apagado) e nao conhece mais
+    # este convidado. O app usa isso para pedir a selfie de novo em vez de mostrar vazio.
+    return {"guest_id": guest_id, "known": guest_id in e["guests"],
+            "photos": sorted(e["matches"].get(guest_id, set()))}
 
 @app.get("/img/{event}/{photo_id}.jpg")
 def img(event: str, photo_id: str):
