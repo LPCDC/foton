@@ -166,6 +166,31 @@ input{font-family:inherit}
 
 .sticky{position:sticky;bottom:14px;margin-top:16px;z-index:5}
 
+/* ---------- acoes do fotografo ---------- */
+.evt-row{display:flex;align-items:stretch;gap:8px;margin-bottom:10px}
+.evt-row .evt{margin-bottom:0;flex:1;min-width:0}
+.evt-del{width:46px;flex-shrink:0;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);
+  color:var(--dim);font-size:19px;display:grid;place-items:center;transition:.16s}
+.evt-del:hover{color:var(--live);border-color:rgba(255,85,96,.4);background:rgba(255,85,96,.07)}
+.evt-del:active{transform:scale(.94)}
+.actions-row{display:flex;gap:8px;margin-top:12px}
+.actions-row .btn{flex:1;padding:12px 10px;font-size:13px;border-radius:12px}
+.srv{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--dim);
+  border:1px solid var(--line);border-radius:999px;padding:5px 11px;background:var(--surface)}
+.srv i{width:7px;height:7px;border-radius:50%;background:var(--dim);display:block}
+.srv.on i{background:var(--ok);box-shadow:0 0 0 3px rgba(90,209,155,.18)}
+.srv.off i{background:var(--live)}
+.ph .del{position:absolute;right:5px;top:5px;z-index:3;width:24px;height:24px;border-radius:50%;
+  background:rgba(10,8,12,.68);backdrop-filter:blur(6px);color:#fff;font-size:14px;line-height:1;
+  display:grid;place-items:center;opacity:0;transition:.18s;border:1px solid rgba(255,255,255,.14)}
+.ph:hover .del,.ph:focus-within .del{opacity:1}
+@media (hover:none){.ph .del{opacity:1}}
+.ph .noface{position:absolute;left:6px;top:6px;z-index:2;background:rgba(255,207,122,.92);color:#2a1f05;
+  font-size:8.5px;font-weight:700;padding:3px 7px;border-radius:999px}
+.tips{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:13px 15px;margin-top:12px}
+.tips b{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);display:block;margin-bottom:7px}
+.tips ul{margin:0;padding-left:16px;color:var(--muted);font-size:12.5px;line-height:1.7}
+
 /* ---------- event live ---------- */
 .ticket{position:relative;background:#faf7f2;border-radius:var(--r);padding:22px 20px 18px;
   display:flex;flex-direction:column;align-items:center;gap:13px;box-shadow:var(--shadow);overflow:hidden}
@@ -295,7 +320,7 @@ input{font-family:inherit}
       <div class="mark" role="img" aria-label="Fóton"></div>
       <div class="word">Patrícia<small>painel do fotógrafo</small></div>
       <div class="grow"></div>
-      <button class="tag-btn" onclick="logout()">sair</button>
+      <span class="srv" id="srv-status"><i></i><span>servidor</span></span>
     </div>
 
     <div class="credit">
@@ -312,6 +337,7 @@ input{font-family:inherit}
     <div class="eyebrow-sm">Seus eventos</div>
     <div id="evt-list"></div>
     <div class="sticky"><button class="btn primary block" onclick="go('create')">＋&nbsp; Criar evento</button></div>
+    <p class="note" style="margin-top:14px"><button class="link" onclick="logout()">Sair da conta</button></p>
   </section>
 
   <!-- ================= CREATE ================= -->
@@ -341,8 +367,13 @@ input{font-family:inherit}
       <span class="codelbl">código do evento</span>
     </div>
     <a id="ev-guestlink" class="link" target="_blank" rel="noopener" style="display:none;text-align:center;font-size:11px;margin-top:8px;word-break:break-all"></a>
-    <input type="file" id="live-upload" accept="image/*" style="display:none" onchange="uploadPhoto(event)">
-    <button class="btn ghost sm block" id="btn-preview" style="margin-top:12px" onclick="openGuest(state.live?state.live.code:'DEMO')">Ver como o convidado vê</button>
+    <input type="file" id="live-upload" accept="image/*" multiple style="display:none" onchange="uploadPhoto(event)">
+    <div class="actions-row" id="ev-actions">
+      <button class="btn ghost" onclick="compartilharConvite()">Enviar convite</button>
+      <button class="btn ghost" onclick="copiarLink()">Copiar link</button>
+      <button class="btn ghost" onclick="encerrarEvento()">Encerrar</button>
+    </div>
+    <button class="btn ghost sm block" id="btn-preview" style="margin-top:8px" onclick="openGuest(state.live?state.live.code:'DEMO')">Ver como o convidado vê</button>
 
     <div class="stats">
       <div class="stat"><div class="n" id="ev-nphotos">0</div><div class="l">Fotos no evento</div></div>
@@ -354,7 +385,15 @@ input{font-family:inherit}
       <button class="btn ghost sm" id="ev-shoot" onclick="shootPhoto()">Simular disparo</button>
     </div>
     <div class="grid" id="ev-grid">
-      <div class="empty" id="ev-empty">Nenhuma foto ainda.<br>Toque em <b>Simular disparo</b> para ver o feed encher — no produto, é a câmera que dispara.</div>
+      <div class="empty" id="ev-empty">Nenhuma foto ainda.</div>
+    </div>
+    <div class="tips">
+      <b>Para o rosto ser reconhecido</b>
+      <ul>
+        <li>Rosto <b>nítido e de frente</b>, sem sombra forte</li>
+        <li>Pessoa <b>próxima</b> — rosto pequeno demais não é lido</li>
+        <li>Sem óculos escuros ou algo cobrindo o rosto</li>
+      </ul>
     </div>
   </section>
 
@@ -521,7 +560,7 @@ function go(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('s-'+id).classList.add('active');
   window.scrollTo(0,0);
-  if(id==='dash')renderDash();
+  if(id==='dash'){renderDash();checarServidor();}
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 
@@ -534,16 +573,41 @@ function renderDash(){
   document.getElementById('st-photos').textContent=state.totPhotos;
   document.getElementById('st-guests').textContent=state.totGuests;
   const box=document.getElementById('evt-list');box.innerHTML='';
+  if(!state.events.length){
+    box.innerHTML='<div class="empty">Nenhum evento ainda.<br>Toque em <b>Criar evento</b> para começar.</div>';return;
+  }
   state.events.forEach((ev,i)=>{
     const live=ev.status==='live';
+    const row=document.createElement('div');row.className='evt-row';
     const b=document.createElement('button');b.className='evt';b.onclick=()=>openEvent(ev);
     const thumb=live?`<div class="dotlive">🔴</div>`:`<img src="${pick(i+4)}" alt="" loading="lazy">`;
     b.innerHTML=`<div class="thumb">${thumb}</div>
       <div class="meta"><b>${ev.name}</b>
-      <span>${live?'<span class="livedot"></span><span class="live-txt">ao vivo agora</span>':fmtDate(ev.date)+' · '+ev.photos+' fotos · '+ev.guests+' convidados'}</span></div>
+      <span>${live?'<span class="livedot"></span><span class="live-txt">ao vivo</span> · '+(ev.photos||0)+' fotos'
+                 :fmtDate(ev.date)+' · '+(ev.photos||0)+' fotos'}</span></div>
       <div class="chev">›</div>`;
-    box.appendChild(b);
+    const del=document.createElement('button');del.className='evt-del';del.innerHTML='🗑';
+    del.setAttribute('aria-label','Apagar evento '+ev.name);
+    del.onclick=(e)=>{e.stopPropagation();deletarEvento(ev);};
+    row.appendChild(b);row.appendChild(del);box.appendChild(row);
   });
+}
+/* apagar evento (com confirmacao) — some do painel e do servidor */
+async function deletarEvento(ev){
+  if(!confirm(`Apagar "${ev.name}"?\n\nAs fotos e os convidados deste evento serão removidos. Não dá para desfazer.`))return;
+  state.events=state.events.filter(x=>x.code!==ev.code);
+  if(state.live&&state.live.code===ev.code) state.live=null;
+  saveEvents(); renderDash(); toast('Evento apagado');
+  if(LIVE){ try{ const fd=new FormData(); fd.append('code',ev.code); await fetch(API+'/event/delete',{method:'POST',body:fd}); }catch(e){} }
+}
+/* status do servidor no painel */
+async function checarServidor(){
+  const el=document.getElementById('srv-status'); if(!el)return;
+  if(!LIVE){ el.style.display='none'; return; }
+  try{ const r=await fetch(API+'/health',{cache:'no-store'});
+    if(!r.ok) throw 0;
+    el.className='srv on'; el.querySelector('span').textContent='no ar';
+  }catch(e){ el.className='srv off'; el.querySelector('span').textContent='offline'; }
 }
 function fmtDate(s){if(!s)return'';const[y,m,d]=s.split('-');return `${d}/${m}/${y}`;}
 
@@ -566,19 +630,60 @@ async function registerEvent(code,tries=8){
 }
 /* upload REAL da foto (modo ao vivo): camera -> celular -> /ingest */
 async function uploadPhoto(e){
-  const file=e.target.files[0]; if(!file)return; e.target.value='';
+  const files=[...(e.target.files||[])]; if(!files.length)return; e.target.value='';
   const ev=state.live; if(!ev)return;
-  toast('Enviando foto…'); const t0=performance.now();
-  try{
-    const fd=new FormData(); fd.append('event',ev.code); fd.append('file',file);
-    const r=await fetch(API+'/ingest',{method:'POST',body:fd});
-    if(!r.ok){ toast('Falha no upload ('+r.status+')'); return; }
-    const j=await r.json();
-    ev._photos.push({src:`${API}/img/${ev.code}/${j.photo_id}.jpg`, faces:j.n_faces});
-    ev.photos++; document.getElementById('ev-nphotos').textContent=ev.photos; renderEventGrid(); saveEvents();
-    toast(j.n_faces ? `Foto publicada · ${j.n_faces} rosto(s) reconhecido(s) ⚡`
-                    : 'Foto enviada, mas nenhum rosto claro — use um retrato nítido de frente');
-  }catch(err){ toast('Backend offline'); }
+  let ok=0, semRosto=0, erro=0;
+  for(let i=0;i<files.length;i++){
+    toast(files.length>1?`Enviando ${i+1} de ${files.length}…`:'Enviando foto…');
+    try{
+      const fd=new FormData(); fd.append('event',ev.code); fd.append('file',files[i]);
+      const r=await fetch(API+'/ingest',{method:'POST',body:fd});
+      if(!r.ok){ erro++; continue; }
+      const j=await r.json();
+      ev._photos.push({id:j.photo_id, src:`${API}/img/${ev.code}/${j.photo_id}.jpg`, faces:j.n_faces});
+      ev.photos=(ev.photos||0)+1; ok++; if(!j.n_faces) semRosto++;
+      document.getElementById('ev-nphotos').textContent=ev.photos; renderEventGrid();
+    }catch(err){ erro++; }
+  }
+  saveEvents(); atualizarStats();
+  const p=[]; if(ok)p.push(`${ok} foto(s) publicada(s)`);
+  if(semRosto)p.push(`${semRosto} sem rosto reconhecível`);
+  if(erro)p.push(`${erro} falhou(ram)`);
+  toast(p.join(' · ')||'Nada enviado');
+}
+/* acoes do evento */
+function guestURL(){ return state.live?`${API}/?evento=${state.live.code}`:''; }
+function compartilharConvite(){
+  const ev=state.live; if(!ev)return;
+  const txt=`📸 Suas fotos do ${ev.name}, na hora!\n\nEntre, tire 1 selfie e receba automaticamente as fotos em que você aparecer:\n${guestURL()}`;
+  if(navigator.share){ navigator.share({title:'Fóton — '+ev.name, text:txt}).catch(()=>{}); }
+  else window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+}
+async function copiarLink(){
+  try{ await navigator.clipboard.writeText(guestURL()); toast('Link copiado ✓'); }
+  catch(e){ toast(guestURL()); }
+}
+function encerrarEvento(){
+  const ev=state.live; if(!ev)return;
+  if(!confirm(`Encerrar "${ev.name}"?\n\nO evento sai do ar para novos convidados. As fotos continuam no seu painel.`))return;
+  ev.status='done'; saveEvents(); stopEvent(); toast('Evento encerrado'); go('dash');
+}
+/* apagar 1 foto */
+async function deletarFoto(pid,ev){
+  if(!confirm('Apagar esta foto? Ela sai também da galeria dos convidados.'))return;
+  ev._photos=ev._photos.filter(p=>p.id!==pid);
+  ev.photos=ev._photos.length; document.getElementById('ev-nphotos').textContent=ev.photos;
+  renderEventGrid(); saveEvents(); toast('Foto apagada');
+  if(LIVE){ try{ const fd=new FormData(); fd.append('event',ev.code); fd.append('photo_id',pid);
+    await fetch(API+'/photo/delete',{method:'POST',body:fd}); }catch(e){} }
+}
+/* convidados conectados (real) */
+async function atualizarStats(){
+  if(!LIVE||!state.live)return;
+  try{ const r=await fetch(`${API}/stats?event=${encodeURIComponent(state.live.code)}`); if(!r.ok)return;
+    const j=await r.json(); state.live.guests=j.guests;
+    const el=document.getElementById('ev-nguests'); if(el) el.textContent=j.guests;
+  }catch(e){}
 }
 function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<4;i++)r+=c[Math.floor(Math.random()*c.length)];return r;}
 /* persistencia dos eventos do fotografo (sobrevive a sair/voltar/recarregar) */
@@ -587,7 +692,7 @@ function loadEvents(){ if(!LIVE)return; try{ const s=localStorage.getItem('foton
 /* reabrir evento: recarrega do servidor as fotos ja enviadas */
 async function syncEventPhotos(ev){
   try{ const r=await fetch(`${API}/photos?event=${encodeURIComponent(ev.code)}`); if(!r.ok)return; const j=await r.json();
-    ev._photos=(j.photos||[]).map(p=>({src:`${API}/img/${ev.code}/${p.id}.jpg`, faces:p.n_faces}));
+    ev._photos=(j.photos||[]).map(p=>({id:p.id, src:`${API}/img/${ev.code}/${p.id}.jpg`, faces:p.n_faces}));
     ev.photos=ev._photos.length; document.getElementById('ev-nphotos').textContent=ev.photos; renderEventGrid(); saveEvents();
   }catch(e){}
 }
@@ -602,6 +707,7 @@ function openEvent(ev){
   drawQR(ev.code||'DEMO');renderEventGrid();go('event');
   const sb=document.getElementById('ev-shoot'); if(sb) sb.textContent=LIVE?'Enviar foto da câmera':'Simular disparo';
   const bp=document.getElementById('btn-preview'); if(bp) bp.style.display=LIVE?'none':'';
+  const ac=document.getElementById('ev-actions'); if(ac) ac.style.display=LIVE?'flex':'none';
   if(LIVE){
     const gurl=`${API}/?evento=${ev.code}`;
     const qi=document.getElementById('qr-img');
@@ -612,15 +718,22 @@ function openEvent(ev){
     syncEventPhotos(ev);   // reabrir evento: recarrega as fotos ja enviadas
   }
   clearInterval(state.liveTimer);
-  if(!LIVE) state.liveTimer=setInterval(()=>{if(Math.random()<.5){ev.guests++;document.getElementById('ev-nguests').textContent=ev.guests;}},2600);
+  if(LIVE){ atualizarStats(); state.liveTimer=setInterval(atualizarStats,4000); }   // convidados reais
+  else state.liveTimer=setInterval(()=>{if(Math.random()<.5){ev.guests++;document.getElementById('ev-nguests').textContent=ev.guests;}},2600);
 }
 function renderEventGrid(){
   const g=document.getElementById('ev-grid'),ev=state.live;
   if(!ev._photos.length){g.innerHTML=`<div class="empty">${LIVE?'Nenhuma foto ainda.<br>Toque em <b>Enviar foto da câmera</b> e escolha um retrato nítido.':'Nenhuma foto ainda.<br>Toque em <b>Simular disparo</b> para ver o feed encher.'}</div>`;return;}
   g.innerHTML='';
   ev._photos.slice().reverse().forEach(p=>{
-    const d=document.createElement('div');d.className='ph';d.onclick=()=>shareSheet('foto');
-    d.innerHTML=`<img src="${p.src}" alt="" loading="lazy"><span class="tag">✓ ${p.faces} rosto${p.faces>1?'s':''}</span><span class="wm">FÓTON</span>`;
+    const d=document.createElement('div');d.className='ph';
+    const badge=p.faces?`<span class="tag">✓ ${p.faces} rosto${p.faces>1?'s':''}</span>`
+                       :`<span class="noface">sem rosto</span>`;
+    d.innerHTML=`<img src="${p.src}" alt="" loading="lazy">${badge}<span class="wm">FÓTON</span>`;
+    if(p.id){ const x=document.createElement('button');x.className='del';x.innerHTML='×';
+      x.setAttribute('aria-label','Apagar foto');
+      x.onclick=(e)=>{e.stopPropagation();deletarFoto(p.id,ev);}; d.appendChild(x); }
+    d.onclick=()=>shareSheet('foto');
     g.appendChild(d);
   });
 }

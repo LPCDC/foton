@@ -157,6 +157,29 @@ def img(event: str, photo_id: str):
     return Response(p["bytes"], media_type="image/jpeg",
                     headers={"Cache-Control": "public, max-age=86400"})
 
+@app.post("/event/delete")
+def event_delete(code: str = Form(...)):
+    """Apaga o evento e TUDO dele (fotos, convidados, embeddings) — ADR-0005."""
+    existed = code in EVENTS
+    EVENTS.pop(code, None)
+    log.info('{"stage":"event","code":"%s","status":"deleted","existed":%s}' % (code, str(existed).lower()))
+    return {"ok": True, "deleted": existed}
+
+@app.post("/photo/delete")
+def photo_delete(event: str = Form(...), photo_id: str = Form(...)):
+    """Remove uma foto do evento e de todos os feeds."""
+    e = _ev(event, create=True)
+    e["photos"].pop(photo_id, None)
+    for gid in e["matches"]:
+        e["matches"][gid].discard(photo_id)
+    log.info('{"stage":"photo","photo_id":"%s","status":"deleted"}' % photo_id)
+    return {"ok": True}
+
+@app.get("/stats")
+def stats(event: str):
+    e = _ev(event, create=True)
+    return {"event": event, "photos": len(e["photos"]), "guests": len(e["guests"])}
+
 @app.get("/photos")
 def photos(event: str):
     """Lista as fotos de um evento (p/ o fotografo reabrir e ver o que ja subiu)."""
