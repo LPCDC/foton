@@ -39,7 +39,9 @@ def _face():
     if _fa is None:
         _fa = FaceAnalysis(name="buffalo_s", root=HERE, allowed_modules=["detection", "recognition"],
                            providers=["CPUExecutionProvider"])   # root=HERE -> models/buffalo_s/ (empacotado, sem download)
-        _fa.prepare(ctx_id=-1, det_size=(320, 320))
+        # det_size=640: rosto de 90px so e detectado a 640 (a 320 = 0/6). Foto de festa
+        # raramente tem rosto gigante -> 640 e o que faz o reconhecimento funcionar de verdade.
+        _fa.prepare(ctx_id=-1, det_size=(640, 640))
     return _fa
 
 def _font(sz):

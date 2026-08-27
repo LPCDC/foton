@@ -522,16 +522,12 @@ input{font-family:inherit}
 <div class="sheet" id="sheet" onclick="if(event.target===this)closeSheet()">
   <div class="inner">
     <div class="grab"></div>
-    <h3 id="sheet-title">Compartilhar foto</h3>
-    <div class="ss">Escolha como entregar ao convidado.</div>
+    <h3 id="sheet-title">Esta foto</h3>
+    <div class="ss" id="sheet-sub">Salvar no celular ou mandar para alguém</div>
     <div class="share-list">
-      <button onclick="shareVia('WhatsApp')">WhatsApp <span class="sub">enviar agora</span></button>
-      <button onclick="shareVia('QR na tela')">QR na tela <span class="sub">o convidado escaneia</span></button>
-      <button onclick="shareVia('Link copiado')">Copiar link <span class="sub">manda onde quiser</span></button>
-      <button onclick="shareVia('Download')">Baixar <span class="sub">salvar no aparelho</span></button>
-      <div class="soon">E-mail <span class="sub">em breve</span></div>
-      <div class="soon">NFC — toque <span class="sub">em breve</span></div>
-      <div class="soon">Imprimir <span class="sub">em breve</span></div>
+      <button data-only-one onclick="compartilharFoto()">Compartilhar <span class="sub">WhatsApp, Instagram…</span></button>
+      <button data-only-one onclick="baixarFoto()">Salvar no celular <span class="sub">galeria</span></button>
+      <button onclick="baixarTodas()">Baixar todas <span class="sub">arquivo .zip</span></button>
     </div>
     <button class="btn ghost block" style="margin-top:16px" onclick="closeSheet()">Fechar</button>
   </div>
@@ -769,7 +765,7 @@ function renderEventGrid(){
     if(p.id){ const x=document.createElement('button');x.className='del';x.innerHTML='×';
       x.setAttribute('aria-label','Apagar foto');
       x.onclick=(e)=>{e.stopPropagation();deletarFoto(p.id,ev);}; d.appendChild(x); }
-    d.onclick=()=>shareSheet('foto');
+    d.onclick=()=>shareSheet(p);
     g.appendChild(d);
   });
 }
@@ -952,16 +948,90 @@ function renderGuestGrid(){
   const wrap=id=>{const g=document.getElementById(id);if(!g)return;
     if(!guestState.photos.length){g.innerHTML=empty;return;}
     g.innerHTML='';
-    guestState.photos.slice().reverse().forEach(p=>{const d=document.createElement('div');d.className='ph';d.onclick=()=>shareSheet('minha foto');
+    guestState.photos.slice().reverse().forEach(p=>{const d=document.createElement('div');d.className='ph';d.onclick=()=>shareSheet(p);
       d.innerHTML=`<img src="${p.src}" alt="" loading="lazy"><span class="wm">FÓTON</span>`;g.appendChild(d);});};
   wrap('g-grid');wrap('g-grid2');
   const c=guestState.photos.length;document.getElementById('g-count').textContent=c+(c===1?' foto':' fotos');
   const dl=document.getElementById('g-download'); if(dl) dl.style.display=c?'':'none';
 }
 
-function shareSheet(what){what=what||'foto';document.getElementById('sheet-title').textContent=what==='todas'?'Baixar todas as fotos':'Compartilhar '+what;document.getElementById('sheet').classList.add('show');}
+/* ===================== COMPARTILHAR / BAIXAR (real) ===================== */
+let sheetTarget=null;   // {src} de uma foto, ou 'todas'
+function shareSheet(target){
+  sheetTarget = target || 'todas';
+  const todas = sheetTarget==='todas';
+  document.getElementById('sheet-title').textContent = todas?'Baixar todas as fotos':'Esta foto';
+  document.getElementById('sheet-sub').textContent = todas
+    ? `${guestState.photos.length} foto(s) em um arquivo .zip`
+    : 'Salvar no celular ou mandar para alguém';
+  document.querySelectorAll('[data-only-one]').forEach(el=>el.style.display=todas?'none':'');
+  document.getElementById('sheet').classList.add('show');
+}
 function closeSheet(){document.getElementById('sheet').classList.remove('show');}
-function shareVia(m){closeSheet();toast('✓ '+m+' — no produto, entrega a foto do R2 na hora.');}
+
+async function fetchBlob(src){ const r=await fetch(src,{mode:'cors'}); if(!r.ok) throw new Error(r.status); return r.blob(); }
+function saveBlob(blob,nome){
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=nome; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url); a.remove();},1500);
+}
+/* baixar 1 foto */
+async function baixarFoto(){
+  const src=sheetTarget&&sheetTarget.src; if(!src)return; closeSheet();
+  toast('Baixando…');
+  try{ saveBlob(await fetchBlob(src), `foton-${Date.now()}.jpg`); toast('Foto salva ✓'); }
+  catch(e){ toast('Não consegui baixar — tente segurar a foto e "salvar imagem"'); }
+}
+/* compartilhar 1 foto (WhatsApp/Instagram/etc via menu nativo) */
+async function compartilharFoto(){
+  const src=sheetTarget&&sheetTarget.src; if(!src)return; closeSheet();
+  try{
+    const blob=await fetchBlob(src);
+    const file=new File([blob],`foton-${Date.now()}.jpg`,{type:blob.type||'image/jpeg'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'Minha foto — Fóton'});
+      return;                                    // menu nativo: WhatsApp, Instagram, etc.
+    }
+    saveBlob(blob,file.name);                    // desktop/sem suporte: baixa e explica
+    toast('Seu aparelho não abre o menu de compartilhar — a foto foi baixada ✓');
+  }catch(e){
+    if(e&&e.name==='AbortError')return;          // usuário cancelou
+    toast('Não consegui compartilhar — a foto pode ser baixada');
+  }
+}
+/* ---- ZIP (stored, sem compressao: JPEG ja e comprimido) — sem biblioteca externa ---- */
+const _crcT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(u8){let c=0xFFFFFFFF;for(let i=0;i<u8.length;i++)c=_crcT[(c^u8[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function makeZip(files){                          // files: [{name, data:Uint8Array}]
+  const enc=new TextEncoder(), locals=[], central=[]; let off=0;
+  const u16=v=>[v&255,(v>>8)&255], u32=v=>[v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255];
+  files.forEach(f=>{
+    const name=enc.encode(f.name), crc=crc32(f.data), n=f.data.length;
+    const lh=[...u32(0x04034b50),...u16(20),...u16(0),...u16(0),...u16(0),...u16(0),
+              ...u32(crc),...u32(n),...u32(n),...u16(name.length),...u16(0)];
+    locals.push(new Uint8Array([...lh,...name]), f.data);
+    central.push(new Uint8Array([...u32(0x02014b50),...u16(20),...u16(20),...u16(0),...u16(0),...u16(0),...u16(0),
+      ...u32(crc),...u32(n),...u32(n),...u16(name.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(off),...name]));
+    off += lh.length + name.length + n;
+  });
+  const cdSize=central.reduce((a,b)=>a+b.length,0);
+  const end=new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),...u16(files.length),...u16(files.length),
+    ...u32(cdSize),...u32(off),...u16(0)]);
+  return new Blob([...locals,...central,end],{type:'application/zip'});
+}
+async function baixarTodas(){
+  const fotos=guestState.photos; if(!fotos.length){toast('Você ainda não tem fotos.');return;}
+  closeSheet(); toast(`Preparando ${fotos.length} foto(s)…`);
+  const arquivos=[];
+  for(let i=0;i<fotos.length;i++){
+    try{ const b=await fetchBlob(fotos[i].src);
+      arquivos.push({name:`foton-${String(i+1).padStart(2,'0')}.jpg`, data:new Uint8Array(await b.arrayBuffer())});
+    }catch(e){}
+  }
+  if(!arquivos.length){toast('Não consegui baixar as fotos.');return;}
+  saveBlob(makeZip(arquivos), `foton-minhas-fotos.zip`);
+  toast(`${arquivos.length} foto(s) baixadas ✓`);
+}
 
 /* home (voltar pra home de qualquer subpagina) */
 function home(){ if(typeof stopEvent==='function') stopEvent(); clearInterval(state._gfeed); clearInterval(state._poll); go('landing'); }
