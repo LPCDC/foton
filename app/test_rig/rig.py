@@ -50,7 +50,7 @@ def _font(sz):
         except Exception: pass
     return ImageFont.load_default()
 
-def process_image(raw: bytes):
+def process_image(raw: bytes, marca: str = "FÓTON"):
     t0 = time.perf_counter()
     img = Image.open(io.BytesIO(raw)).convert("RGB")
     w, h = img.size
@@ -60,7 +60,7 @@ def process_image(raw: bytes):
     fw, fh = img.size
     d = ImageDraw.Draw(img, "RGBA")
     font = _font(max(18, fw // 28))
-    txt = "FÓTON"
+    txt = (marca or "FÓTON").strip()[:40]
     bb = d.textbbox((0, 0), txt, font=font); tw, th = bb[2] - bb[0], bb[3] - bb[1]
     m = int(fw * 0.02); x, y = fw - tw - m, fh - th - m * 2
     d.text((x + 2, y + 2), txt, font=font, fill=(0, 0, 0, 120))
@@ -83,7 +83,7 @@ def _ev(code, create=False):
     if e is None:
         if not create:
             raise HTTPException(404, "evento nao encontrado")
-        e = EVENTS[code] = {"photos": {}, "guests": {}, "matches": {}}
+        e = EVENTS[code] = {"photos": {}, "guests": {}, "matches": {}, "brand": "FÓTON", "contatos": []}
         log.info('{"stage":"event","code":"%s","status":"auto-created"}' % code)
     return e
 
@@ -103,10 +103,11 @@ def health():
     return {"ok": True, "engine": "InsightFace buffalo_s (SCRFD+ArcFace) CPU", "events": len(EVENTS)}
 
 @app.post("/event")
-def create_event(code: str = Form(...)):
-    EVENTS[code] = {"photos": {}, "guests": {}, "matches": {}}
+def create_event(code: str = Form(...), brand: str = Form("FÓTON")):
+    EVENTS[code] = {"photos": {}, "guests": {}, "matches": {},
+                    "brand": (brand or "FÓTON").strip()[:40] or "FÓTON", "contatos": []}
     log.info('{"stage":"event","code":"%s","status":"created"}' % code)
-    return {"event": code}
+    return {"event": code, "brand": EVENTS[code]["brand"]}
 
 @app.post("/ingest")
 async def ingest(event: str = Form(...), file: UploadFile = File(...)):
@@ -114,7 +115,7 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...)):
     raw = await file.read()
     pid = uuid.uuid4().hex[:12]
     t0 = time.time()
-    treated, dims, pms = process_image(raw)
+    treated, dims, pms = process_image(raw, e.get("brand", "FÓTON"))
     faces = detect_embed(treated)
     e["photos"][pid] = {"bytes": treated, "faces": faces, "ts": time.time()}
     matched = []
@@ -128,7 +129,8 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...)):
             "processing_ms": round(pms, 1), "latency_ms": lat, "matched_guests": matched}
 
 @app.post("/selfie")
-async def selfie(event: str = Form(...), consent: bool = Form(...), file: UploadFile = File(...)):
+async def selfie(event: str = Form(...), consent: bool = Form(...), file: UploadFile = File(...),
+                 nome: str = Form(""), contato: str = Form("")):
     e = _ev(event, create=True)
     if not consent:
         raise HTTPException(400, "consentimento obrigatorio (LGPD, ADR-0005)")
@@ -142,8 +144,18 @@ async def selfie(event: str = Form(...), consent: bool = Form(...), file: Upload
     matched = [pid for pid, p in e["photos"].items()
                if any(float(emb @ f) >= THRESH for f in p["faces"])]
     e["matches"][gid] = set(matched)
-    log.info('{"stage":"selfie","guest_id":"%s","matches":%d,"status":"ok"}' % (gid, len(matched)))
+    if (nome or "").strip() or (contato or "").strip():   # opcional: lead p/ o fotografo
+        e.setdefault("contatos", []).append({"guest_id": gid, "nome": (nome or "").strip()[:60],
+                                             "contato": (contato or "").strip()[:40], "ts": time.time()})
+    log.info('{"stage":"selfie","guest_id":"%s","matches":%d,"lead":%s,"status":"ok"}'
+             % (gid, len(matched), str(bool((nome or contato or "").strip())).lower()))
     return {"guest_id": gid, "matches": matched}
+
+@app.get("/contatos")
+def contatos(event: str):
+    """Lista de contatos deixados pelos convidados — valor comercial p/ o fotografo."""
+    e = _ev(event, create=True)
+    return {"event": event, "contatos": e.get("contatos", [])}
 
 @app.get("/feed")
 def feed(event: str, guest_id: str):
