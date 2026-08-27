@@ -232,6 +232,7 @@ input{font-family:inherit}
 .consent input{margin-top:2px;width:19px;height:19px;accent-color:var(--accent);flex-shrink:0;cursor:pointer}
 .consent label{font-size:12.5px;color:var(--muted);line-height:1.55;cursor:pointer}
 .consent b{color:var(--text);font-weight:600}
+.cam-compact{aspect-ratio:1/1;max-height:42vh}
 .cam{aspect-ratio:3/4;border-radius:var(--r);overflow:hidden;background:#000;position:relative;
   display:grid;place-items:center;margin-bottom:16px;border:1px solid var(--line)}
 .cam video,.cam img{width:100%;height:100%;object-fit:cover}
@@ -431,9 +432,9 @@ input{font-family:inherit}
       <div class="grow"></div>
       <span class="pill livepill"><span class="livedot"></span> ao vivo</span>
     </div>
-    <h1 class="title">Receba suas fotos na hora</h1>
-    <p class="subtitle">Tire 1 selfie. As fotos em que você aparecer chegam sozinhas aqui, durante a festa.</p>
-    <div class="cam" id="cam2">
+    <h1 class="title" style="font-size:25px">Receba suas fotos na hora</h1>
+    <p class="subtitle" style="margin:6px 0 14px">Tire 1 selfie — suas fotos chegam sozinhas aqui.</p>
+    <div class="cam cam-compact" id="cam2">
       <div class="ph-txt" id="cam2-ph"><span class="k">🤳</span>Toque em <b>Ativar câmera</b><br>e enquadre seu rosto</div>
       <video id="cam2-video" autoplay playsinline muted style="display:none"></video>
       <div class="frame"></div>
@@ -442,11 +443,11 @@ input{font-family:inherit}
       <button class="btn ghost block" id="cam2-btn" onclick="ativarCam2()">Ativar câmera</button>
       <button class="btn primary block" onclick="tirarSelfie2()">Tirar selfie</button>
     </div>
-    <div class="consent" style="margin:14px 0 0">
+    <div class="consent" style="margin:12px 0 0;padding:11px 13px">
       <input type="checkbox" id="g-consent2" checked>
-      <label for="g-consent2">Autorizo usar minha selfie <b>apenas</b> para encontrar minhas fotos neste evento. Ela não é guardada.</label>
+      <label for="g-consent2">Autorizo usar minha selfie <b>apenas</b> para achar minhas fotos. Ela não é guardada.</label>
     </div>
-    <label class="note" style="margin-top:12px;cursor:pointer;display:block">ou <span class="link">escolher uma foto do celular</span>
+    <label class="note" style="margin-top:10px;cursor:pointer;display:block">ou <span class="link">escolher uma foto do celular</span>
       <input type="file" accept="image/*" style="display:none" onchange="pickSelfie2(event)"></label>
   </section>
 
