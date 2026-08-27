@@ -415,7 +415,34 @@ input{font-family:inherit}
     <p class="note" style="margin-top:20px">Sem instalar app. Sem cadastro. Só a sua selfie.</p>
   </section>
 
-  <!-- ================= GUEST · CONSENT ================= -->
+  <!-- ================= GUEST · ENTRADA ÚNICA (selfie + consentimento) ================= -->
+  <section class="screen" id="s-g-start">
+    <div class="head">
+      <div class="mark" role="img" aria-label="Fóton"></div>
+      <div class="word" id="g-evtname3">Evento</div>
+      <div class="grow"></div>
+      <span class="pill livepill"><span class="livedot"></span> ao vivo</span>
+    </div>
+    <h1 class="title">Receba suas fotos na hora</h1>
+    <p class="subtitle">Tire 1 selfie. As fotos em que você aparecer chegam sozinhas aqui, durante a festa.</p>
+    <div class="cam" id="cam2">
+      <div class="ph-txt" id="cam2-ph"><span class="k">🤳</span>Toque em <b>Ativar câmera</b><br>e enquadre seu rosto</div>
+      <video id="cam2-video" autoplay playsinline muted style="display:none"></video>
+      <div class="frame"></div>
+    </div>
+    <div class="cam-row">
+      <button class="btn ghost block" id="cam2-btn" onclick="ativarCam2()">Ativar câmera</button>
+      <button class="btn primary block" onclick="tirarSelfie2()">Tirar selfie</button>
+    </div>
+    <div class="consent" style="margin:14px 0 0">
+      <input type="checkbox" id="g-consent2" checked>
+      <label for="g-consent2">Autorizo usar minha selfie <b>apenas</b> para encontrar minhas fotos neste evento. Ela não é guardada.</label>
+    </div>
+    <label class="note" style="margin-top:12px;cursor:pointer;display:block">ou <span class="link">escolher uma foto do celular</span>
+      <input type="file" accept="image/*" style="display:none" onchange="pickSelfie2(event)"></label>
+  </section>
+
+  <!-- ================= GUEST · CONSENT (fluxo antigo/demo) ================= -->
   <section class="screen" id="s-g-consent">
     <div class="head">
       <div class="mark" role="img" aria-label="Fóton"></div>
@@ -477,6 +504,7 @@ input{font-family:inherit}
     <p class="subtitle" style="margin-top:0">Novas fotos entram sozinhas enquanto a festa acontece.</p>
     <div class="grid" id="g-grid2"></div>
     <div class="sticky"><button class="btn primary block" id="g-download" onclick="shareSheet('todas')">Baixar todas as fotos</button></div>
+    <p class="note" style="margin-top:12px"><button class="link" onclick="refazerSelfie()">Não sou eu — tirar outra selfie</button></p>
   </section>
 
 </div>
@@ -772,13 +800,70 @@ function entrarNoEvento(){
   if(code.length<3){ toast('Digite o código do evento (ex.: MRN7).'); return; }
   openGuest(code);
 }
+/* ---- sessao do convidado: sobrevive a sair da tela / bloquear o celular ---- */
+function saveGuestSession(){ try{ localStorage.setItem('foton_guest_'+guestState.event,
+  JSON.stringify({id:guestState.id, ts:Date.now()})); }catch(e){} }
+function loadGuestSession(code){ try{ const s=localStorage.getItem('foton_guest_'+code); if(!s)return null;
+  const j=JSON.parse(s); if(!j.id) return null;
+  if(Date.now()-(j.ts||0) > 24*3600*1000){ localStorage.removeItem('foton_guest_'+code); return null; } // 24h
+  return j; }catch(e){ return null; } }
+function clearGuestSession(code){ try{ localStorage.removeItem('foton_guest_'+code); }catch(e){} }
+
 function openGuest(code){
   guestState.event=code; guestState.photos=[]; guestState.id=null; guestState.active=false;
   const nm=(state.live&&state.live.code===code)?state.live.name:(LIVE?('Evento '+code):'Casamento Ana & Léo');
-  document.getElementById('g-evtname').textContent=nm;
-  document.getElementById('g-evtname2').textContent=nm;
-  document.getElementById('g-consent').checked=false;
-  go('g-consent');
+  ['g-evtname','g-evtname2','g-evtname3'].forEach(id=>{const el=document.getElementById(id); if(el) el.textContent=nm;});
+  if(!LIVE){ document.getElementById('g-consent').checked=false; go('g-consent'); return; }
+  const sess=loadGuestSession(code);
+  if(sess){                                   // JA REGISTRADO: volta direto pra galeria
+    guestState.id=sess.id; guestState.active=true;
+    go('g-gallery'); renderGuestGrid(); startPolling(); recarregarFeed();
+    toast('Bem-vindo de volta ✓');
+    return;
+  }
+  document.getElementById('g-consent2').checked=true;
+  go('g-start');
+}
+async function recarregarFeed(){
+  try{ const r=await fetch(`${API}/feed?event=${encodeURIComponent(guestState.event)}&guest_id=${guestState.id}`);
+    if(!r.ok)return; const j=await r.json();
+    guestState.photos=(j.photos||[]).map(id=>({src:`${API}/img/${guestState.event}/${id}.jpg`}));
+    renderGuestGrid();
+  }catch(e){}
+}
+/* camera da tela unica */
+let cam2Stream=null;
+async function ativarCam2(){
+  try{ cam2Stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:960},height:{ideal:1280}}});
+    const v=document.getElementById('cam2-video'); v.srcObject=cam2Stream; v.style.display='block';
+    document.getElementById('cam2-ph').style.display='none';
+    document.getElementById('cam2-btn').textContent='Câmera ativa';
+  }catch(e){ toast('Câmera bloqueada — use "escolher uma foto".'); }
+}
+function tirarSelfie2(){
+  if(!document.getElementById('g-consent2').checked){ toast('Marque o consentimento para continuar.'); return; }
+  const v=document.getElementById('cam2-video');
+  if(!cam2Stream){ toast('Toque em "Ativar câmera" primeiro.'); return; }
+  const W=480,H=640, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d'); const vw=v.videoWidth,vh=v.videoHeight, sc=Math.min(vw/W,vh/H);
+  ctx.drawImage(v,(vw-W*sc)/2,(vh-H*sc)/2,W*sc,H*sc,0,0,W,H);
+  cam2Stream.getTracks().forEach(t=>t.stop()); cam2Stream=null;
+  entrarComSelfie(cv.toDataURL('image/jpeg',.92));
+}
+function pickSelfie2(e){
+  if(!document.getElementById('g-consent2').checked){ toast('Marque o consentimento para continuar.'); return; }
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader(); r.onload=()=>entrarComSelfie(r.result); r.readAsDataURL(f);
+}
+function entrarComSelfie(src){
+  document.getElementById('g-selfie-thumb').src=src;
+  liveSelfie(src);
+}
+/* refazer selfie (nao sou eu) */
+function refazerSelfie(){
+  clearGuestSession(guestState.event); clearInterval(state._poll);
+  guestState.id=null; guestState.photos=[]; document.getElementById('g-consent2').checked=true;
+  go('g-start');
 }
 function toSelfie(){if(!document.getElementById('g-consent').checked){toast('Marque o consentimento para continuar.');return;}go('g-selfie');}
 let camStream=null;
@@ -813,12 +898,14 @@ async function liveSelfie(src){
     const blob=await (await fetch(src)).blob();
     const fd=new FormData(); fd.append('event',guestState.event); fd.append('consent','true'); fd.append('file',blob,'selfie.jpg');
     const r=await fetch(API+'/selfie',{method:'POST',body:fd});
-    if(r.status===422){ toast('Não achei seu rosto — tente outra selfie'); go('g-selfie'); return; }
-    if(!r.ok){ toast('Erro no servidor ('+r.status+')'); go('g-selfie'); return; }
+    const volta=()=>go(LIVE?'g-start':'g-selfie');
+    if(r.status===422){ toast('Não achei seu rosto — enquadre o rosto de frente, com luz'); volta(); return; }
+    if(!r.ok){ toast('Erro no servidor ('+r.status+')'); volta(); return; }
     const j=await r.json(); guestState.id=j.guest_id; guestState.photos=[];
+    saveGuestSession();                       // <- volta rapido se sair da tela
     (j.matches||[]).forEach(id=>guestState.photos.push({src:`${API}/img/${guestState.event}/${id}.jpg`}));
     goGallery(); startPolling();
-  }catch(e){ toast('Backend offline'); go('g-selfie'); }
+  }catch(e){ toast('Backend offline'); go(LIVE?'g-start':'g-selfie'); }
 }
 function startPolling(){
   clearInterval(state._poll);
@@ -886,6 +973,16 @@ const _bb=document.querySelector('.brand-badge'); if(_bb) _bb.innerHTML=badgeSVG
 /* collage da landing — fotos reais */
 ['col1','col2','col3'].forEach((id,i)=>document.getElementById(id).src=PHOTOS[i]);
 
+/* volta do bloqueio de tela / troca de app: retoma o feed na hora */
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible')return;
+  if(LIVE && guestState.id && document.getElementById('s-g-gallery').classList.contains('active')){
+    recarregarFeed(); startPolling();
+  }
+  if(LIVE && state.live && document.getElementById('s-event').classList.contains('active')){
+    syncEventPhotos(state.live); atualizarStats();
+  }
+});
 /* carrega eventos persistidos do fotografo (sobrevive a sair/voltar) */
 loadEvents();
 /* deep-link ?evento=CODE abre como convidado (o que o QR faz) */
