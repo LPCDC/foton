@@ -150,10 +150,22 @@ monitor externo (GitHub Actions) — **falta só a chave do WhatsApp**.
 5. Login com Google · cobrança (créditos hoje são manuais) · domínio próprio.
 
 **Riscos conhecidos**
-- **1 vCPU / 1 GB** é o gargalo real: 50 convidados simultâneos formam fila.
-  Migrar para ARM quando houver estoque, ou VM paga.
+- **1 vCPU / 1 GB** é o gargalo real. Migrar para ARM quando houver estoque, ou VM paga.
 - **Always Free não tem SLA.** Expectativa honesta: ~99%.
 - **Fotos servidas pela VM** — R2 resolve.
+
+### Carga MEDIDA em produção (2026-08-28)
+
+| Cenário | Resultado |
+|---|---|
+| 8 selfies simultâneas | **1 s no total** — tranquilo |
+| 1 foto de câmera (24 MP, 13 MB) | **2,9 s** (upload + tratamento + reconhecimento) |
+| 4 fotos de câmera em rajada | **19 s no total** (~4,8 s cada — enfileiram no único núcleo) |
+
+**Leitura honesta:** foto isolada cumpre o SLA de 10 s. **Em rajada, não.** 20 fotos de
+uma vez levam ~1,5 min; 50 fotos, ~4 min. Selfies de convidados são baratas; **o custo
+está no upload de fotos grandes**. Mitigações, em ordem: reduzir a foto no celular antes
+de subir · mais núcleos (ARM/VM paga) · fila com prioridade para selfies.
 
 ## 10. Modelo comercial
 
