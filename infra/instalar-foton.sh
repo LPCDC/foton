@@ -25,7 +25,16 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq iptables-persistent >
 sudo netfilter-persistent save >/dev/null 2>&1 || true
 echo "firewall da VM (80/443): ok"
 
-# 4) código
+# 4) DADOS ficam FORA do código (/var/lib/foton). O passo abaixo apaga /opt/foton;
+#    quando o banco morava lá dentro, toda reinstalação zerava contas e eventos.
+sudo mkdir -p /var/lib/foton
+if [ -f /opt/foton/data/foton.db ] && [ ! -f /var/lib/foton/foton.db ]; then
+  sudo cp /opt/foton/data/foton.db* /var/lib/foton/ 2>/dev/null || true
+  echo "banco antigo migrado para /var/lib/foton: ok"
+fi
+sudo chown -R ubuntu:ubuntu /var/lib/foton
+
+# código
 sudo rm -rf /opt/foton
 sudo git clone -q https://github.com/LPCDC/foton.git /opt/foton
 sudo chown -R ubuntu:ubuntu /opt/foton
@@ -43,16 +52,45 @@ After=network.target
 User=ubuntu
 WorkingDirectory=/opt/foton/app/test_rig
 Environment=OMP_NUM_THREADS=1
-Environment=FOTON_DB=/opt/foton/data/foton.db
+Environment=FOTON_DB=/var/lib/foton/foton.db
 ExecStart=/opt/foton/venv/bin/uvicorn rig:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=5
 [Install]
 WantedBy=multi-user.target
 UNIT
-mkdir -p /opt/foton/data
 sudo systemctl daemon-reload && sudo systemctl enable -q foton && sudo systemctl restart foton
 echo "servico: ok"
+
+# 4b) BACKUP diário do banco (7 cópias) — protege contra corrupção e erro humano
+sudo tee /usr/local/bin/foton-backup >/dev/null <<'BKP'
+#!/usr/bin/env bash
+mkdir -p /var/lib/foton/backup
+[ -f /var/lib/foton/foton.db ] || exit 0
+sqlite3 /var/lib/foton/foton.db ".backup /var/lib/foton/backup/foton-$(date +%u).db" 2>/dev/null \
+  || cp /var/lib/foton/foton.db "/var/lib/foton/backup/foton-$(date +%u).db"
+BKP
+sudo chmod +x /usr/local/bin/foton-backup
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sqlite3 >/dev/null 2>&1 || true
+sudo tee /etc/systemd/system/foton-backup.service >/dev/null <<'B1'
+[Unit]
+Description=Foton backup do banco
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/foton-backup
+B1
+sudo tee /etc/systemd/system/foton-backup.timer >/dev/null <<'B2'
+[Unit]
+Description=Foton backup diario
+[Timer]
+OnCalendar=daily
+Persistent=true
+[Install]
+WantedBy=timers.target
+B2
+sudo systemctl enable -q --now foton-backup.timer
+sudo /usr/local/bin/foton-backup
+echo "backup diario do banco: ok"
 
 # 6) nginx na frente (porta 80) — o HTTPS entra depois com o domínio
 sudo tee /etc/nginx/sites-available/foton >/dev/null <<'NGX'
