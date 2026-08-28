@@ -1958,12 +1958,13 @@ const GUIAS={
   canon:{app:'Canon Camera Connect', loja:'grátis na Play Store / App Store',
     modelos:'EOS R8, R6, R5, R50, RP · T6s/760D, T7i, 90D · PowerShot com Wi-Fi',
     passos:[
-      'Instale o <b>Canon Camera Connect</b> no celular.',
-      'Na câmera: <b>MENU → (rede) → Configurações de Wi-Fi → Ativar</b>, depois <b>Conectar a smartphone</b>.',
-      'No app, toque em <b>conectar</b> e escolha a sua câmera. Na primeira vez o celular pede para entrar no Wi-Fi da câmera — aceite.',
-      'Toque em <b>Imagens na câmera</b>, selecione as fotos e <b>baixe</b> para o celular.',
+      'Instale o <b>Canon Camera Connect</b> no celular e <b>ligue o Bluetooth</b> do celular.',
+      'Na câmera (R8 e linha R): <b>MENU → Funções de comunicação → Conectar a smartphone(tablet)</b>. <span style="color:var(--warn)">Não procure por "Rede" nem "Configurações de Wi-Fi" — na R8 o menu chama <b>Funções de comunicação</b>, com ícone de transferência de dados.</span> Nas DSLR antigas (T6s/760D) o caminho é <b>MENU → ferramentas → Wi-Fi/NFC → Ativar</b>.',
+      'Siga o pareamento no app. Na primeira vez o celular pede para entrar no Wi-Fi da câmera — aceite.',
+      '<b>Ligue o envio automático (só R8 e linha R):</b> com a câmera já conectada, vá em <b>Funções de comunicação → Conectar a smartphone(tablet) → Enviar para smartphone após o disparo</b> e marque <b>Envio automático: Ativar</b>. Escolha o <b>Tamanho a enviar</b>. A partir daí <b>cada foto cai sozinha no celular</b>, sem você tocar na câmera.',
+      'Na T6s (sem envio automático): toque em <b>Imagens na câmera</b>, selecione as fotos e <b>baixe</b>.',
       '<b>Volte para os dados móveis</b> (saia do Wi-Fi da câmera) e envie pelo Fóton.'],
-    dica:'Na R8 dá para deixar o Bluetooth pareado: a reconexão fica quase instantânea nas próximas vezes.'},
+    dica:'Deixe o Bluetooth pareado: a reconexão fica quase instantânea nos próximos eventos. O Wi-Fi da câmera não tem internet — por isso o envio ao Fóton só funciona depois de voltar para o 4G.'},
   nikon:{app:'SnapBridge', loja:'grátis na Play Store / App Store',
     modelos:'Z6/Z7/Z8/Z50/Zf · D780, D850, D7500, D5600',
     passos:[
@@ -2045,7 +2046,7 @@ async function _renderGuiaDireto(box, silencioso){
       </div>
       ${c.aviso?`<p class="note" style="margin-top:12px;text-align:left;color:var(--warn)">⚠ ${c.aviso}</p>`
                :`<p class="note" style="margin-top:12px;text-align:left;color:var(--ok)">✓ Evento <b>${c.evento_ao_vivo}</b> ao vivo — as fotos vão para ele.</p>`}
-      <p class="note" style="margin-top:8px;text-align:left;font-size:11.5px;color:var(--dim)">Compatível com câmeras que têm "Transferência FTP" no próprio menu (ex.: Canon R6/R6 II/R5/R3, corpos profissionais Nikon/Sony com FTP). A maioria das câmeras — <b>inclusive a Canon R8</b> — não tem esse recurso e usa o caminho pelo celular (abas Canon/Nikon/Sony acima).</p>`;
+      <p class="note" style="margin-top:8px;text-align:left;font-size:11.5px;color:var(--dim)">Só funciona em câmera que tenha <b>"Transferência FTP" no próprio menu</b> — corpos profissionais (Canon R5/R3/R6 II, Nikon Z série pro, Sony com FTP). <b>A Canon R8 e a T6s NÃO têm FTP</b> — verificado na prática. Para elas o caminho é o celular (abas Canon/Nikon/Sony acima), com <b>envio automático</b> ligado na R8.</p>`;
   }catch(e){ if(!silencioso) box.innerHTML='<div class="empty">Erro de conexão.</div>'; }
 }
 function sairGuia(){ if(_pollCam){clearInterval(_pollCam);_pollCam=null;} home(); }
