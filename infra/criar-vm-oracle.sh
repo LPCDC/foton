@@ -44,8 +44,8 @@ oci network security-list update --security-list-id "$SL" --force --ingress-secu
  {"protocol":"1","source":"0.0.0.0/0","isStateless":false}]' >/dev/null
 echo "firewall da nuvem (22/80/443): ok"
 
-# 5) chave SSH (gera se não existir)
-[ -f ~/.ssh/foton.key ] || ssh-keygen -t ed25519 -f ~/.ssh/foton.key -N "" -C foton >/dev/null
+# 5) chave SSH (RSA — o Cloud Shell roda em modo FIPS e recusa ed25519)
+[ -f ~/.ssh/foton.key ] || ssh-keygen -t rsa -b 4096 -f ~/.ssh/foton.key -N "" -C foton >/dev/null
 echo "chave SSH: ok"
 
 # 6) cria a instância — tenta 2/12, depois 1/6 se faltar capacidade
