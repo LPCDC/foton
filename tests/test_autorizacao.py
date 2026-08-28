@@ -14,6 +14,7 @@ import io, os, sys, tempfile, types
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(RAIZ, "app", "test_rig"))
 os.environ["FOTON_DB"] = os.path.join(tempfile.mkdtemp(), "teste.db")
+os.environ["FOTON_ADMINS"] = "chefe@t.com"
 
 # ---- dublês: cv2 e insightface (o resto do pipeline é o real) ----
 import numpy as np
@@ -102,6 +103,29 @@ print("\n[6] Dona encerra e apaga o próprio evento")
 checa("dona encerra", C.post("/event/close",  data={"code": "FESTA1"}, headers=h(dona)).status_code, 200)
 checa("dona apaga",   C.post("/event/delete", data={"code": "FESTA1"}, headers=h(dona)).status_code, 200)
 checa("sumiu mesmo",  C.get("/photos?event=FESTA1").json()["photos"], [])
+
+print("\n[7] Freio do login (força bruta) — sem travar quem erra a senha de vez em quando")
+for i in range(9):
+    C.post("/login", data={"email": "dona@t.com", "senha": "errada"})
+checa("9 erros ainda deixam entrar", C.post("/login", data={"email": "dona@t.com", "senha": "senha123"}).status_code, 200)
+for i in range(10):
+    C.post("/login", data={"email": "dona@t.com", "senha": "errada"})
+checa("10 erros seguidos -> freia", C.post("/login", data={"email": "dona@t.com", "senha": "senha123"}).status_code, 429)
+rig._tentativas.clear()
+checa("passada a janela, volta a entrar", C.post("/login", data={"email": "dona@t.com", "senha": "senha123"}).status_code, 200)
+
+print("\n[8] Torre de controle do admin")
+checa("fotógrafa comum não vê a saúde", C.get("/admin/saude", headers=h(dona)).status_code, 403)
+checa("anônimo não vê", C.get("/admin/saude").status_code, 403)
+chefe = C.post("/signup", data={"email": "chefe@t.com", "senha": "senha123"}).json()["token"]
+r = C.get("/admin/saude", headers=h(chefe))
+checa("admin vê", r.status_code, 200)
+s = r.json()
+checa("tem as seções que importam", sorted(s.keys()),
+      ["alertas", "backup", "disco", "fila", "negocio", "servidor"])
+checa("uptime do processo é número", isinstance(s["servidor"]["uptime_processo_h"], float), True)
+checa("fila de fotos do FTP responde", isinstance(s["fila"]["fotos_ftp_aguardando"], (int, type(None))), True)
+checa("sem backup vira alerta", "SEM BACKUP" in s["alertas"], True)
 
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

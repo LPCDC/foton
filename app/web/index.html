@@ -1058,7 +1058,31 @@ async function registerEvent(code,tries=8,brand='',name='',date=''){
 }
 /* upload REAL da foto (modo ao vivo): camera -> celular -> /ingest */
 let filaFalhas=[];                       // fotos que nao subiram (rede ruim) -> reenviar
+/* Reduz a foto ANTES de subir. O servidor ja reduz para 2048px de lado maior, entao
+   isto nao perde nada de qualidade — so evita empurrar 13 MB por 4G e decodificar
+   24 MP no unico nucleo da VM. E o maior ganho na rajada.
+   ATENCAO (armadilha ja paga): o canvas descarta o EXIF, e sem a rotacao a foto
+   chega deitada e o rosto nao e detectado. Por isso imageOrientation:'from-image',
+   que ja entrega os pixels em pe. Qualquer imprevisto -> manda o arquivo original. */
+const LADO_MAX=2048;
+async function reduzir(file){
+  try{
+    if(!file || !/^image\//.test(file.type||'') ) return file;
+    if(file.size < 1.5*1024*1024) return file;                  // pequena: nao compensa
+    if(typeof createImageBitmap!=='function') return file;      // navegador antigo
+    const bmp=await createImageBitmap(file,{imageOrientation:'from-image'});
+    const s=Math.min(1, LADO_MAX/Math.max(bmp.width,bmp.height));
+    if(s>=1){ bmp.close&&bmp.close(); return file; }
+    const w=Math.round(bmp.width*s), h=Math.round(bmp.height*s);
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    cv.getContext('2d').drawImage(bmp,0,0,w,h); bmp.close&&bmp.close();
+    const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',.9));
+    if(!blob || blob.size>=file.size) return file;              // nao ajudou: original
+    return new File([blob], file.name, {type:'image/jpeg'});
+  }catch(e){ return file; }
+}
 async function enviarUma(ev,file,tentativas=3){
+  file=await reduzir(file);
   for(let t=0;t<tentativas;t++){
     try{
       const fd=new FormData(); fd.append('event',ev.code); fd.append('file',file);

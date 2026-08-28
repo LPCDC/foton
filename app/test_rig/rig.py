@@ -9,7 +9,7 @@ bytes são descartados. Logs sem PII (só id de rastreio, contagem, latência).
 import io, os, time, uuid, logging
 import cv2, numpy as np, qrcode
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header, Request
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -108,6 +108,7 @@ def _pode(code, authorization):
         raise HTTPException(403, "este evento é de outra conta")
     return c
 
+INICIO = time.time()
 app = FastAPI(title="Fóton", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
@@ -162,10 +163,31 @@ def signup(email: str = Form(...), senha: str = Form(...), nome: str = Form(""),
     return {"token": store.novo_token(c["email"]), "nome": c["nome"], "marca": c["marca"],
             "credits": c["credits"], "credits_total": c["credits_total"], "email": c["email"]}
 
+_tentativas = {}          # ip -> [instantes de falha]
+LIMITE_FALHAS, JANELA_S = 10, 600
+
+def _freio(ip):
+    """Freio contra força bruta no login. Conta só FALHA e por IP.
+
+    10 falhas em 10 min é folgado de propósito: travar a fotógrafa que errou a senha
+    no meio do evento seria pior que o ataque que isto evita.
+    """
+    agora = time.time()
+    h = [t for t in _tentativas.get(ip, []) if agora - t < JANELA_S]
+    _tentativas[ip] = h
+    if len(h) >= LIMITE_FALHAS:
+        raise HTTPException(429, "muitas tentativas — espere alguns minutos")
+
 @app.post("/login")
-def login(email: str = Form(...), senha: str = Form(...)):
+def login(request: Request, email: str = Form(...), senha: str = Form(...)):
+    ip = request.client.host if request.client else "?"
+    _freio(ip)
     c = store.autentica(email, senha)
-    if not c: raise HTTPException(401, "e-mail ou senha incorretos")
+    if not c:
+        _tentativas.setdefault(ip, []).append(time.time())
+        log.info('{"stage":"login","status":"falha","tentativas":%d}' % len(_tentativas[ip]))
+        raise HTTPException(401, "e-mail ou senha incorretos")
+    _tentativas.pop(ip, None)                     # acertou: zera o histórico
     return {"token": store.novo_token(c["email"]), "nome": c["nome"], "marca": c["marca"],
             "credits": c["credits"], "credits_total": c["credits_total"], "email": c["email"]}
 
@@ -359,6 +381,72 @@ def admin_resumo(authorization: str = Header(None)):
     return {**store.resumo_geral(),
             "disco_livre_gb": round(du.free / 1e9, 1), "disco_total_gb": round(du.total / 1e9, 1),
             "fotografos_lista": store.todos_fotografos()}
+
+@app.get("/admin/saude")
+def admin_saude(authorization: str = Header(None)):
+    """Torre de controle: o que precisa estar verde ANTES e DURANTE um evento.
+
+    Tudo em try/except de propósito — um painel de saúde que quebra quando algo
+    está estranho é justamente o que não serve. Campo que não deu para ler vem null.
+    """
+    _admin(authorization)
+    import shutil, glob
+    def _tenta(f, padrao=None):
+        try: return f()
+        except Exception: return padrao
+
+    du = _tenta(lambda: shutil.disk_usage("/"))
+    dbp = os.environ.get("FOTON_DB", "")
+    dirdb = os.path.dirname(dbp) or "."
+
+    def _mem():
+        m = {}
+        with open("/proc/meminfo") as f:
+            for ln in f:
+                p = ln.split()
+                if p[0][:-1] in ("MemTotal", "MemAvailable"): m[p[0][:-1]] = int(p[1]) * 1024
+        return {"total_mb": round(m["MemTotal"] / 1e6), "livre_mb": round(m["MemAvailable"] / 1e6),
+                "uso_pct": round(100 * (1 - m["MemAvailable"] / m["MemTotal"]))}
+
+    def _backup():
+        arqs = glob.glob(os.path.join(dirdb, "backup", "*.db"))
+        if not arqs: return None
+        novo = max(arqs, key=os.path.getmtime)
+        return {"horas_atras": round((time.time() - os.path.getmtime(novo)) / 3600, 1),
+                "tamanho_mb": round(os.path.getsize(novo) / 1e6, 1), "copias": len(arqs)}
+
+    def _fila():
+        raiz = os.environ.get("FOTON_FTP_DIR", "/var/lib/foton/ftp")
+        n = sum(len(fs) for _, _, fs in os.walk(os.path.join(raiz, "_pendentes")))
+        return n
+
+    banco_mb = _tenta(lambda: round(os.path.getsize(dbp) / 1e6, 1))
+    bkp = _tenta(_backup)
+    return {
+        "servidor": {
+            "uptime_processo_h": round((time.time() - INICIO) / 3600, 1),
+            "uptime_maquina_h": _tenta(lambda: round(float(open("/proc/uptime").read().split()[0]) / 3600, 1)),
+            "carga": _tenta(lambda: open("/proc/loadavg").read().split()[:3]),
+            "memoria": _tenta(_mem),
+        },
+        "disco": {
+            "livre_gb": _tenta(lambda: round(du.free / 1e9, 1)),
+            "total_gb": _tenta(lambda: round(du.total / 1e9, 1)),
+            "uso_pct": _tenta(lambda: round(100 * (du.total - du.free) / du.total)),
+            "banco_mb": banco_mb,
+            # o backup guarda 7 cópias do banco INTEIRO, e as fotos moram nele
+            "backups_ocupam_mb": _tenta(lambda: round(sum(os.path.getsize(a) for a in
+                                       glob.glob(os.path.join(dirdb, "backup", "*.db"))) / 1e6, 1)),
+        },
+        "backup": bkp,
+        "fila": {"fotos_ftp_aguardando": _tenta(_fila), "ftp_ligado": _tenta(lambda: __import__("ftp_camera") is not None, False)},
+        "negocio": store.resumo_geral(),
+        "alertas": [a for a in [
+            "DISCO ACIMA DE 80%" if _tenta(lambda: (du.total - du.free) / du.total > .8) else None,
+            "BACKUP COM MAIS DE 48H" if (bkp and bkp["horas_atras"] > 48) else ("SEM BACKUP" if not bkp else None),
+            "FOTOS PRESAS NA FILA DO FTP" if _tenta(_fila, 0) else None,
+        ] if a],
+    }
 
 @app.post("/admin/creditos")
 def admin_creditos(email: str = Form(...), quantidade: int = Form(...), authorization: str = Header(None)):
