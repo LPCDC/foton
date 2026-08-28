@@ -739,7 +739,7 @@ function go(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('s-'+id).classList.add('active');
   window.scrollTo(0,0);
-  if(id==='dash'){renderDash();checarServidor();}
+  if(id==='dash'){renderDash();checarServidor();sincronizarEventos();}
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 
@@ -798,11 +798,12 @@ function criarEvento(){
   const leads=document.getElementById('ev-leads').checked;
   const ev={id:'e'+Date.now(),name,date,photos:0,guests:0,status:'live',code:genCode(),brand,leads};
   state.events.unshift(ev);state.credits--;saveEvents();openEvent(ev);   // abre a tela do QR NA HORA (não trava) e persiste
-  if(LIVE) registerEvent(ev.code,8,brand);                  // registra no servidor em 2º plano (com retry no cold start)
+  if(LIVE) registerEvent(ev.code,8,brand,name,date);        // registra no servidor em 2º plano (com retry no cold start)
 }
-async function registerEvent(code,tries=8,brand=''){
+async function registerEvent(code,tries=8,brand='',name='',date=''){
   for(let i=0;i<tries;i++){
     try{ const fd=new FormData(); fd.append('code',code); if(brand) fd.append('brand',brand);
+      if(name) fd.append('name',name); if(date) fd.append('date',date);
       const r=await fetch(API+'/event',{method:'POST',body:fd}); if(r.ok) return; }catch(e){}
     if(i===0) toast('Acordando o servidor…');
     await new Promise(r=>setTimeout(r,2500));
@@ -939,6 +940,28 @@ function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i
 /* persistencia dos eventos do fotografo (sobrevive a sair/voltar/recarregar) */
 function saveEvents(){ if(!LIVE)return; try{ localStorage.setItem('foton_ev', JSON.stringify(state.events.map(e=>({id:e.id,name:e.name,date:e.date,code:e.code,status:e.status,photos:e.photos||0})))); }catch(e){} }
 function loadEvents(){ if(!LIVE)return; try{ const s=localStorage.getItem('foton_ev'); state.events = s ? JSON.parse(s) : []; }catch(e){ state.events=[]; } }
+/* sincroniza a lista com o SERVIDOR -> o painel fica igual em qualquer aparelho */
+async function sincronizarEventos(){
+  if(!LIVE)return;
+  try{
+    const r=await fetch(API+'/events'); if(!r.ok)return;
+    const remotos=(await r.json()).events||[];
+    const porCodigo={}; state.events.forEach(e=>porCodigo[e.code]=e);
+    remotos.forEach(rm=>{
+      const local=porCodigo[rm.code];
+      if(local){ local.photos=rm.photos; local.guests=rm.guests;      // atualiza numeros
+                 if(rm.name&&local.name==='Evento sem nome') local.name=rm.name; }
+      else porCodigo[rm.code]={id:'e'+rm.code, code:rm.code, name:rm.name||('Evento '+rm.code),
+             date:rm.date||'', photos:rm.photos, guests:rm.guests, brand:rm.brand||'', status:'live'};
+    });
+    const codigosRemotos=new Set(remotos.map(e=>e.code));
+    state.events=Object.values(porCodigo)
+      .filter(e=>codigosRemotos.has(e.code))       // some o que ja nao existe no servidor
+      .sort((a,b)=>(b.id>a.id?1:-1));
+    saveEvents();
+    if(document.getElementById('s-dash').classList.contains('active')) renderDash();
+  }catch(e){}
+}
 /* reabrir evento: recarrega do servidor as fotos ja enviadas */
 async function syncEventPhotos(ev){
   try{ const r=await fetch(`${API}/photos?event=${encodeURIComponent(ev.code)}`); if(!r.ok)return; const j=await r.json();
@@ -1399,6 +1422,7 @@ document.addEventListener('visibilitychange',()=>{
   if(LIVE && state.live && document.getElementById('s-event').classList.contains('active')){
     syncEventPhotos(state.live); atualizarStats();
   }
+  if(LIVE && document.getElementById('s-dash').classList.contains('active')) sincronizarEventos();
 });
 /* carrega eventos persistidos do fotografo (sobrevive a sair/voltar) */
 loadEvents();

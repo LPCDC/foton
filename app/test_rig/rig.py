@@ -84,7 +84,10 @@ def _ev(code, create=False):
     if e is None:
         if not create:
             raise HTTPException(404, "evento nao encontrado")
-        e = EVENTS[code] = {"photos": {}, "guests": {}, "matches": {}, "brand": "FÓTON", "contatos": []}
+        # auto-criado (alguem acessou um codigo que nao existe): fica marcado para NAO
+        # poluir a lista do painel — so aparece la o que o fotografo criou de proposito.
+        e = EVENTS[code] = {"photos": {}, "guests": {}, "matches": {}, "brand": "FÓTON",
+                            "contatos": [], "auto": True, "created": time.time()}
         log.info('{"stage":"event","code":"%s","status":"auto-created"}' % code)
     return e
 
@@ -104,9 +107,12 @@ def health():
     return {"ok": True, "engine": "InsightFace buffalo_s (SCRFD+ArcFace) CPU", "events": len(EVENTS)}
 
 @app.post("/event")
-def create_event(code: str = Form(...), brand: str = Form("FÓTON")):
+def create_event(code: str = Form(...), brand: str = Form("FÓTON"),
+                 name: str = Form(""), date: str = Form("")):
     EVENTS[code] = {"photos": {}, "guests": {}, "matches": {},
-                    "brand": (brand or "FÓTON").strip()[:40] or "FÓTON", "contatos": []}
+                    "brand": (brand or "FÓTON").strip()[:40] or "FÓTON", "contatos": [],
+                    "name": (name or "Evento").strip()[:60], "date": (date or "")[:10],
+                    "created": time.time()}
     log.info('{"stage":"event","code":"%s","status":"created"}' % code)
     return {"event": code, "brand": EVENTS[code]["brand"]}
 
@@ -197,6 +203,19 @@ def photo_delete(event: str = Form(...), photo_id: str = Form(...)):
 def stats(event: str):
     e = _ev(event, create=True)
     return {"event": event, "photos": len(e["photos"]), "guests": len(e["guests"])}
+
+@app.get("/events")
+def events():
+    """Lista os eventos do servidor — para o painel ficar igual em qualquer aparelho.
+    OBS: sem login real, e uma lista unica (ok para o piloto). Na Fase 1 (Supabase Auth)
+    cada fotografo vera apenas os proprios eventos."""
+    out = [{"code": c, "name": e.get("name", "Evento"), "date": e.get("date", ""),
+            "brand": e.get("brand", ""), "photos": len(e["photos"]),
+            "guests": len(e["guests"]), "created": e.get("created", 0)}
+           for c, e in EVENTS.items()
+           if not e.get("auto") or e["photos"] or e["guests"]]   # esconde fantasmas vazios
+    out.sort(key=lambda x: x["created"], reverse=True)
+    return {"events": out}
 
 @app.get("/photos")
 def photos(event: str):
