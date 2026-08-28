@@ -166,9 +166,13 @@ ainda não com a Canon**.
 a senha do FTP é derivável do repo público · sem rate limit no `/login` · fotos são
 BLOB no SQLite × 7 backups (disco).
 
-**a) Garantir que a Canon R8 e a T6s conectem — NUNCA foi testado com câmera real.**
-   - R8: tem Wi-Fi + **FTP nativo** → deve usar o **envio direto** (`/camera/config`).
-   - T6s (760D): tem Wi-Fi mas **não tem FTP** → caminho é Camera Connect → celular → app.
+**a) Garantir que as câmeras conectem — NUNCA foi testado com câmera real.**
+   - ⚠️ **CORREÇÃO (2026-08-28): a R8 NÃO tem transferência FTP.** A premissa antiga
+     deste documento estava errada. O FTP no menu é dos corpos superiores
+     (R5, R3, R6/R6 II). A própria fotógrafa desconfiou disso antes de nós.
+   - T6s (760D): tem Wi-Fi mas **não tem FTP** → Camera Connect → celular → app.
+   - **Consequência:** o caminho garantido do piloto é **celular → app**. O FTP é
+     bônus, e só se ela tiver um R6/R6 II. Confirmar o modelo exato olhando o corpo.
    - **É o maior risco em aberto.** Fazer um ensaio presencial com as duas câmeras
      antes de qualquer evento pago. Usar o "testar foto" do admin para validar na hora.
 
@@ -206,6 +210,26 @@ está no upload de fotos grandes**. Mitigações, em ordem: reduzir a foto no ce
 de subir · mais núcleos (ARM/VM paga) · fila com prioridade para selfies.
 
 ## 10. Modelo comercial
+
+### Proposta da Patrícia (áudio de 2026-08-28) — AGUARDA DECISÃO DO DONO
+
+No áudio ela propõe, por conta própria, duas coisas que mudam o negócio:
+
+1. **Sociedade / revenda:** ela leva o Fóton nos trabalhos dela e repassa **50% de
+   tudo que vender** com o programa. Deixa de ser só cliente e vira **canal de
+   aquisição** — é a "máquina de aquisição" que o dono quer provar.
+2. **Alugar em vez de vender:** *"em vez de você vender o programa, você alugar…
+   porque aí você vai ganhar mais. Se você vender, ganha o seu na hora e não ganha
+   mais."* — ela está **pedindo recorrência**.
+
+⚠️ Isso **contradiz a premissa do ADR-0012** ("a cliente não quer mensalidade").
+A premissa nasceu de conversa anterior e agora a própria cliente propõe o oposto.
+**Não decidir sozinho:** revisitar o ADR-0012 com o dono antes de fixar preço.
+
+Ela também se ofereceu para levar **as duas câmeras** ao encontro e fazer um teste
+no evento "do dia dois", possivelmente com um ajudante.
+
+### Modelo hoje (registrado)
 
 **Pagamento único / créditos por evento** (ADR-0012 — a cliente não quer mensalidade).
 Custo marginal por evento é ~centavos; o custo relevante é o fixo (hoje ~R$0 na Oracle).
