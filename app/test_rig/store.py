@@ -143,6 +143,21 @@ def eventos_de(dono):
               ORDER BY e.criado DESC""", (dono,), "all")
     return [dict(r) for r in rs]
 
+def adota_evento(code, dono):
+    """Reivindica um evento SEM dono (órfão) para o fotógrafo. Nunca rouba de outro."""
+    e = evento(code)
+    if not e: return False
+    if e["dono"] and e["dono"] != dono: return False        # já tem dono: não mexe
+    q("UPDATE event SET dono=?, auto=0 WHERE code=?", (dono, code))
+    return True
+
+def orfaos():
+    rs = q("""SELECT e.code, e.nome, e.criado,
+                     (SELECT COUNT(*) FROM photo WHERE event_code=e.code) fotos
+              FROM event e WHERE (e.dono IS NULL OR e.dono='')
+              ORDER BY e.criado DESC""", (), "all")
+    return [dict(r) for r in rs]
+
 def apaga_evento(code):
     for t in ("photo", "face", "guest", "contact"):
         q(f"DELETE FROM {t} WHERE event_code=?", (code,))

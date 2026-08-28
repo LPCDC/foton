@@ -152,6 +152,29 @@ def events(authorization: str = Header(None)):
                         "photos": e["fotos"], "guests": e["convidados"], "status": e["status"]}
                        for e in store.eventos_de(c["email"])]}
 
+@app.post("/event/adotar")
+def event_adotar(codes: str = Form(...), authorization: str = Header(None)):
+    """O app manda os códigos que ele tem salvos localmente; o servidor devolve os que
+    conseguiu vincular a esta conta. Recupera eventos que ficaram sem dono."""
+    c = _dono(authorization)
+    if not c: raise HTTPException(401, "sessão expirada")
+    adotados = [x.strip() for x in codes.split(",") if x.strip() and store.adota_evento(x.strip(), c["email"])]
+    if adotados: log.info('{"stage":"event","acao":"adotados","n":%d}' % len(adotados))
+    return {"adotados": adotados}
+
+@app.get("/admin/orfaos")
+def admin_orfaos(authorization: str = Header(None)):
+    _admin(authorization)
+    return {"orfaos": store.orfaos()}
+
+@app.post("/admin/adotar-todos")
+def admin_adotar_todos(email: str = Form(...), authorization: str = Header(None)):
+    """Vincula TODOS os eventos órfãos a um fotógrafo (resgate de suporte)."""
+    _admin(authorization)
+    if not store.conta(email.strip().lower()): raise HTTPException(404, "fotógrafo não encontrado")
+    n = sum(1 for o in store.orfaos() if store.adota_evento(o["code"], email.strip().lower()))
+    return {"ok": True, "adotados": n}
+
 @app.post("/event/delete")
 def event_delete(code: str = Form(...)):
     existed = store.evento(code) is not None

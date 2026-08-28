@@ -970,8 +970,12 @@ function criarEvento(){
   const ev={id:'e'+Date.now(),name,date,photos:0,guests:0,status:'live',code:genCode(),brand,leads};
   state.events.unshift(ev);
   if(SESSAO) SESSAO.credits=Math.max(0,SESSAO.credits-1); else state.credits--;
-  saveEvents();openEvent(ev);   // abre a tela do QR NA HORA (não trava) e persiste
-  if(LIVE) registerEvent(ev.code,8,brand,name,date);        // registra no servidor em 2º plano (com retry no cold start)
+  saveEvents();
+  // registra no servidor em 2º plano e abre a tela na hora (evento novo não tem
+  // fotos, então openEvent não precisa consultar o servidor — era isso que criava
+  // o evento SEM DONO e o fazia sumir do painel).
+  if(LIVE) registerEvent(ev.code,8,brand,name,date);
+  openEvent(ev,{novo:true});        // registra no servidor em 2º plano (com retry no cold start)
 }
 async function registerEvent(code,tries=8,brand='',name='',date=''){
   for(let i=0;i<tries;i++){
@@ -1136,6 +1140,13 @@ function loadEvents(){ if(!LIVE)return; try{ const s=localStorage.getItem('foton
 async function sincronizarEventos(){
   if(!LIVE)return;
   try{
+    // recupera eventos que ficaram sem dono no servidor (senão sumiam do painel
+    // mesmo existindo — os convidados viam as fotos e a fotógrafa não via o evento)
+    const locais=(state.events||[]).map(e=>e.code).filter(Boolean);
+    if(locais.length){
+      try{ const fd=new FormData(); fd.append('codes',locais.join(','));
+        await fetch(API+'/event/adotar',{method:'POST',body:fd,headers:auth()}); }catch(e){}
+    }
     const r=await fetch(API+'/events',{headers:auth()});
     if(r.status===401){ sessaoFotografoExpirou(); return; }   // nunca apagar a lista por sessão inválida
     if(!r.ok) return;                                          // erro de rede: mantém o que já está na tela
@@ -1167,7 +1178,8 @@ async function syncEventPhotos(ev){
   }catch(e){}
 }
 
-function openEvent(ev){
+function openEvent(ev,opts){
+  const novo=!!(opts&&opts.novo);
   state.live=ev;ev.status='live';ev._photos=ev._photos||[];
   document.getElementById('ev-title').textContent=ev.name;
   document.getElementById('ev-date-lbl').textContent=fmtDate(ev.date);
@@ -1185,7 +1197,7 @@ function openEvent(ev){
     qi.onerror=()=>{qi.style.display='none';document.getElementById('qr').style.display='none';};
     qi.style.display='block'; qi.src=`${API}/qr?data=${encodeURIComponent(gurl)}`;
     const gl=document.getElementById('ev-guestlink'); gl.textContent='🔗 '+gurl; gl.href=gurl; gl.style.display='block';
-    syncEventPhotos(ev);   // reabrir evento: recarrega as fotos ja enviadas
+    if(!novo) syncEventPhotos(ev);   // reabrir evento: recarrega as fotos já enviadas
   }
   clearInterval(state.liveTimer);
   if(LIVE){ atualizarStats(); state.liveTimer=setInterval(atualizarStats,4000); }   // convidados reais
