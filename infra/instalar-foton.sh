@@ -73,6 +73,39 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t >/dev/null && sudo systemctl restart nginx
 echo "nginx: ok"
 
+# 7) auto-update: a VM busca a versao nova sozinha (a cada 2 min) e reinicia se mudou.
+#    Sem isso, cada correcao exigiria SSH manual pelo Cloud Shell.
+sudo tee /usr/local/bin/foton-update >/dev/null <<'UPD'
+#!/usr/bin/env bash
+cd /opt/foton || exit 0
+ANTES=$(git rev-parse HEAD)
+git fetch -q origin main && git reset -q --hard origin/main
+if [ "$ANTES" != "$(git rev-parse HEAD)" ]; then
+  /opt/foton/venv/bin/pip install -q -r /opt/foton/app/test_rig/requirements.txt || true
+  systemctl restart foton
+  logger -t foton "atualizado para $(git rev-parse --short HEAD)"
+fi
+UPD
+sudo chmod +x /usr/local/bin/foton-update
+sudo tee /etc/systemd/system/foton-update.service >/dev/null <<'U1'
+[Unit]
+Description=Foton auto-update
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/foton-update
+U1
+sudo tee /etc/systemd/system/foton-update.timer >/dev/null <<'U2'
+[Unit]
+Description=Foton auto-update a cada 2 min
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+[Install]
+WantedBy=timers.target
+U2
+sudo systemctl daemon-reload && sudo systemctl enable -q --now foton-update.timer
+echo "auto-update (a cada 2min): ok"
+
 echo
 echo "aguardando o modelo carregar (1a vez demora)..."
 for i in $(seq 1 30); do
