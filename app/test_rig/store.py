@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS contact(
   event_code TEXT, guest_id TEXT, nome TEXT, contato TEXT, ts REAL);
 CREATE TABLE IF NOT EXISTS session(
   token TEXT PRIMARY KEY, email TEXT, criado REAL);
+CREATE TABLE IF NOT EXISTS config(
+  chave TEXT PRIMARY KEY, valor TEXT);
 CREATE INDEX IF NOT EXISTS ix_photo_ev ON photo(event_code);
 CREATE INDEX IF NOT EXISTS ix_face_ev ON face(event_code);
 CREATE INDEX IF NOT EXISTS ix_guest_ev ON guest(event_code);
@@ -95,6 +97,20 @@ def por_token(token):
 def conta(email):
     r = q("SELECT * FROM photographer WHERE email=?", (email,), "one")
     return dict(r) if r else None
+
+# ---------------- configuração persistente ----------------
+def segredo(chave):
+    """Segredo do servidor, criado sozinho na primeira vez e guardado no banco.
+
+    Fica no banco de propósito: sobrevive a restart e a `rm -rf /opt/foton`, entra no
+    backup diário, e não exige ninguém abrir o Cloud Shell para definir variável.
+    """
+    r = q("SELECT valor FROM config WHERE chave=?", (chave,), "one")
+    if r and r["valor"]:
+        return r["valor"]
+    v = secrets.token_urlsafe(24)
+    q("INSERT OR REPLACE INTO config(chave,valor) VALUES(?,?)", (chave, v))
+    return v
 
 def gasta_credito(email):
     q("UPDATE photographer SET credits=MAX(0,credits-1) WHERE email=?", (email,))

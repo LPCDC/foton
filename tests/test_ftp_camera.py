@@ -95,5 +95,13 @@ except AuthenticationFailed: ok = False
 checa("conta criada agora já conecta", ok, True)
 checa("pasta dela é só dela", aut.get_home_dir("nova@t.com").endswith("nova_at_t.com"), True)
 
+print("\n[6] Senha do FTP não pode ser calculável a partir do repositório público")
+import hashlib
+antiga = hashlib.sha256(("foton-ftp" + "p@t.com").encode()).hexdigest()[:12]
+checa("não é mais a senha da semente publica", F.senha_ftp("p@t.com") == antiga, False)
+checa("estável entre chamadas", F.senha_ftp("p@t.com"), F.senha_ftp("p@t.com"))
+checa("semente sobrevive no banco", store.segredo("ftp_seed"), store.segredo("ftp_seed"))
+checa("cada conta tem senha própria", F.senha_ftp("p@t.com") == F.senha_ftp("nova@t.com"), False)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

@@ -113,9 +113,15 @@ class _Handler(FTPHandler):
 
 
 def senha_ftp(email):
-    """Senha do FTP derivada da conta — a fotógrafa não precisa decorar outra."""
+    """Senha do FTP derivada da conta — a fotógrafa não precisa decorar outra.
+
+    A semente é um segredo do servidor, gerado sozinho na primeira vez e guardado no
+    banco. Antes o padrão era a string "foton-ftp", que está no repositório PÚBLICO:
+    quem soubesse o e-mail da fotógrafa calculava a senha da câmera dela e despejava
+    foto no evento ao vivo. A senha aparece no painel dela, não precisa decorar.
+    """
     import hashlib
-    seg = os.environ.get("FOTON_FTP_SEED", "foton-ftp")
+    seg = os.environ.get("FOTON_FTP_SEED") or store.segredo("ftp_seed")
     return hashlib.sha256((seg + email).encode()).hexdigest()[:12]
 
 
