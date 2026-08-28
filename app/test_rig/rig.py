@@ -48,8 +48,18 @@ def _font(sz):
 
 def process_image(raw: bytes, marca: str = "FÓTON"):
     t0 = time.perf_counter()
+    img = Image.open(io.BytesIO(raw))
+    # draft: manda o decodificador de JPEG ja entregar a imagem reduzida (usa a escala
+    # do proprio DCT, 1/2, 1/4...). Decodificar 24 MP inteiros para depois jogar 90%
+    # fora era desperdicio puro no unico nucleo da VM.
+    # Alvo 1024 e nao 2048 de proposito: com 2048 o PIL escolhe escala 1/1 e nao economiza
+    # nada. Numa foto de camera (6000x4000) o draft entrega 3000x2000, que ainda e maior
+    # que os 2048 finais — a imagem entregue fica IDENTICA. So numa origem perto de 4000px
+    # o resultado fica 2000 em vez de 2048 (2,3% menor, irrelevante para o rosto).
+    try: img.draft("RGB", (LONG_EDGE // 2, LONG_EDGE // 2))
+    except Exception: pass
     # exif_transpose: celular/camera gravam a rotacao no EXIF. Sem isso a foto sai deitada.
-    img = ImageOps.exif_transpose(Image.open(io.BytesIO(raw))).convert("RGB")
+    img = ImageOps.exif_transpose(img).convert("RGB")
     w, h = img.size
     s = LONG_EDGE / max(w, h)
     if s < 1:
@@ -473,6 +483,27 @@ def admin_creditos(email: str = Form(...), quantidade: int = Form(...), authoriz
     if not c: raise HTTPException(404, "fotógrafo não encontrado")
     log.info('{"stage":"admin","acao":"creditos","alvo":"%s","n":%d}' % (email, quantidade))
     return {"ok": True, "credits": c["credits"], "credits_total": c["credits_total"]}
+
+@app.post("/conta/excluir")
+def conta_excluir(senha: str = Form(...), authorization: str = Header(None)):
+    """O próprio fotógrafo encerra a conta. Pede a senha de novo de propósito: é
+    irreversível e leva junto eventos e fotos (LGPD Art. 18)."""
+    c = _dono(authorization)
+    if not c: raise HTTPException(401, "sessão expirada")
+    if not store.autentica(c["email"], senha): raise HTTPException(403, "senha incorreta")
+    store.apaga_conta(c["email"])
+    log.info('{"stage":"conta","acao":"excluida_pelo_titular"}')
+    return {"ok": True}
+
+@app.post("/admin/conta/excluir")
+def admin_conta_excluir(email: str = Form(...), authorization: str = Header(None)):
+    """Limpeza de suporte: apagar conta de teste sem precisar da senha dela."""
+    a = _admin(authorization)
+    alvo = email.strip().lower()
+    if alvo == a["email"].lower(): raise HTTPException(400, "não dá para apagar a própria conta de admin")
+    if not store.apaga_conta(alvo): raise HTTPException(404, "fotógrafo não encontrado")
+    log.info('{"stage":"admin","acao":"conta_excluida","alvo":"%s"}' % alvo)
+    return {"ok": True}
 
 @app.post("/admin/senha")
 def admin_senha(email: str = Form(...), nova: str = Form(...), authorization: str = Header(None)):

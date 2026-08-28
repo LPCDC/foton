@@ -204,6 +204,19 @@ def orfaos():
               ORDER BY e.criado DESC""", (), "all")
     return [dict(r) for r in rs]
 
+def apaga_conta(email):
+    """Apaga o fotógrafo e TUDO que é dele: eventos, fotos, rostos, convidados,
+    contatos e sessões. Não existia rota para isso — conta criada por engano ficava
+    para sempre, e o titular não tinha como sair (LGPD Art. 18)."""
+    email = (email or "").strip().lower()
+    if not conta(email):
+        return False
+    for e in q("SELECT code FROM event WHERE dono=?", (email,), "all") or []:
+        apaga_evento(e["code"])
+    q("DELETE FROM session WHERE email=?", (email,))
+    q("DELETE FROM photographer WHERE email=?", (email,))
+    return True
+
 def apaga_evento(code):
     for t in ("photo", "face", "guest", "contact"):
         q(f"DELETE FROM {t} WHERE event_code=?", (code,))

@@ -138,5 +138,20 @@ checa("anônimo NÃO vê a fila", "aguardando" in C.get("/stats?event=FESTA9").j
 checa("outra conta NÃO vê a fila", "aguardando" in C.get("/stats?event=FESTA9", headers=h(outra)).json(), False)
 checa("convidado ainda lê o /stats", C.get("/stats?event=FESTA9").status_code, 200)
 
+print("\n[10] Encerrar conta — leva os dados junto, e ninguém encerra a conta de outro")
+alvo = C.post("/signup", data={"email": "sai@t.com", "senha": "senha123"}).json()["token"]
+C.post("/event", data={"code": "DELE1"}, headers=h(alvo))
+C.post("/ingest", data={"event": "DELE1"}, files={"file": ("f.jpg", jpeg(), "image/jpeg")}, headers=h(alvo))
+checa("senha errada não encerra", C.post("/conta/excluir", data={"senha": "chutei"}, headers=h(alvo)).status_code, 403)
+checa("anônimo não encerra", C.post("/conta/excluir", data={"senha": "senha123"}).status_code, 401)
+checa("fotógrafa comum não usa a rota de admin",
+      C.post("/admin/conta/excluir", data={"email": "sai@t.com"}, headers=h(dona)).status_code, 403)
+checa("o titular encerra", C.post("/conta/excluir", data={"senha": "senha123"}, headers=h(alvo)).status_code, 200)
+checa("a conta sumiu", rig.store.conta("sai@t.com"), None)
+checa("as fotos dela sumiram", C.get("/photos?event=DELE1").json()["photos"], [])
+checa("a sessão morreu junto", C.get("/me", headers=h(alvo)).status_code, 401)
+checa("admin não apaga a si mesmo",
+      C.post("/admin/conta/excluir", data={"email": "chefe@t.com"}, headers=h(chefe)).status_code, 400)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

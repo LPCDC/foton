@@ -304,6 +304,16 @@ input{font-family:inherit}
 @keyframes phin{from{opacity:0;transform:scale(.86) translateY(6px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
 /* momento de encanto: a foto CHEGANDO (é o clímax do produto pro convidado) */
 .ph.nova{animation:chega .9s cubic-bezier(.2,.9,.25,1.2) both}
+/* seleção múltipla: escolher algumas e mandar de uma vez */
+.ph.sel{outline:3px solid var(--accent);outline-offset:-3px}
+.ph .marca-sel{position:absolute;right:6px;top:6px;z-index:4;width:22px;height:22px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.85);background:rgba(10,8,12,.45);display:flex;align-items:center;
+  justify-content:center;font-size:12px;color:#fff;font-weight:700}
+.ph.sel .marca-sel{background:var(--accent);border-color:var(--accent);color:#1a1206}
+.barra-sel{position:fixed;left:12px;right:12px;bottom:14px;z-index:60;display:flex;gap:8px;align-items:center;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:10px 12px;
+  box-shadow:0 14px 34px -12px rgba(0,0,0,.6)}
+.barra-sel .q{font-size:13px;font-weight:600;color:var(--text);flex:1}
 .ph.nova::before{content:"";position:absolute;inset:0;z-index:3;border-radius:13px;
   box-shadow:0 0 0 2px var(--accent), 0 0 28px 4px rgba(232,217,176,.55);
   animation:brilho 1.6s ease-out forwards;pointer-events:none}
@@ -770,7 +780,10 @@ input{font-family:inherit}
     </div>
     <p class="subtitle" id="g-hint" style="margin:12px 0 14px">Novas fotos entram sozinhas enquanto a festa acontece.</p>
     <div class="grid" id="g-grid2"></div>
-    <div class="sticky"><button class="btn primary block" id="g-download" onclick="shareSheet('todas')">Baixar todas as fotos</button></div>
+    <div class="sticky">
+      <button class="btn primary block" id="g-download" onclick="shareSheet('todas')">Baixar todas as fotos</button>
+      <button class="btn ghost block" id="g-escolher" style="margin-top:8px" onclick="ligarSelecao()">Escolher algumas</button>
+    </div>
     <p class="note" style="margin-top:12px">
       <button class="link btn-instalar" style="display:none" onclick="instalarApp()">📲 Guardar na tela inicial</button>
     </p>
@@ -1585,12 +1598,71 @@ function renderGuestGrid(){
     g.innerHTML='';
     const ordem=lista.slice().reverse();
     g.innerHTML='';
-    ordem.forEach((p,i)=>{const d=document.createElement('div');d.className='ph'+(p._nova?' nova':'');
-      d.onclick=()=>abrirFoto(ordem,i);                       // toque abre a FOTO (não o menu)
-      d.innerHTML=`<img src="${p.src}" alt="Foto ${i+1}" loading="lazy">`;g.appendChild(d);});};
+    ordem.forEach((p,i)=>{const d=document.createElement('div');
+      const marcada=SEL && SEL.has(p.src);
+      d.className='ph'+(p._nova?' nova':'')+(marcada?' sel':'');
+      // fora do modo seleção o toque abre a FOTO (não o menu); dentro dele, marca
+      d.onclick=()=> SEL ? alternarSel(p.src) : abrirFoto(ordem,i);
+      d.innerHTML=`<img src="${p.src}" alt="Foto ${i+1}" loading="lazy">`
+        +(SEL?`<span class="marca-sel">${marcada?'✓':''}</span>`:'');
+      g.appendChild(d);});};
   wrap('g-grid');wrap('g-grid2');
   const c=guestState.photos.length;document.getElementById('g-count').textContent=c+(c===1?' foto':' fotos');
-  const dl=document.getElementById('g-download'); if(dl) dl.style.display=(todasAba?guestState.todas.length:c)?'':'none';
+  const tem=(todasAba?guestState.todas.length:c);
+  const dl=document.getElementById('g-download'); if(dl) dl.style.display=tem?'':'none';
+  const es=document.getElementById('g-escolher'); if(es) es.style.display=(tem>1&&!SEL)?'':'none';
+}
+
+/* ===================== SELEÇÃO MÚLTIPLA (convidado) =====================
+   Faltava o meio-termo: dava para salvar UMA foto ou baixar TODAS num zip.
+   Quem quer mandar as 4 melhores para o grupo da família não tinha caminho. */
+let SEL=null;                                     // null = modo normal; Set = selecionando
+function ligarSelecao(){ SEL=new Set(); renderGuestGrid(); barraSel(); }
+function sairSelecao(){ SEL=null; renderGuestGrid(); barraSel(); }
+function alternarSel(src){ SEL.has(src)?SEL.delete(src):SEL.add(src); renderGuestGrid(); barraSel(); }
+function selecionarTudo(){
+  const lista=(guestState.aba==='todas'?guestState.todas:guestState.photos);
+  const todas=lista.length && lista.every(p=>SEL.has(p.src));
+  SEL = new Set(todas?[]:lista.map(p=>p.src));    // toca de novo e desmarca tudo
+  renderGuestGrid(); barraSel();
+}
+function barraSel(){
+  let b=document.getElementById('barra-sel');
+  if(!SEL){ if(b)b.remove(); return; }
+  if(!b){ b=document.createElement('div'); b.id='barra-sel'; b.className='barra-sel'; document.body.appendChild(b); }
+  const n=SEL.size;
+  b.innerHTML=`<span class="q">${n?n+(n>1?' fotos selecionadas':' foto selecionada'):'Toque nas fotos'}</span>
+    <button class="btn ghost sm" onclick="selecionarTudo()">Todas</button>
+    <button class="btn sm" ${n?'':'disabled style="opacity:.45"'} onclick="enviarSelecionadas()">Enviar</button>
+    <button class="btn ghost sm" onclick="sairSelecao()">Sair</button>`;
+}
+async function enviarSelecionadas(){
+  if(!SEL||!SEL.size)return;
+  const srcs=[...SEL];
+  toast('Preparando '+srcs.length+' foto'+(srcs.length>1?'s':'')+'…');
+  let arquivos=[];
+  try{
+    for(const s of srcs){ const b=await fetchBlob(s);
+      arquivos.push(new File([b],`foton-${arquivos.length+1}.jpg`,{type:b.type||'image/jpeg'})); }
+  }catch(e){ toast('Não consegui buscar as fotos. Verifique a conexão.'); return; }
+  // menu nativo com VÁRIAS fotos (WhatsApp, Instagram). Nem todo aparelho aceita mais de uma.
+  try{
+    if(navigator.canShare&&navigator.canShare({files:arquivos})){
+      const marca=(state.live&&state.live.brand)||'';
+      await navigator.share({files:arquivos, title:'Minhas fotos',
+        text:`📸 Minhas fotos na hora${marca?` — ${marca}`:''} ✨`});
+      sairSelecao(); return;
+    }
+  }catch(e){ if(e&&e.name==='AbortError'){ return; } }
+  // sem suporte: 1 foto baixa direto, várias vão num zip
+  try{
+    if(arquivos.length===1){ saveBlob(arquivos[0],arquivos[0].name); toast('Foto salva ✓'); }
+    else{
+      const dados=[]; for(const f of arquivos) dados.push({name:f.name,data:new Uint8Array(await f.arrayBuffer())});
+      saveBlob(makeZip(dados),'foton-selecionadas.zip'); toast(arquivos.length+' fotos salvas em .zip ✓');
+    }
+    sairSelecao();
+  }catch(e){ toast('Seu navegador bloqueou o download — segure a foto e escolha "Salvar imagem"'); }
 }
 
 /* ========================= PRIVACIDADE (LGPD) ========================= */
