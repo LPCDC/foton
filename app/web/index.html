@@ -1004,7 +1004,7 @@ async function deletarEvento(ev){
   state.events=state.events.filter(x=>x.code!==ev.code);
   if(state.live&&state.live.code===ev.code) state.live=null;
   saveEvents(); renderDash(); toast('Evento apagado');
-  if(LIVE){ try{ const fd=new FormData(); fd.append('code',ev.code); await fetch(API+'/event/delete',{method:'POST',body:fd}); }catch(e){} }
+  if(LIVE){ try{ const fd=new FormData(); fd.append('code',ev.code); await fetch(API+'/event/delete',{method:'POST',headers:auth(),body:fd}); }catch(e){} }
 }
 /* status do servidor no painel */
 async function checarServidor(){
@@ -1057,7 +1057,7 @@ async function enviarUma(ev,file,tentativas=3){
   for(let t=0;t<tentativas;t++){
     try{
       const fd=new FormData(); fd.append('event',ev.code); fd.append('file',file);
-      const r=await fetch(API+'/ingest',{method:'POST',body:fd});
+      const r=await fetch(API+'/ingest',{method:'POST',headers:auth(),body:fd});
       if(r.ok) return await r.json();
       if(r.status>=400&&r.status<500&&r.status!==429) return null;   // erro do arquivo: nao adianta insistir
     }catch(err){}
@@ -1145,12 +1145,12 @@ async function encerrarEvento(){
   try{
     const [s,c]=await Promise.all([
       fetch(`${API}/stats?event=${encodeURIComponent(ev.code)}`).then(r=>r.json()).catch(()=>null),
-      fetch(`${API}/contatos?event=${encodeURIComponent(ev.code)}`).then(r=>r.json()).catch(()=>null)]);
+      fetch(`${API}/contatos?event=${encodeURIComponent(ev.code)}`,{headers:auth()}).then(r=>r.json()).catch(()=>null)]);
     if(s) convidados=s.guests; if(c) contatos=(c.contatos||[]).length;
   }catch(e){}
   comRosto=(ev._photos||[]).filter(p=>p.faces>0).length;
   ev.status='done'; ev.resumo={fotos:ev.photos||0, comRosto, convidados, contatos};
-  if(LIVE){ try{ const fd=new FormData(); fd.append('code',ev.code); await fetch(API+'/event/close',{method:'POST',body:fd}); }catch(e){} }
+  if(LIVE){ try{ const fd=new FormData(); fd.append('code',ev.code); await fetch(API+'/event/close',{method:'POST',headers:auth(),body:fd}); }catch(e){} }
   saveEvents(); stopEvent(); go('dash');
   mostrarResumo(ev);
 }
@@ -1171,7 +1171,7 @@ async function deletarFoto(pid,ev){
   ev.photos=ev._photos.length; document.getElementById('ev-nphotos').textContent=ev.photos;
   renderEventGrid(); saveEvents(); toast('Foto apagada');
   if(LIVE){ try{ const fd=new FormData(); fd.append('event',ev.code); fd.append('photo_id',pid);
-    await fetch(API+'/photo/delete',{method:'POST',body:fd}); }catch(e){} }
+    await fetch(API+'/photo/delete',{method:'POST',headers:auth(),body:fd}); }catch(e){} }
 }
 /* convidados conectados (real) */
 async function atualizarStats(){
@@ -1190,7 +1190,7 @@ async function carregarContatos(){
   const box=document.getElementById('box-contatos'), lista=document.getElementById('lista-contatos');
   if(!box||!lista)return;
   try{
-    const r=await fetch(`${API}/contatos?event=${encodeURIComponent(state.live.code)}`); if(!r.ok)return;
+    const r=await fetch(`${API}/contatos?event=${encodeURIComponent(state.live.code)}`,{headers:auth()}); if(!r.ok)return;
     const j=await r.json(), cs=j.contatos||[];
     if(!cs.length){ box.style.display='none'; return; }
     box.style.display='';

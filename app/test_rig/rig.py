@@ -91,6 +91,23 @@ def _dono(token):
     t = token.replace("Bearer ", "").strip()
     return store.por_token(t)
 
+def _pode(code, authorization):
+    """Portão das ações destrutivas: só o DONO do evento (ou admin) mexe nele.
+
+    O código do evento fica no QR projetado na parede da festa — sem isto, qualquer
+    convidado apagava o evento, encerrava a festa ou injetava foto na galeria dos
+    outros. Evento órfão (dono=None, do auto-create) aceita qualquer sessão válida,
+    porque é assim que a fotógrafa readota o evento dela; anônimo, nunca.
+    """
+    c = _dono(authorization)
+    if not c:
+        raise HTTPException(401, "sessão expirada")
+    e = store.evento(code)
+    if e and e.get("dono") and e["dono"] != c["email"] and c["email"].lower() not in ADMINS:
+        log.info('{"stage":"authz","code":"%s","status":"negado"}' % code)
+        raise HTTPException(403, "este evento é de outra conta")
+    return c
+
 app = FastAPI(title="Fóton", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
@@ -207,14 +224,16 @@ def admin_adotar_todos(email: str = Form(...), authorization: str = Header(None)
     return {"ok": True, "adotados": n}
 
 @app.post("/event/delete")
-def event_delete(code: str = Form(...)):
+def event_delete(code: str = Form(...), authorization: str = Header(None)):
+    _pode(code, authorization)
     existed = store.evento(code) is not None
     store.apaga_evento(code)
     log.info('{"stage":"event","code":"%s","status":"deleted"}' % code)
     return {"ok": True, "deleted": existed}
 
 @app.post("/event/close")
-def event_close(code: str = Form(...)):
+def event_close(code: str = Form(...), authorization: str = Header(None)):
+    _pode(code, authorization)
     store.encerra_evento(code)
     return {"ok": True}
 
@@ -243,8 +262,14 @@ def ingerir_bytes(event: str, raw: bytes):
     return pid, len(faces)
 
 @app.post("/ingest")
-async def ingest(event: str = Form(...), file: UploadFile = File(...)):
-    e = _ev(event, create=True)
+async def ingest(event: str = Form(...), file: UploadFile = File(...),
+                 authorization: str = Header(None)):
+    # Sem isto, qualquer um com o código do QR injetava imagem na galeria dos convidados.
+    c = _pode(event, authorization)
+    e = store.evento(event)
+    if e is None:                      # primeira foto de um evento novo: já nasce COM DONO
+        store.cria_evento(event, dono=c["email"], nome="Evento", auto=1)
+        e = store.evento(event)
     raw = await file.read()
     pid = uuid.uuid4().hex[:12]
     t0 = time.time()
@@ -292,8 +317,10 @@ def feed(event: str, guest_id: str):
             "photos": store.matches_de(guest_id)}
 
 @app.get("/contatos")
-def contatos(event: str):
-    _ev(event, create=True)
+def contatos(event: str, authorization: str = Header(None)):
+    # Nome e telefone de convidado é dado pessoal: só a dona do evento vê.
+    # Aberto, bastava o código do QR para baixar a lista inteira (LGPD Art. 46).
+    _pode(event, authorization)
     return {"event": event, "contatos": store.contatos_de(event)}
 
 @app.get("/img/{event}/{photo_id}.jpg")
@@ -303,7 +330,8 @@ def img(event: str, photo_id: str):
     return Response(b, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
 
 @app.post("/photo/delete")
-def photo_delete(event: str = Form(...), photo_id: str = Form(...)):
+def photo_delete(event: str = Form(...), photo_id: str = Form(...), authorization: str = Header(None)):
+    _pode(event, authorization)
     store.apaga_foto(event, photo_id)
     log.info('{"stage":"photo","photo_id":"%s","status":"deleted"}' % photo_id)
     return {"ok": True}
