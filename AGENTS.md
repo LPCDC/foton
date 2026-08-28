@@ -86,10 +86,20 @@ DISCOVER → DECOMPOSE → EXPERIMENT → BUILD → TEST → CRITIQUE → BENCHM
 
 ## 9. Estado Atual do Projeto
 
-- **Fase:** Sprint **S0 — Feasibility Gauntlet**. **Sem código de produção.**
-- **Nada de implementar features, fixar provider/engine, ou instalar libs** antes dos benchmarks do S0.
-- **Repo git dedicado ainda não criado** (ADR-0001, aguarda aprovação). **Não commitar no repo da home** `C:/Users/Pichau`.
-- Documentos vivos: `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/GAUNTLET.md`, `docs/BENCHMARKS.md`, `docs/ROADMAP.md`.
+> Esta seção descreve o momento em que o projeto foi planejado (S0, pré-código). Está
+> **desatualizada** e mantida aqui só como registro — **`BLUEPRINT.md` na raiz do repo é
+> a fonte de verdade do estado atual** e deve ser lido primeiro em qualquer sessão nova.
+
+- **Fase real (2026-08-28):** em **produção**, com cliente real (Patrícia, fotógrafa em
+  Santos). Não é mais S0 — o app roda em `https://getfoton.duckdns.org`, repo público em
+  `github.com/LPCDC/foton`. Próximo marco: `docs/PILOTO-1.md` (piloto real com câmera).
+- Documentos vivos e atualizados: `BLUEPRINT.md` (estado geral) · `docs/DECISIONS.md`
+  (ADRs, incluindo as que documentam o que mudou desde o S0) · `docs/BENCHMARKS.md`
+  (medições reais em produção) · `docs/PILOTO-1.md` · `docs/TESTES.md` ·
+  `docs/ROTEIRO-CAMERAS.md`.
+- `docs/ARCHITECTURE.md`, `docs/ROADMAP.md` e a parte antiga de `docs/GAUNTLET.md` são
+  **histórico do planejamento original** — cada um tem um aviso no topo explicando o quê
+  mudou e apontando para o documento atual.
 
 ## 10. Ordem de Trabalho para o Agente
 

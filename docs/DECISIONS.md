@@ -56,7 +56,8 @@ Formato para copiar:
 - **Consequências:** cor/exposição saem como da câmera. Edição por IA fica no backlog como diferencial futuro.
 
 ## ADR-0009 — Reconhecimento facial: self-hosted (YuNet+SFace) para o MVP
-- **Status:** ACCEPTED (para o MVP) — revisar se aparecer gargalo de precisão em fotos reais
+- **Status:** SUPERSEDED por ADR-0015 (motor trocado para buffalo_s/SCRFD+ArcFace)
+- **Status (histórico):** ACCEPTED (para o MVP) — revisar se aparecer gargalo de precisão em fotos reais
 - **Data:** 2026-08-24
 - **Decisão:** MVP usa **facial self-hosted** — YuNet (detecção) + SFace (embedding), ONNX/OpenCV, CPU. Sem API gerenciada.
 - **Contexto:** EXP-05 mediu **97,2%** no LFW, **~6 ms/rosto** em CPU, **~R$0** de custo, dados sob nosso controle. O critério do dono foi "que fique de uma forma confiável" — self-hosted entrega isso sem enviar rostos a terceiro (melhor p/ LGPD, ADR-0005) e sem custo por chamada.
@@ -65,7 +66,8 @@ Formato para copiar:
 - **Consequências:** exige hospedar o modelo (37MB) num worker Python. Precisão em **fotos reais de evento** (ângulo/blur/multi-face) ainda é UNKNOWN → EXP futuro com fotos reais pode forçar reavaliação. Comparação com gerenciado fica arquivada como opção de contingência.
 
 ## ADR-0010 — Stack do MVP: Netlify + Supabase + Cloudflare R2 + FastAPI
-- **Status:** ACCEPTED
+- **Status:** SUPERSEDED por ADR-0014 (infra) e ADR-0016 (app: sem Supabase/R2, monólito FastAPI+SQLite)
+- **Status (histórico):** ACCEPTED
 - **Data:** 2026-08-24
 - **Decisão:** o MVP roda em quatro serviços, todos com free tier:
   - **Netlify (free)** — hospeda o front-end estático (painel da fotógrafa + app do convidado / PWA).
@@ -118,11 +120,14 @@ Formato para copiar:
 - **Justificativa:** marca distintiva e protegível; separa **marca** (Fóton) de **categoria** (fotos na hora).
 - **Consequências:** antes de investir pesado, **clearance obrigatório**: busca INPI + registrar domínio (ex.: foton.com.br / getfoton) + @ no Instagram. Propagar o nome nos docs/README (ainda citam "Foto na Hora"). Watermark e UI já atualizados.
 
-## Decisões resolvidas (2026-08-24)
-Provider de nuvem, linguagem do backend, storage/CDN e feed ao vivo saíram de "adiadas" e viraram ADR-0010/0011: **Supabase + Netlify + Cloudflare R2 + FastAPI (Python)**, feed via **Supabase Realtime**. Match = brute-force cosine (EXP-06), sem índice dedicado nessa escala.
+## Decisões resolvidas (2026-08-24) — histórico, ver ADR-0015/0016 para o que roda hoje
+Provider de nuvem, linguagem do backend, storage/CDN e feed ao vivo saíram de "adiadas" e viraram ADR-0010/0011: **Supabase + Netlify + Cloudflare R2 + FastAPI (Python)**, feed via **Supabase Realtime**. Match = brute-force cosine (EXP-06), sem índice dedicado nessa escala. **Esse desenho foi abandonado na prática** — produção roda o monólito da ADR-0016.
 
-## Ainda adiado (aguarda dado)
-Preço final (aguarda EXP-10, custo por evento real) · gateway de pagamento (pós-validação) · edge/offline, NFC, edição por IA (pós-MVP).
+## Estado real de hoje (2026-08-28) — ver `BLUEPRINT.md` para o quadro completo
+Motor facial: **buffalo_s/SCRFD+ArcFace** (ADR-0015). Stack: **FastAPI + SQLite, um processo só** (ADR-0016). Infra: **Oracle VM própria** (ADR-0014). Domínio: **duckdns + foton.app.br em paralelo** (ADR-0017, em propagação). Modelo comercial: **créditos, pagamento único** (ADR-0012, segue válido — mas ver `BLUEPRINT.md` §10, a própria cliente propôs recorrência, decisão do dono em aberto).
+
+## Ainda adiado (aguarda dado ou decisão)
+Preço final (aguarda EXP-10, custo por evento real) · gateway de pagamento (pós-validação) · modelo de recorrência vs. pagamento único (proposta da cliente, ver BLUEPRINT §10) · edge/offline, NFC, edição por IA, estilos artísticos de renderização (pós-piloto — ver `docs/PILOTO-1.md`).
 
 ## ADR-0014 — Infraestrutura própria: Oracle Cloud Always Free (São Paulo)
 - **Status:** ACCEPTED — em uso
@@ -136,3 +141,62 @@ Preço final (aguarda EXP-10, custo por evento real) · gateway de pagamento (p�
   2. **Firewall em dois níveis** — Security List (nuvem) **e** iptables (dentro da VM). Abrir só um não funciona; o instalador faz os dois.
   3. **Cloud Shell em modo FIPS** recusa chaves ed25519 → usar **RSA**.
 - **Consequências:** 1 GB de RAM é apertado para o ArcFace (~380 MB medidos) — daí o swap; se faltar fôlego, migrar para ARM quando houver estoque (o script já tenta ARM primeiro). **Falta HTTPS** (obrigatório para a câmera do convidado ligar) — próximo passo, com domínio.
+- **Atualização (2026-08-28):** HTTPS resolvido (Let's Encrypt, `infra/https.sh`) no dia seguinte a este ADR. O gargalo de hoje não é RAM nem HTTPS — é **reputação do domínio** `duckdns.org` (Chrome mostra "Site perigoso"); ver ADR-0017.
+
+## ADR-0015 — Reconhecimento facial em produção: InsightFace buffalo_s (SCRFD+ArcFace)
+- **Status:** ACCEPTED — em uso em produção
+- **Data:** 2026-08-24 (nunca documentado formalmente até agora — código e ADR haviam divergido)
+- **Decisão:** o motor que roda em produção **não é** o YuNet+SFace da ADR-0009. É o
+  **InsightFace `buffalo_s`** (SCRFD para detecção + ArcFace para embedding), ONNX/CPU,
+  `det_size=640`, limiar de cosseno **0,25**.
+- **Contexto:** o pacote `buffalo_s` do InsightFace embute os dois modelos com uma API
+  pronta (`FaceAnalysis`) e pesa pouco (~16 MB), cabendo versionado no repo (ver `.gitignore`,
+  que abre exceção só para ele). `det_size=320` deixava rosto de 90px **não detectado**
+  (0/6 numa bateria de teste) — `det_size=640` corrigiu.
+- **Justificativa:** 99,5% no LFW (medido), mesma família usada por plataformas líderes,
+  sem custo por chamada, sem enviar rosto a terceiro (LGPD, ADR-0005).
+- **Consequências:** o número de precisão da ADR-0009 (97,2%, YuNet+SFace) está **obsoleto** —
+  não descreve o motor que roda hoje. `det_size=640` custa mais CPU que 320; mitigado por
+  `Image.draft()` no pré-processamento (ver `docs/BENCHMARKS.md`, 2026-08-28).
+
+## ADR-0016 — Simplificação do stack: um único processo (FastAPI + SQLite + HTML estático)
+- **Status:** ACCEPTED — em uso em produção
+- **Data:** 2026-08-24 a 2026-08-28 (retroativo — nunca documentado formalmente)
+- **Decisão:** abandonado o desenho de 4 serviços da ADR-0010. Produção roda **um único
+  processo Python** (`app/test_rig/rig.py`) que serve API **e** front-end (`app/web/index.html`
+  via `StaticFiles`), com **SQLite** (`store.py`) no lugar de Supabase/Postgres, autenticação
+  própria (PBKDF2 + token de sessão) no lugar de Supabase Auth, e **sem** Cloudflare R2 — as
+  fotos ficam como BLOB no próprio SQLite.
+- **Contexto:** a ADR-0014 já havia trocado a infra (Render→Oracle VM) por causa do disco
+  efêmero. Na prática, ao construir o piloto real, o Supabase/R2/Netlify-para-o-app nunca
+  chegaram a ser usados — o caminho mais simples (que cumpria "simplicidade é requisito",
+  CLAUDE.md §4.3) foi manter tudo num processo só, com o Netlify sobrando só como **demo
+  estática antiga** (não serve o app de produção).
+- **Alternativas:** implementar a ADR-0010 como planejada (mais peças para operar sozinho,
+  sem ganho medido) · manter o monólito (menos peças, mais fácil de depurar e fazer deploy
+  com `git push`).
+- **Justificativa:** o dono opera sozinho; menos serviços = menos coisa para quebrar. Cumpre
+  o SLA medido (ver BENCHMARKS) sem a complexidade extra.
+- **Consequências:** fotos como BLOB no SQLite limita escala (mitigação futura: R2, ver
+  BLUEPRINT §9 "Depois") — hoje o disco tem folga (40,5 GB livres, medido). Sem Realtime do
+  Supabase, o feed do convidado é **polling** (`/feed`, `/stats`), não push — funciona no
+  volume medido, mas não escala para milhares de convidados simultâneos sem revisão.
+
+## ADR-0017 — Domínio próprio para sair da reputação ruim do duckdns.org
+- **Status:** ACCEPTED — em execução (DNS em propagação)
+- **Data:** 2026-08-28
+- **Decisão:** o app passa a responder também em `app.foton.app.br` (domínio próprio,
+  registrado no Registro.br), mantendo `getfoton.duckdns.org` funcionando em paralelo.
+- **Contexto:** o Chrome mostra **"Site perigoso"** ao abrir `getfoton.duckdns.org` no
+  celular do convidado. Não é o certificado (TLS 1.3 válido) — é reputação de domínio:
+  `duckdns.org` é muito usado em golpe, e o classificador do Safe Browsing pesa isso mais
+  a página pedir câmera + nome + telefone. Isso mataria o piloto sozinho: ninguém escaneia
+  um QR que abre alerta vermelho.
+- **Alternativas:** pedir para o convidado ignorar o aviso (inaceitável — parece golpe de
+  verdade) · trocar de provedor de DNS dinâmico (mesmo problema de reputação, outro domínio
+  genérico) · **domínio próprio** (resolve na raiz).
+- **Justificativa:** é a única correção real; qualquer outra é gambiarra.
+- **Consequências:** certificado precisa cobrir os dois domínios (`infra/dominio.sh`,
+  `--expand`); o painel mostra `FOTON_HOST` correto para a configuração de FTP da câmera;
+  o duckdns **não é desligado** — QR já impresso, PWA instalado e o monitor externo não
+  podem quebrar na troca.

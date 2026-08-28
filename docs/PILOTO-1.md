@@ -29,13 +29,13 @@ Falhou qualquer um → **no-go**, conserta e repete. Sem negociar critério depo
 
 ## Bloqueadores (têm que cair ANTES do piloto)
 
-| | Bloqueador | Estado |
+| | Bloqueador | Estado (2026-08-28) |
 |---|---|---|
-| **B1** | **Chrome mostra "Site perigoso"** no celular do convidado. O certificado está válido (TLS 1.3) — é reputação do domínio `duckdns.org`, que é muito usado em golpe. **Mata o piloto sozinho:** ninguém escaneia um QR que abre um alerta vermelho. Correção: **domínio próprio** + certificado. | ABERTO — decisão do dono (comprar domínio) |
-| **B2** | **Qual câmera realmente envia sozinha.** A premissa "R8 tem FTP nativo" **está errada** (ver `DECISIONS.md`). Confirmar os modelos exatos no encontro. | ABERTO — encontro com a fotógrafa |
-| **B3** | **Rajada**: 4,8 s por foto quando chegam juntas, 1 vCPU. 20 fotos = ~1,5 min. Mitigação mínima: reduzir a foto no celular antes de subir. | ABERTO |
-| **B4** | **Disco**: fotos são BLOB no SQLite × 7 backups completos. Um evento de 800 fotos pode consumir ~8 GB. Medir o disco livre e limpar antes. | ABERTO — medir |
-| **B5** | Monitor externo **nunca executou** (workflow ativo, 0 execuções) e não tem a chave do WhatsApp. Se cair no evento, ninguém avisa. | ABERTO |
+| **B1** | **Chrome mostra "Site perigoso"** no celular do convidado (reputação do domínio `duckdns.org`, não é o certificado). Correção: **domínio próprio**. | **EM ANDAMENTO** — `foton.app.br` registrado no Registro.br; DNS em propagação; script `infra/dominio.sh` pronto e commitado (mantém o duckdns funcionando em paralelo). Falta: propagação terminar + rodar o script no Cloud Shell. |
+| **B2** | **Qual câmera realmente envia sozinha.** A premissa "R8 tem FTP nativo" **estava errada** — confirmado: a R8 não tem FTP; só corpos superiores (R6/R6 II/R5/R3) têm. | **ENTENDIDO, não testado com hardware real.** O caminho FTP foi validado ponta a ponta com cliente de script (login, envio, foto entrando sozinha) — falta confirmar com uma câmera Canon física qual modelo ela realmente tem (`docs/ROTEIRO-CAMERAS.md`). |
+| **B3** | **Rajada**: 1 vCPU, foto de câmera grande domina o tempo. | **MITIGADO, não eliminado.** Reduzir a foto no celular antes de subir (2,9× mais rápido) + `Image.draft()` no servidor (2,7× mais rápido). Medido: 1 foto isolada agora cabe folgado no SLA de 10s; rajada de 20 ainda não (~46s extrapolado, era ~125s). |
+| **B4** | **Disco**: fotos são BLOB no SQLite × 7 backups completos. | **MEDIDO, rebaixado.** 40,5 GB livres de 48,3 GB, banco de 3,3 MB — folga real, não é risco imediato. `/admin/saude` expõe o número e alerta se passar de 80%. |
+| **B5** | Monitor externo **nunca executou** e não tinha a chave do WhatsApp. | **PARCIAL.** Secrets (`WA_PHONE`, `WA_APIKEY`) configurados no GitHub; CallMeBot testado 2x sem confirmação de entrega (chave pode precisar reativação). A aba Actions **não aparece** no repositório do dono — sinal de que Actions está desabilitado nas configurações; sem isso o workflow nunca dispara e não há alerta de queda algum hoje. **Ação do dono:** Settings → Actions → General → habilitar. |
 
 ## Caminho da foto — decidir no encontro
 
@@ -58,8 +58,11 @@ Falhou qualquer um → **no-go**, conserta e repete. Sem negociar critério depo
 `docs/BENCHMARKS.md`: disparadas, recebidas, perdidas, P50/P95 do disparo→celular,
 entregas corretas, entregas erradas, convidados que não foram reconhecidos.
 
-## Decisões do dono, em aberto
+## Decisões do dono
 
-1. **Domínio próprio** (B1) — qual nome, e comprar.
-2. **Preço do piloto** — a proposta é que exista dinheiro real, mesmo simbólico.
-3. **Proposta de sociedade da fotógrafa** — ver `BLUEPRINT.md` §10.
+1. ~~Domínio próprio (B1)~~ — **decidido**: `foton.app.br`, registrado 2026-08-28. Em propagação.
+2. **Preço do piloto** — ainda em aberto; a proposta é que exista dinheiro real, mesmo simbólico.
+3. **Proposta de sociedade da fotógrafa** — ela propôs, por conta própria: 50% do que
+   vender com o programa + modelo de aluguel (recorrência) em vez de venda única. Isso
+   **contradiz o ADR-0012** (pagamento único). Ver `BLUEPRINT.md` §10 e `docs/DECISIONS.md`.
+   Ainda sem decisão — não fechar verbalmente antes do piloto.

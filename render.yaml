@@ -1,5 +1,9 @@
-# Fóton — blueprint do TEST-RIG na Render (teste ao vivo). NÃO é o produto (ADR-0010).
-# Deploy: conectar este repo (GitHub) na Render → ela lê este arquivo.
+# Fóton — Render NÃO é mais usado em produção (ADR-0014/0016, docs/DECISIONS.md).
+# A produção roda numa VM própria (Oracle Cloud) — ver BLUEPRINT.md §2/§5.
+# Este arquivo só importa se algum serviço "foton-rig" ainda estiver conectado a este
+# repo na Render — VERIFICAR e, se existir e não tiver uso, desligar (evita um segundo
+# endpoint desatualizado respondendo pelo nome "Fóton").
+# Deploy real: git push -> a VM se atualiza sozinha em ~2 min.
 services:
   - type: web
     name: foton-rig

@@ -6,7 +6,28 @@
 
 ---
 
-## 0. Status do S0 — PARCIAL / PAUSADO (2026-08-23)
+## 0. Status — EM PRODUÇÃO (atualizado 2026-08-28)
+
+> ⚠️ A seção original desta parte (S0 "parcial/pausado", de 2026-08-23) descrevia um
+> momento pré-produto. Ela fica logo abaixo, sem alterar, como registro histórico —
+> os números medidos ali (EXP-04/05/06) continuam corretos como medições **do motor
+> antigo (YuNet+SFace)**, hoje substituído por buffalo_s/SCRFD+ArcFace (ADR-0015).
+
+**Estado real de hoje:**
+- App em produção, com cliente real (Patrícia). Ver `BLUEPRINT.md`.
+- **Caminho celular→app medido em produção** (não mais proxy sintético): 1 foto de câmera
+  isolada cabe no SLA de 10s; rajada grande ainda não (ver entradas de 2026-08-28 abaixo).
+- **Caminho FTP direto validado ponta a ponta** com cliente de script real (login,
+  envio, foto entrando sozinha no evento) — **ainda não testado com uma câmera Canon
+  física**. É o próximo passo (`docs/ROTEIRO-CAMERAS.md`).
+- O "risco principal" de 2026-08-23 (upload de JPEG grande domina o orçamento) **se
+  confirmou** e já tem mitigação medida: reduzir a foto no celular antes de subir
+  (2,9× mais rápido) + `Image.draft()` no servidor (2,7× mais rápido) — ver entradas
+  de 2026-08-28.
+
+---
+
+## 0-histórico. Status do S0 — como estava em 2026-08-23 (não reflete hoje)
 
 **Provado sem câmera (compute, CPU-only, LAB Ryzen 7800X3D):**
 - ✅ EXP-04 processing (watermark+otimização): P95 **533 ms**.

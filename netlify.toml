@@ -1,4 +1,7 @@
 # Fóton — deploy estático da demo (front-end puro). Publica só app/web.
+# Status (2026-08-28): é uma demo antiga, não a produção (a produção fica na VM
+# própria — ver BLUEPRINT.md §2). O plano é este domínio Netlify virar o SITE DE MARCA
+# (vitrine), separado do app — ver BLUEPRINT.md §9.
 [build]
   publish = "app/web"
   command = ""

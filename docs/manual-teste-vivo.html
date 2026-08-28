@@ -69,9 +69,9 @@ kbd{font-family:var(--sans);background:var(--surface-2);border:1px solid var(--l
   <h1>Fóton — Roteiro do Teste ao Vivo</h1>
   <p class="sub">Uma foto real da câmera → tratada na nuvem → aparece no celular do convidado por reconhecimento facial. ~5 minutos.</p>
 
-  <a class="hero-link" href="https://foton-rig.onrender.com" target="_blank" rel="noopener">
+  <a class="hero-link" href="https://getfoton.duckdns.org" target="_blank" rel="noopener">
     <div class="l">Abra no celular</div>
-    <div class="u">foton-rig.onrender.com</div>
+    <div class="u">getfoton.duckdns.org</div>
     <div class="who">Mesmo endereço para os dois: quem fotografa entra em <b>Fotógrafo</b>, quem recebe entra em <b>Convidado</b>.</div>
   </a>
   <div class="legend">
@@ -83,7 +83,8 @@ kbd{font-family:var(--sans);background:var(--surface-2);border:1px solid var(--l
   <div class="box warn">
     <div class="tag">Faça antes de sentar com ela</div>
     <ol class="steps">
-      <li><b>Acordar o servidor.</b> Abra <kbd>foton-rig.onrender.com</kbd> e entre como <b>Fotógrafo</b>. No topo do painel deve aparecer <b>“no ar”</b> em verde. Na primeira vez pode levar ~1 minuto.</li>
+      <li><b>Conferir que o servidor está no ar.</b> Abra <kbd>getfoton.duckdns.org</kbd> e entre como <b>Fotógrafo</b>. No topo do painel deve aparecer <b>“no ar”</b> em verde — é imediato, o servidor não dorme mais (VM própria).</li>
+      <li><b>⚠ Aviso do navegador.</b> Em alguns celulares o Chrome pode mostrar "Site perigoso" ao abrir esse endereço — é reputação do domínio, não um problema real. Se `foton.app.br` já estiver no ar, use esse endereço em vez do duckdns.</li>
       <li><b>Ensaiar a câmera → celular</b> <span class="who-chip who-p">Patrícia</span>. Instale o <b>Canon Camera Connect</b> (grátis) e transfira 1 foto da câmera para o celular. <b>Essa é a única parte que ainda não testamos.</b></li>
       <li><b>Combinar a foto certa.</b> O reconhecimento precisa de <b>rosto nítido, de frente e próximo</b>. A primeira foto do teste deve ser um <b>retrato</b>, não uma foto de longe.</li>
     </ol>
@@ -125,7 +126,7 @@ kbd{font-family:var(--sans);background:var(--surface-2);border:1px solid var(--l
   <h2>Se algo travar</h2>
   <div class="box">
     <table>
-      <tr><td class="q">Demora muito / não carrega</td><td>Servidor dormiu. Abra o site e espere ~1 min até o status ficar <b>“no ar”</b> verde.</td></tr>
+      <tr><td class="q">Demora muito / não carrega</td><td>Confira a internet do celular. O servidor não dorme mais — se o status não ficar <b>“no ar”</b> verde, é queda real, não sono.</td></tr>
       <tr><td class="q">“Não achei seu rosto”</td><td>Rosto de lado, escuro ou pequeno. Refaça <b>de frente, com luz, rosto grande no quadro</b>.</td></tr>
       <tr><td class="q">Foto marcada “sem rosto”</td><td>Normal em foto de longe/ângulo. Use um retrato mais fechado — vale para qualquer sistema facial.</td></tr>
       <tr><td class="q">A foto não casou</td><td>Confira se a selfie e a foto são da mesma pessoa, ambas nítidas e de frente.</td></tr>
@@ -136,7 +137,7 @@ kbd{font-family:var(--sans);background:var(--surface-2);border:1px solid var(--l
 
   <div class="box ok">
     <div class="tag">O que dizer sobre o que é isto</div>
-    <p class="muted">É um <b>protótipo funcional</b>: o reconhecimento, o tratamento e a entrega são reais. O que falta para virar produto é a foto sair da câmera <b>sozinha</b> (hoje ela passa pelo celular) e a operação em escala de festa. Ofereça a ela ser a <b>primeira cliente-piloto</b>.</p>
+    <p class="muted">É o <b>produto real</b>, já em produção — a Patrícia já tem conta e eventos criados. Existe também o caminho <b>"Direto"</b> (FTP): em câmeras com transferência FTP no menu (não é o caso da R8; é R6/R6 II/R5/R3), a foto sai da câmera <b>sozinha</b>, sem passar pelo celular — configurável no painel dela em "Conectar câmera". O que falta agora é o <b>piloto com evento real</b> — ver `docs/PILOTO-1.md`.</p>
   </div>
 
   <div class="foot">

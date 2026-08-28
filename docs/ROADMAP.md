@@ -1,5 +1,12 @@
 # ROADMAP.md — Foto na Hora (SaaS em nuvem)
 
+> ⚠️ **SUPERSEDED — o plano de sprints S0→S8 abaixo não foi o caminho seguido.**
+> Na prática, depois do S0 o dono decidiu construir a plataforma inteira de uma vez
+> (não sprint a sprint) e validar com uma cliente real. **O que falta de verdade hoje
+> está em `BLUEPRINT.md` §9 ("O que vem") e em `docs/PILOTO-1.md`** (critério de
+> aceite do próximo marco: um piloto real com fotógrafa, câmera e convidados). Este
+> arquivo fica como registro do plano original.
+>
 > Sprints. **S0 é exclusivamente viabilidade técnica.** Nenhum produto é construído antes de o S0 provar, com números, o caminho para **P95 < 10s** (sobre hotspot real), a escolha de facial e o custo por evento.
 > Cada sprint só fecha pelo Gauntlet (`docs/GAUNTLET.md`): funcional + performance + confiabilidade.
 

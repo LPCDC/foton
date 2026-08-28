@@ -1,5 +1,10 @@
 # GAUNTLET.md — Protocolo de Qualidade
 
+> O ciclo abaixo (medir antes/depois, registrar em `docs/BENCHMARKS.md`, só aceitar com
+> número) continua sendo seguido na prática, mesmo fora da estrutura de sprints S0-S8
+> original (ver aviso em `docs/ROADMAP.md`). "Gate S0" no fim deste arquivo é histórico —
+> o projeto já está em produção. O método continua valendo.
+>
 > Uma implementação **não** é concluída só porque funciona funcionalmente.
 > Ela precisa satisfazer os critérios de **performance** e **confiabilidade** definidos para o sprint.
 

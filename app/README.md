@@ -1,96 +1,50 @@
-# Foto na Hora — Plataforma (MVP)
+# Fóton — o app
 
-O que a gente vende, em uma frase: **um serviço web** (como assinar um software, mas em
-**pagamento único** — ADR-0012). A fotógrafa faz **login e senha**, cria o evento, mostra o QR
-e fotografa. O convidado escaneia, tira 1 selfie e recebe as fotos dele **na hora**. Sem
-instalar nada, sem hardware no evento.
+> Este arquivo descreve só o código desta pasta. O que é o produto, onde roda,
+> como fazer deploy e o que falta: **`BLUEPRINT.md` na raiz do repo é a fonte
+> de verdade** — leia-o primeiro em qualquer sessão nova.
 
-> **Não vendemos** um programa instalado no PC/câmera dela, nem um equipamento. Vendemos
-> **acesso ao pipeline na nuvem**. O equipamento dela vira irrelevante (ADR-0006).
-
----
-
-## Estrutura
+## Estrutura real (2026-08-28)
 
 ```
-app/
-  web/index.html   ← front-end (Netlify). Painel do fotógrafo + app do convidado. RODA HOJE em modo demo.
-  db/schema.sql    ← banco (Supabase / PostgreSQL)
-  api/             ← worker do pipeline (FastAPI): watermark + facial + match
-    main.py        ← endpoints /ingest e /guest/selfie
-    pipeline.py    ← reusa EXP-04 (watermark) + EXP-05 (YuNet/SFace) + EXP-06 (match)
-    requirements.txt
+app/test_rig/
+  rig.py         FastAPI: TODAS as rotas — contas, eventos, pipeline, admin, LGPD, FTP.
+  store.py       SQLite: contas, eventos, fotos, rostos, convidados, contatos, config.
+  ftp_camera.py  servidor FTP (a câmera envia direto, sem passar pelo celular).
+  models/buffalo_s/  modelo ONNX do InsightFace, versionado no repo (não baixa em runtime).
+app/web/
+  index.html     TODO o front — uma página só, sem framework. Painel do fotógrafo
+                 + app do convidado. É o mesmo arquivo que o rig.py serve em produção
+                 (StaticFiles) e que o Netlify serve como demo.
+  sw.js          service worker (só cacheia estáticos — nunca API, ver BLUEPRINT §7).
+  assets/        fotos de demonstração.
 ```
 
-## Ver a demo AGORA (sem montar nada)
+Não existe `app/api/`, `app/db/`, Supabase, nem Render em produção. Esse desenho
+foi abandonado — ver ADR-0015/ADR-0016 em `docs/DECISIONS.md`. O que roda hoje é
+**um único processo Python** (rig.py) numa VM própria, servindo API e front juntos.
 
-`app/web/index.html` é autocontido. Abra no navegador:
+## Rodar localmente
 
 ```bash
-# opção simples (a câmera/selfie exige localhost ou https):
-cd app/web && python -m http.server 8080
-# abra http://localhost:8080  → celular na mesma rede: http://SEU_IP:8080
+cd app/test_rig
+pip install -r requirements.txt
+uvicorn rig:app --reload --app-dir .
+# abra http://localhost:8000
 ```
 
-Fluxo da demo: **Sou o fotógrafo** → login (já preenchido) → **Criar evento** → **Simular
-disparo** (feed enche) → **Ver como o convidado vê** → selfie → galeria enchendo ao vivo.
-Nenhuma foto real sai do aparelho. É a peça pra mostrar pra Patrícia.
+Sem internet/câmera real: qualquer JPEG serve para testar `/ingest` e `/selfie`.
+Testes automatizados (não exigem o modelo facial carregado): `python ../../tests/test_autorizacao.py`
+e `python ../../tests/test_ftp_camera.py`, a partir da raiz do repo.
 
----
+## Como operar um evento de verdade
 
-## Arquitetura de produção (ADR-0010/0011) — 4 serviços, todos com free tier
+Ver `BLUEPRINT.md` §2 (onde está) e §3 (pipeline). Resumo: a fotógrafa cria conta,
+cria evento, mostra o QR, fotografa (celular ou FTP direto — `docs/ROTEIRO-CAMERAS.md`).
+Créditos são atribuídos manualmente pelo admin (`/admin/creditos`) — não existe
+gateway de pagamento ainda (ADR-0012).
 
-| Serviço | Papel | Free tier (2026) |
-|---|---|---|
-| **Netlify** | hospeda `app/web` (front estático) | 100GB banda/mês |
-| **Supabase** | Auth (login/senha), PostgreSQL, Realtime (feed ao vivo) | 500MB DB · 50k usuários · 200 conexões |
-| **Cloudflare R2** | fotos + CDN (**egress zero** = custo por evento ~R$0) | 10GB storage · egress $0 |
-| **Render** (ou Railway) | worker FastAPI (`app/api`) — pipeline pesado | web free 750h/mês |
+## Deploy
 
-O front NÃO fala com o worker direto o tempo todo: a câmera manda a foto pro worker
-(`/ingest`), o worker trata+reconhece, grava no R2+Supabase, e o **Supabase Realtime** empurra
-pro celular do convidado. Cada peça é trocável (contratos explícitos, §4 CLAUDE.md).
-
----
-
-## Como operar um evento (runbook)
-
-1. **Conta da fotógrafa** — criada no Supabase Auth (login/senha). O operador atribui os
-   créditos comprados: `update photographer set credits=20, credits_total=20 where id=...`
-   (no MVP o crédito é manual; gateway de pagamento fica pós-validação — ADR-0012).
-2. **Antes do evento** — se o worker do Render estiver "dormindo" (free tier dorme após 15min),
-   acordar com um ping (`GET /health`) uns minutos antes. Com clientes pagando, subir o worker
-   pro plano always-on (~US$7/mês — o único custo fixo relevante).
-3. **No evento** — fotógrafa: login → Criar evento → mostra o QR. Câmera configurada 1x para
-   enviar por FTP/Wi-Fi ao endpoint `/ingest` (mapeado no S1, quando as câmeras chegarem).
-4. **Convidado** — escaneia o QR (`?evento=CODE`) → consente → selfie → feed pessoal ao vivo.
-5. **Fim** — encerrar o evento. Selfies/embeddings dos convidados são descartados (ADR-0005).
-
----
-
-## Deploy (quando for pra valer)
-
-```
-1. Supabase: criar projeto → rodar app/db/schema.sql no SQL editor →
-   Database > Replication: habilitar realtime em `photo` e `match`.
-2. Cloudflare R2: criar bucket `fotonahora` → domínio público de CDN.
-3. Render: novo Web Service apontando app/api (uvicorn main:app) → env:
-   R2_PUBLIC_BASE, R2_KEY/SECRET, SUPABASE_URL, SUPABASE_SERVICE_KEY.
-   Copiar os modelos ONNX de experiments/exp05_facial/models/ para app/api/models/.
-4. Netlify: publicar app/web → em produção, criar app/web/config.js com as chaves
-   PÚBLICAS do Supabase (anon key) e trocar DEMO=false.
-```
-
-> **Segredos nunca no código nem no git** (§7 CLAUDE.md). Chaves de serviço só como env no
-> Render/Netlify. Os modelos ONNX e qualquer credencial já estão no `.gitignore`.
-
-## Custo (economics — ver docs/BENCHMARKS.md §6)
-
-Marginal por evento **~R$0,05–0,30** (egress zero no R2 + facial self-hosted em CPU). Único
-custo relevante é o **fixo** de hospedagem (~US$7/mês do worker quando houver clientes). É isso
-que faz o **pagamento único** fechar: um pacote de 20 eventos custa <R$6 de infra marginal.
-
-## Pendências do S0 (não bloqueiam esta camada)
-
-Upload câmera→nuvem e P95<10s reais (EXP-01/02/03/08) seguem aguardando as câmeras R8/T6s +
-hotspot. O `/ingest` já é o ponto onde a câmera vai plugar. Ver `docs/ROADMAP.md`.
+`git push` — a VM tem auto-update (ver `BLUEPRINT.md` §5). Não precisa dos passos
+de Supabase/R2/Render que apareciam aqui antes; esse desenho não é o que roda.

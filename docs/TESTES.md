@@ -18,14 +18,21 @@ ali ele é o que está sendo testado. Nas camadas acima ele é dublado, porque p
 
 ## Camadas
 
-### 1. Contrato HTTP — `tests/test_autorizacao.py` ✅ existe
-Sobe o FastAPI real + SQLite real em arquivo temporário; dubla `cv2` e `insightface`.
-Cobre: portão anônimo (5 rotas), portão de outra conta (4 rotas), caminho feliz da
-fotógrafa, caminho do convidado, evento nasce com dono, encerrar/apagar.
-**21 checagens, 21 passando.** Roda em ~3 s, sem rede.
+### 1. Contrato HTTP — `tests/test_autorizacao.py` e `tests/test_ftp_camera.py` ✅ existem
+`test_autorizacao.py` sobe o FastAPI real + SQLite real em arquivo temporário; dubla
+`cv2` e `insightface`. Cobre: portão anônimo, portão de outra conta, caminho feliz da
+fotógrafa, caminho do convidado, evento nasce com dono, encerrar/apagar, faixa do
+evento ("está chegando?"), freio de login, torre de controle do admin, encerrar conta.
+**46 checagens, 46 passando.**
+
+`test_ftp_camera.py` testa o servidor FTP isoladamente (sem subir o FastAPI): fila de
+pendentes, descarte por idade, login conferido no banco na hora, semente não-derivável,
+indicador "câmera conectada" sem precisar de foto de teste. **23 checagens, 23 passando.**
+Roda em poucos segundos, sem rede.
 
 ```bash
 python tests/test_autorizacao.py
+python tests/test_ftp_camera.py
 ```
 
 ### 2. Fumaça em produção — a fazer (`tests/fumaca.sh`)
@@ -49,26 +56,41 @@ perderam, o que a fotógrafa precisou digitar.
 
 | Área | Tipo | Estado | Alvo |
 |---|---|---|---|
-| Autorização das rotas | contrato | ✅ 21/21 | toda rota destrutiva com teste de 401 e 403 |
-| Detecção + embedding | unidade | ❌ falta | 4 casos de regressão acima |
+| Autorização das rotas | contrato | ✅ 46/46 | toda rota destrutiva com teste de 401 e 403 |
+| FTP da câmera (pendentes, login, semente) | contrato | ✅ 23/23 | ver `tests/test_ftp_camera.py` |
+| Detecção + embedding | unidade | ❌ falta | 4 casos de regressão abaixo |
 | Upload em lote / retry | contrato | ❌ falta | rede cai no meio: nenhuma foto perdida |
-| FTP da câmera | integração | ❌ falta | foto antes do evento abrir NÃO some |
-| LGPD (exclusão, expiração) | contrato | ❌ falta | excluir convidado apaga vetor, match e contato |
-| Disco / rajada | carga | ⚠️ parcial | ver BENCHMARKS.md; falta com foto de 13 MB |
-| Front (galeria, lightbox) | manual | manual | fica manual por ora — 1 página, sem framework |
+| LGPD (exclusão, expiração automática) | contrato | ⚠️ parcial | exclusão manual coberta; expiração por tempo (`store.expirar`) sem teste |
+| Disco / rajada | carga | ✅ medido em produção | ver BENCHMARKS.md 2026-08-28: 1 foto e rajada de 4, com e sem redução no celular |
+| Câmera Canon física | ensaio real | ❌ nunca feito | `docs/ROTEIRO-CAMERAS.md` — bloqueador do piloto |
+| Front (galeria, lightbox, seleção múltipla) | manual | manual | fica manual por ora — 1 página, sem framework |
 
 **Não testar:** qrcode, PIL, FastAPI (código de terceiros), scripts de infra de uso único.
 
-## Furos conhecidos que ainda não têm teste
+## Furos corrigidos (2026-08-28) — não repetir
 
-1. **FTP sem evento ao vivo engole a foto** — `ftp_camera.py:45`. Sem teste e sem
-   correção. É perda silenciosa de foto.
-2. **Usuário de FTP só nasce no boot** — `ftp_camera.py:76`. Conta nova não loga na
-   câmera até reiniciar o serviço.
-3. **Senha do FTP derivável** — `FOTON_FTP_SEED` não é definida em produção.
-4. **Disco** — fotos são BLOB no SQLite e o backup guarda 7 cópias do banco inteiro.
-   Falta um teste que alerte antes de encher.
-5. **Sem rate limit no `/login`**; sessão sem expiração.
+1. ~~FTP sem evento ao vivo engolia a foto~~ — corrigido: fila de pendentes, drena ao
+   abrir o evento. `tests/test_ftp_camera.py`.
+2. ~~Usuário de FTP só nascia no boot~~ — corrigido: login conferido no banco na hora.
+3. ~~Senha do FTP derivável do repo público~~ — corrigido: semente gerada e guardada
+   no banco (`store.segredo`).
+4. ~~Rotas destrutivas sem dono~~ (`/event/delete`, `/event/close`, `/photo/delete`,
+   `/ingest`, `/contatos`) — corrigido: `_pode()` exige sessão + ser dono do evento.
+5. ~~Sem rate limit no `/login`~~ — corrigido: 10 falhas/10min por IP → 429.
+6. ~~Não existia rota para apagar conta~~ — corrigido: `/conta/excluir` e
+   `/admin/conta/excluir`.
+
+## Furos conhecidos que ainda não têm teste nem correção
+
+1. **Disco** — fotos são BLOB no SQLite e o backup guarda 7 cópias do banco inteiro.
+   Medido em 2026-08-28: 40,5 GB livres, folgado hoje — mas ainda falta um teste que
+   **alerte** antes de encher (`/admin/saude` já expõe o número; falta o teste).
+2. **Sessão de login nunca expira** (tabela `session` sem TTL).
+3. **`GET /stats` e `GET /photos` ainda criam evento sozinhos** quando o código não
+   existe — é a fábrica de "eventos órfãos" (2 encontrados e apagados em 2026-08-28).
+   Conserto simples (404 em vez de criar), adiado por mexer no caminho do convidado.
+4. **Câmera Canon física nunca testada** — todo o caminho FTP foi validado com cliente
+   de script; falta o ensaio real (`docs/ROTEIRO-CAMERAS.md`).
 
 ## Medições reais (2026-08-28, produção)
 

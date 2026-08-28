@@ -1,6 +1,13 @@
 # ARCHITECTURE.md — Foto na Hora (SaaS em nuvem)
 
-> Arquitetura **proposta** (não implementada). Validada empiricamente no Sprint S0.
+> ⚠️ **SUPERSEDED — histórico do planejamento S0, não descreve o sistema de hoje.**
+> O que roda em produção é bem mais simples do que este documento propõe: um único
+> processo Python (`app/test_rig/rig.py`) servindo API e front juntos, SQLite no lugar
+> de Postgres/object storage separado, sem fila/serviços distintos por estágio — ver
+> ADR-0016 em `docs/DECISIONS.md`. **Leia `BLUEPRINT.md` para o estado real.** Este
+> arquivo fica como registro de como o problema foi pensado antes do primeiro código.
+>
+> Arquitetura **proposta** (não implementada, na época). Validada empiricamente no Sprint S0.
 > Toda decisão marcante vira ADR em `docs/DECISIONS.md`.
 
 ---
