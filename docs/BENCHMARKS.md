@@ -150,3 +150,19 @@ Todos `UNKNOWN` até o S0.
 - **Próximo experimento proposto:** `Image.draft()` do Pillow decodifica o JPEG já em escala reduzida.
   Deve derrubar os 3,7 s de processamento da foto grande e beneficiaria os **dois** caminhos.
   `UNKNOWN — REQUIRES EXPERIMENT`.
+
+**2026-08-28 · `Image.draft()` — decodificar o JPEG já reduzido** — produção (VM 1 vCPU / 1 GB)
+- **Método:** MESMA foto nos dois lados (4000×5000, 20 MP, 1,8 MB, com um rosto), 2 envios cada.
+- **Alvo do draft = 1024 e não 2048:** pedindo 2048 o PIL escolhe escala 1/1 e não economiza nada.
+
+| | antes | depois | ganho |
+|---|---|---|---|
+| processamento no servidor | 1.537–1.690 ms | **556–633 ms** | 2,7× |
+| total ponta a ponta | 1.920–2.886 ms | **868–926 ms** | ~2,5× |
+| rostos detectados | 1 | **1** | sem regressão |
+| imagem entregue | 1638×2048 | **1638×2048** | idêntica |
+
+- **Conclusão:** `ACCEPT`. Beneficia os **dois** caminhos — inclusive o FTP da câmera, que manda o
+  arquivo original e não pode ser reduzido no cliente.
+- **Ressalva medida:** numa origem perto de 4000 px de lado maior a saída fica 2000 px em vez de
+  2048 (2,3% menor). Numa foto de câmera de 6000×4000 a saída é **idêntica**.
