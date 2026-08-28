@@ -482,7 +482,7 @@ input{font-family:inherit}
 
   <!-- ================= GUIA DE CÂMERAS ================= -->
   <section class="screen" id="s-guia">
-    <button class="back" onclick="home()">←&nbsp; início</button>
+    <button class="back" onclick="sairGuia()">←&nbsp; início</button>
     <h1 class="title">Conectar sua câmera</h1>
     <p class="subtitle">A foto vai da câmera para o seu celular pelo app do fabricante — e do celular para o Fóton. Configure uma vez; depois é só usar.</p>
 
@@ -550,6 +550,9 @@ input{font-family:inherit}
     <div id="evt-list"></div>
     <div class="sticky"><button class="btn primary block" onclick="abrirCriarEvento()">＋&nbsp; Criar evento</button></div>
     <p class="note" style="margin-top:14px">
+      <button class="link" onclick="go('guia')">📷 Conectar câmera</button>
+    </p>
+    <p class="note" style="margin-top:6px">
       <button class="link btn-instalar" style="display:none" onclick="instalarApp()">📲 Instalar o Fóton no celular</button>
     </p>
     <p class="note" style="margin-top:6px"><button class="link" onclick="logout()">Sair da conta</button></p>
@@ -1950,6 +1953,7 @@ document.querySelectorAll('.mark').forEach(m=>{m.innerHTML=badgeSVG(false);m.onc
 const _bb=document.querySelector('.brand-badge'); if(_bb) _bb.innerHTML=badgeSVG(true);
 
 /* ============ GUIA DE CÂMERAS (dados oficiais dos fabricantes) ============ */
+let _pollCam=null;                       // usado por guiaMarca/guiaDireto — declarado antes por causa do guiaMarca('canon') logo abaixo
 const GUIAS={
   canon:{app:'Canon Camera Connect', loja:'grátis na Play Store / App Store',
     modelos:'EOS R8, R6, R5, R50, RP · T6s/760D, T7i, 90D · PowerShot com Wi-Fi',
@@ -1980,6 +1984,7 @@ const GUIAS={
     dica:'A Sony tem transferência automática em segundo plano: as fotos vão chegando ao celular enquanto você fotografa.'}
 };
 function guiaMarca(m,btn){
+  if(_pollCam){clearInterval(_pollCam);_pollCam=null;}
   document.querySelectorAll('.guia-tabs .tab').forEach(b=>b.classList.remove('on'));
   if(btn)btn.classList.add('on');
   const g=GUIAS[m];
@@ -1993,21 +1998,37 @@ function guiaMarca(m,btn){
 }
 guiaMarca('canon');
 
-/* modo DIRETO: a camera envia sozinha, sem passar pelo celular */
+/* modo DIRETO: a camera envia sozinha para o SERVIDOR — nao pelo celular dela.
+   O celular so entra se for usado como hotspot (a internet da camera), e nesse
+   caso pode ser QUALQUER celular com dados — a foto nao passa por ele, so a rede. */
 async function guiaDireto(btn){
   document.querySelectorAll('.guia-tabs .tab').forEach(b=>b.classList.remove('on'));
   if(btn)btn.classList.add('on');
+  if(_pollCam){clearInterval(_pollCam);_pollCam=null;}
   const box=document.getElementById('guia-conteudo');
   if(!SESSAO){ box.innerHTML='<div class="empty">Entre como fotógrafo para ver os dados da sua câmera.</div>'; return; }
   box.innerHTML='<p class="muted" style="font-size:13px">Carregando seus dados…</p>';
+  await _renderGuiaDireto(box);
+  if(box.dataset.ok==='1') _pollCam=setInterval(()=>_renderGuiaDireto(box,true), 4000);
+}
+async function _renderGuiaDireto(box, silencioso){
   try{
     const r=await fetch(API+'/camera/config',{headers:auth()});
-    if(!r.ok){ box.innerHTML='<div class="empty">Não consegui carregar.</div>'; return; }
+    if(!r.ok){ if(!silencioso) box.innerHTML='<div class="empty">Não consegui carregar.</div>'; return; }
     const c=await r.json();
-    if(!c.ativo){ box.innerHTML='<div class="empty">O envio direto ainda não está ativo neste servidor.</div>'; return; }
+    if(!c.ativo){ if(!silencioso) box.innerHTML='<div class="empty">O envio direto ainda não está ativo neste servidor.</div>'; return; }
+    box.dataset.ok='1';
     const linha=(k,v)=>`<div class="c-row"><b>${k}</b><span style="font-family:var(--mono);color:var(--accent)">${v}</span></div>`;
-    box.innerHTML=`
-      <p class="subtitle" style="margin:0 0 12px">Sua câmera envia cada foto <b>sozinha</b>, sem passar pelo celular. Configure uma vez.</p>
+    const s=c.conectada_ha_s;
+    // ela nao precisa gastar uma foto de teste para saber se acertou os dados —
+    // o servidor sabe no instante em que a camera consegue logar.
+    const status=(s!==null&&s!==undefined&&s<600)
+      ? `<div class="tips" style="border-color:var(--ok);margin-bottom:12px"><b style="color:var(--ok)">✓ Câmera conectada</b>
+         <p style="margin:4px 0 0;font-size:13px">O servidor recebeu o login ${s<15?'agora mesmo':'há '+(s<90?Math.round(s)+'s':Math.round(s/60)+' min')} — os dados abaixo estão certos.</p></div>`
+      : `<div class="tips" style="margin-bottom:12px"><b>Aguardando a câmera conectar…</b>
+         <p style="margin:4px 0 0;font-size:13px">Depois de preencher os dados abaixo na câmera, esta tela avisa sozinha — não precisa tirar foto para testar.</p></div>`;
+    box.innerHTML=status+`
+      <p class="subtitle" style="margin:0 0 12px">Sua câmera envia cada foto <b>direto para o servidor do Fóton</b> — a foto <b>não passa pelo seu celular</b>. Configure uma vez.</p>
       <div class="tips"><b>Dados para a câmera (FTP)</b>
         <div class="contatos">
           ${linha('Servidor',c.servidor)}${linha('Porta',c.porta)}
@@ -2018,15 +2039,16 @@ async function guiaDireto(btn){
       <div class="card" style="padding:6px 18px;margin-top:12px">
         <div class="passo"><span class="n">1</span><span class="t">Na câmera: <b>MENU → Rede → Configurações FTP</b> (ou "Transferência FTP").</span></div>
         <div class="passo"><span class="n">2</span><span class="t">Preencha com os dados acima. Marque <b>modo passivo</b>.</span></div>
-        <div class="passo"><span class="n">3</span><span class="t">Conecte a câmera ao <b>Wi-Fi com internet</b> (o hotspot do seu celular serve).</span></div>
+        <div class="passo"><span class="n">3</span><span class="t">Conecte a câmera a um <b>Wi-Fi com internet</b> — o hotspot de <b>qualquer celular</b> serve (a foto não fica nesse celular, ele só empresta a internet).</span></div>
         <div class="passo"><span class="n">4</span><span class="t">Ative <b>"Transferência automática"</b> — cada foto vai sozinha para o Fóton.</span></div>
         <div class="passo"><span class="n">5</span><span class="t"><b>Abra um evento antes de fotografar.</b> As fotos entram no evento que estiver ao vivo.</span></div>
       </div>
       ${c.aviso?`<p class="note" style="margin-top:12px;text-align:left;color:var(--warn)">⚠ ${c.aviso}</p>`
                :`<p class="note" style="margin-top:12px;text-align:left;color:var(--ok)">✓ Evento <b>${c.evento_ao_vivo}</b> ao vivo — as fotos vão para ele.</p>`}
-      <p class="note" style="margin-top:8px;text-align:left;font-size:11.5px;color:var(--dim)">Compatível com Canon R8/R6/R5, Nikon Z (com FTP) e Sony com FTP. Câmeras sem FTP continuam pelo celular.</p>`;
-  }catch(e){ box.innerHTML='<div class="empty">Erro de conexão.</div>'; }
+      <p class="note" style="margin-top:8px;text-align:left;font-size:11.5px;color:var(--dim)">Compatível com câmeras que têm "Transferência FTP" no próprio menu (ex.: Canon R6/R6 II/R5/R3, corpos profissionais Nikon/Sony com FTP). A maioria das câmeras — <b>inclusive a Canon R8</b> — não tem esse recurso e usa o caminho pelo celular (abas Canon/Nikon/Sony acima).</p>`;
+  }catch(e){ if(!silencioso) box.innerHTML='<div class="empty">Erro de conexão.</div>'; }
 }
+function sairGuia(){ if(_pollCam){clearInterval(_pollCam);_pollCam=null;} home(); }
 
 /* palco da landing — uma foto real de fundo (troca a cada abertura) */
 (()=>{const el=document.getElementById('stage-bg'); if(!el)return;

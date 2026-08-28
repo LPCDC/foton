@@ -124,6 +124,9 @@ def senha_ftp(email):
     seg = os.environ.get("FOTON_FTP_SEED") or store.segredo("ftp_seed")
     return hashlib.sha256((seg + email).encode()).hexdigest()[:12]
 
+def conectada_ha_s(email):
+    return store.ftp_visto_ha_s(email)
+
 
 class _Auth(DummyAuthorizer):
     """Confere o login contra o banco NA HORA.
@@ -136,6 +139,7 @@ class _Auth(DummyAuthorizer):
         c = store.conta((username or "").strip().lower())
         if not c or not secrets.compare_digest(senha_ftp(c["email"]), password or ""):
             raise AuthenticationFailed("usuario ou senha do FTP incorretos")
+        store.marca_ftp_visto(c["email"])   # login certo: ela sabe na hora, sem esperar foto
 
     def get_home_dir(self, username):
         return _pasta_do((username or "").strip().lower())

@@ -112,6 +112,20 @@ def segredo(chave):
     q("INSERT OR REPLACE INTO config(chave,valor) VALUES(?,?)", (chave, v))
     return v
 
+def marca_ftp_visto(email):
+    """Registra que a câmera CONSEGUIU logar no FTP, agora — sem precisar de foto.
+
+    É a diferença entre a fotógrafa digitar a senha errada e só descobrir quando
+    nenhuma foto aparece, e ela saber em segundos que funcionou.
+    """
+    q("INSERT OR REPLACE INTO config(chave,valor) VALUES(?,?)", ("ftp_visto:" + email, str(time.time())))
+
+def ftp_visto_ha_s(email):
+    r = q("SELECT valor FROM config WHERE chave=?", ("ftp_visto:" + email,), "one")
+    if not r or not r["valor"]:
+        return None
+    return time.time() - float(r["valor"])
+
 def gasta_credito(email):
     q("UPDATE photographer SET credits=MAX(0,credits-1) WHERE email=?", (email,))
 

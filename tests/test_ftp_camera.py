@@ -103,5 +103,18 @@ checa("estável entre chamadas", F.senha_ftp("p@t.com"), F.senha_ftp("p@t.com"))
 checa("semente sobrevive no banco", store.segredo("ftp_seed"), store.segredo("ftp_seed"))
 checa("cada conta tem senha própria", F.senha_ftp("p@t.com") == F.senha_ftp("nova@t.com"), False)
 
+print("\n[7] 'Câmera conectada' — a fotógrafa sabe SEM gastar uma foto de teste")
+store.cria_conta("conecta@t.com", "senha123", "Conecta")
+checa("antes de logar, nunca conectou", store.ftp_visto_ha_s("conecta@t.com"), None)
+checa("via /camera/config (helper)", F.conectada_ha_s("conecta@t.com"), None)
+aut = F._Auth()
+try: aut.validate_authentication("conecta@t.com", "senha errada de proposito", None)
+except AuthenticationFailed: pass
+checa("senha ERRADA não marca como conectada", store.ftp_visto_ha_s("conecta@t.com"), None)
+aut.validate_authentication("conecta@t.com", F.senha_ftp("conecta@t.com"), None)
+ha_s = store.ftp_visto_ha_s("conecta@t.com")
+checa("login CERTO marca como conectada agora", ha_s is not None and ha_s < 2, True)
+checa("cada fotógrafo tem o próprio relógio", store.ftp_visto_ha_s("p@t.com") != ha_s, True)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

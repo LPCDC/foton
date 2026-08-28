@@ -541,12 +541,13 @@ def camera_config(authorization: str = Header(None)):
         senha = ftp_camera.senha_ftp(c["email"])
         porta = ftp_camera.PORTA
         ativo = True
+        ha_s = ftp_camera.conectada_ha_s(c["email"])
     except Exception:
-        senha, porta, ativo = None, None, False
+        senha, porta, ativo, ha_s = None, None, False, None
     ao_vivo = next((e["code"] for e in store.eventos_de(c["email"]) if e["status"] == "live"), None)
     return {"ativo": ativo, "servidor": os.environ.get("FOTON_HOST", "getfoton.duckdns.org"),
             "porta": porta, "usuario": c["email"], "senha": senha, "modo": "FTP passivo",
-            "evento_ao_vivo": ao_vivo,
+            "evento_ao_vivo": ao_vivo, "conectada_ha_s": (round(ha_s) if ha_s is not None else None),
             "aviso": None if ao_vivo else "Crie/abra um evento antes de fotografar — as fotos vão para o evento ao vivo."}
 
 # ============================ LGPD ============================
