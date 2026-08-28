@@ -1206,11 +1206,23 @@ async function deletarFoto(pid,ev){
 async function atualizarStats(){
   if(!LIVE||!state.live)return;
   const fo=document.getElementById('faixa-ok');
-  try{ const r=await fetch(`${API}/stats?event=${encodeURIComponent(state.live.code)}`);
+  try{ const r=await fetch(`${API}/stats?event=${encodeURIComponent(state.live.code)}`,{headers:auth()});
     if(!r.ok)throw 0;
     const j=await r.json(); state.live.guests=j.guests;
     const el=document.getElementById('ev-nguests'); if(el) el.textContent=j.guests;
-    if(fo){ fo.className='ok'; fo.querySelector('span').textContent='recebendo'; }   // ela vê que está tudo certo
+    /* A pergunta que ela faz no meio da festa é uma só: "está chegando?".
+       Ponto verde escrito "recebendo" não responde — pode estar verde e parado.
+       Então o texto diz o que ACABOU de acontecer. */
+    if(fo){
+      const s=j.ultima_foto_s, ag=j.aguardando;
+      let txt='recebendo', cls='ok';
+      if(ag>0){ txt=ag+(ag>1?' fotos a caminho':' foto a caminho'); }
+      else if(s===null||s===undefined){ txt='pronta — aguardando a 1ª foto'; }
+      else if(s<20){ txt='foto recebida agora'; }
+      else if(s<180){ txt='última foto há '+Math.round(s)+'s'; }
+      else { txt='sem foto há '+Math.round(s/60)+' min'; cls='ok off'; }
+      fo.className=cls; fo.querySelector('span').textContent=txt;
+    }
   }catch(e){ if(fo){ fo.className='ok off'; fo.querySelector('span').textContent='sem conexão'; } }
   carregarContatos();
 }
@@ -1626,6 +1638,7 @@ async function abrirAdmin(){
     document.getElementById('adm-servidor').innerHTML=
       `<div class="c-row"><b>Disco livre</b><span>${j.disco_livre_gb} GB de ${j.disco_total_gb} GB</span></div>`+
       `<div class="c-row"><b>Reconhecimento</b><span>ArcFace (buffalo_s)</span></div>`;
+    carregarSaude();
     document.getElementById('adm-lista').innerHTML=(j.fotografos_lista||[]).map(f=>`
       <div class="tips" style="margin-bottom:8px">
         <b style="color:var(--text);text-transform:none;letter-spacing:0;font-size:14px">${(f.nome||f.email).replace(/[<>]/g,'')}</b>
@@ -1636,6 +1649,32 @@ async function abrirAdmin(){
         </div>
       </div>`).join('') || '<div class="empty">Nenhum fotógrafo ainda.</div>';
   }catch(e){ toast('Servidor indisponível.'); }
+}
+/* Torre de controle: o que precisa estar verde ANTES e DURANTE um evento.
+   Vem tudo de /admin/saude — campo que o servidor não conseguiu ler chega null,
+   e aqui vira "—" em vez de quebrar a tela inteira. */
+async function carregarSaude(){
+  const box=document.getElementById('adm-servidor'); if(!box)return;
+  try{
+    const r=await fetch(API+'/admin/saude',{headers:auth()}); if(!r.ok)return;
+    const s=await r.json();
+    const n=(v,suf='')=>(v===null||v===undefined)?'—':v+suf;
+    const linha=(k,v,alerta)=>`<div class="c-row"><b>${k}</b><span${alerta?' style="color:var(--live);font-weight:600"':''}>${v}</span></div>`;
+    const d=s.disco||{}, m=(s.servidor||{}).memoria||{}, b=s.backup, f=s.fila||{};
+    box.innerHTML=
+      (s.alertas&&s.alertas.length
+        ? `<div class="tips" style="border-color:var(--live);margin-bottom:10px"><b style="color:var(--live)">Atenção</b>
+           <p style="margin:4px 0 0;font-size:13px">${s.alertas.join(' · ')}</p></div>` : '')
+      + linha('Disco', `${n(d.livre_gb)} GB livres de ${n(d.total_gb)} GB (${n(d.uso_pct,'%')} em uso)`, d.uso_pct>80)
+      + linha('Banco de fotos', `${n(d.banco_mb,' MB')} · backups ocupam ${n(d.backups_ocupam_mb,' MB')}`)
+      + linha('Último backup', b? `há ${b.horas_atras} h · ${b.copias} cópia(s)` : 'nunca', !b||(b&&b.horas_atras>48))
+      + linha('Memória', `${n(m.livre_mb)} MB livres de ${n(m.total_mb)} MB (${n(m.uso_pct,'%')})`, m.uso_pct>90)
+      + linha('Servidor de pé há', `${n((s.servidor||{}).uptime_processo_h,' h')} (máquina: ${n((s.servidor||{}).uptime_maquina_h,' h')})`)
+      + linha('Carga', ((s.servidor||{}).carga||['—']).join('  '))
+      + linha('Envio direto (FTP)', f.ftp_ligado?'ligado':'DESLIGADO', !f.ftp_ligado)
+      + linha('Fotos aguardando na fila', n(f.fotos_ftp_aguardando), f.fotos_ftp_aguardando>0)
+      + linha('Reconhecimento','ArcFace (buffalo_s)');
+  }catch(e){}
 }
 async function admCreditos(email,n){
   try{ const fd=new FormData(); fd.append('email',email); fd.append('quantidade',n);

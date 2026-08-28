@@ -264,6 +264,10 @@ def salva_contato(code, gid, nome, contato):
     q("INSERT INTO contact(event_code,guest_id,nome,contato,ts) VALUES(?,?,?,?,?)",
       (code, gid, nome[:60], contato[:40], time.time()))
 
+def ultima_foto(code):
+    r = q("SELECT MAX(criado) t FROM photo WHERE event_code=?", (code,), "one")
+    return r["t"] if r and r["t"] else None
+
 def contatos_de(code):
     rs = q("SELECT nome,contato,ts FROM contact WHERE event_code=? ORDER BY ts DESC", (code,), "all")
     return [dict(r) for r in rs]

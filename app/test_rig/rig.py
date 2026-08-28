@@ -266,9 +266,27 @@ def event_close(code: str = Form(...), authorization: str = Header(None)):
     return {"ok": True}
 
 @app.get("/stats")
-def stats(event: str):
-    _ev(event, create=True)
-    return {"event": event, "photos": len(store.fotos_de(event)), "guests": store.conta_convidados(event)}
+def stats(event: str, authorization: str = Header(None)):
+    """Alimenta a faixa fixa do painel dela durante o evento.
+
+    `ultima_foto_s` e `aguardando` existem para responder a única pergunta que a
+    fotógrafa faz no meio da festa: "está chegando?". Sem isso ela só vê um ponto
+    verde que não prova nada.
+    """
+    e = _ev(event, create=True)
+    ult = store.ultima_foto(event)
+    out = {"event": event, "photos": len(store.fotos_de(event)),
+           "guests": store.conta_convidados(event),
+           "ultima_foto_s": (round(time.time() - ult) if ult else None)}
+    c = _dono(authorization)
+    if c and (not e.get("dono") or e["dono"] == c["email"]):
+        try:                          # fila do FTP: foto que a câmera mandou e ainda não entrou
+            import ftp_camera, os as _os
+            p = ftp_camera._pendentes_do(c["email"])
+            out["aguardando"] = len([f for f in _os.listdir(p) if not f.startswith(".")])
+        except Exception:
+            out["aguardando"] = None
+    return out
 
 @app.get("/photos")
 def photos(event: str):

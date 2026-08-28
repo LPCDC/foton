@@ -127,5 +127,16 @@ checa("uptime do processo é número", isinstance(s["servidor"]["uptime_processo
 checa("fila de fotos do FTP responde", isinstance(s["fila"]["fotos_ftp_aguardando"], (int, type(None))), True)
 checa("sem backup vira alerta", "SEM BACKUP" in s["alertas"], True)
 
+print("\n[9] A faixa do evento responde 'está chegando?'")
+C.post("/event", data={"code": "FESTA9", "brand": "D"}, headers=h(dona))
+st = C.get("/stats?event=FESTA9", headers=h(dona)).json()
+checa("sem foto ainda -> tempo nulo", st["ultima_foto_s"], None)
+checa("dona vê a fila do FTP", "aguardando" in st, True)
+C.post("/ingest", data={"event": "FESTA9"}, files={"file": ("f.jpg", jpeg(), "image/jpeg")}, headers=h(dona))
+checa("depois da foto, o tempo é pequeno", C.get("/stats?event=FESTA9", headers=h(dona)).json()["ultima_foto_s"] < 5, True)
+checa("anônimo NÃO vê a fila", "aguardando" in C.get("/stats?event=FESTA9").json(), False)
+checa("outra conta NÃO vê a fila", "aguardando" in C.get("/stats?event=FESTA9", headers=h(outra)).json(), False)
+checa("convidado ainda lê o /stats", C.get("/stats?event=FESTA9").status_code, 200)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)
