@@ -113,15 +113,22 @@ echo "nginx: ok"
 
 # 7) auto-update: a VM busca a versao nova sozinha (a cada 2 min) e reinicia se mudou.
 #    Sem isso, cada correcao exigiria SSH manual pelo Cloud Shell.
+sudo git config --global --add safe.directory /opt/foton 2>/dev/null || true
 sudo tee /usr/local/bin/foton-update >/dev/null <<'UPD'
 #!/usr/bin/env bash
+# roda como root: o git recusa repo de outro dono sem safe.directory
+export HOME=/root
+git config --global --add safe.directory /opt/foton 2>/dev/null || true
 cd /opt/foton || exit 0
-ANTES=$(git rev-parse HEAD)
-git fetch -q origin main && git reset -q --hard origin/main
-if [ "$ANTES" != "$(git rev-parse HEAD)" ]; then
-  /opt/foton/venv/bin/pip install -q -r /opt/foton/app/test_rig/requirements.txt || true
+ANTES=$(git rev-parse HEAD 2>/dev/null || echo none)
+git fetch -q origin main 2>/dev/null || { logger -t foton "fetch falhou"; exit 0; }
+git reset -q --hard origin/main 2>/dev/null || exit 0
+DEPOIS=$(git rev-parse HEAD 2>/dev/null || echo none)
+if [ "$ANTES" != "$DEPOIS" ]; then
+  chown -R ubuntu:ubuntu /opt/foton 2>/dev/null || true
+  /opt/foton/venv/bin/pip install -q -r /opt/foton/app/test_rig/requirements.txt 2>/dev/null || true
   systemctl restart foton
-  logger -t foton "atualizado para $(git rev-parse --short HEAD)"
+  logger -t foton "atualizado: ${ANTES:0:7} -> ${DEPOIS:0:7}"
 fi
 UPD
 sudo chmod +x /usr/local/bin/foton-update
