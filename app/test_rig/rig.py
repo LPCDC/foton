@@ -100,6 +100,12 @@ def _startup():
     try: _face(); log.info('{"stage":"warm","status":"ready"}')
     except Exception as e: log.info('{"stage":"warm","status":"fail","err":"%s"}' % str(e)[:140])
     # LGPD: expiração roda no boot e a cada 12h, sem depender de ninguém lembrar
+    # FTP da câmera (opcional — se a lib não estiver instalada, o resto segue igual)
+    try:
+        import ftp_camera
+        ftp_camera.iniciar(ingerir_bytes)
+    except Exception as e:
+        log.info('{"stage":"ftp","status":"desligado","motivo":"%s"}' % str(e)[:100])
     import threading
     def _limpeza():
         while True:
@@ -211,6 +217,19 @@ def photos(event: str):
     return {"event": event, "photos": [{"id": p["id"], "n_faces": p["n_faces"]} for p in store.fotos_de(event)]}
 
 # ============================ PIPELINE ============================
+def ingerir_bytes(event: str, raw: bytes):
+    """Coração do pipeline — usado pelo upload do app E pelo FTP da câmera."""
+    e = _ev(event, create=True)
+    pid = uuid.uuid4().hex[:12]
+    treated, dims, pms = process_image(raw, e.get("marca") or "FÓTON")
+    faces = detect_embed(treated)
+    store.salva_foto(pid, event, treated, faces)
+    for gid, gemb in store.convidados_de(event):
+        g = _emb(gemb)
+        if any(float(g @ f) >= THRESH for f in faces):
+            store.salva_match(gid, pid)
+    return pid, len(faces)
+
 @app.post("/ingest")
 async def ingest(event: str = Form(...), file: UploadFile = File(...)):
     e = _ev(event, create=True)
@@ -327,6 +346,25 @@ def admin_testar_foto(file: UploadFile = File(...), authorization: str = Header(
             "Nenhum rosto lido. Aproxime a pessoa, use luz melhor e rosto de frente.")
     return {"n_faces": len(faces), "dims": dims, "processing_ms": round(pms, 1),
             "total_ms": int((time.time() - t0) * 1000), "dica": dica}
+
+# ======================= FTP DA CÂMERA =======================
+@app.get("/camera/config")
+def camera_config(authorization: str = Header(None)):
+    """Dados que a fotógrafa digita na câmera para enviar direto, sem celular."""
+    c = _dono(authorization)
+    if not c: raise HTTPException(401, "sessão expirada")
+    try:
+        import ftp_camera
+        senha = ftp_camera.senha_ftp(c["email"])
+        porta = ftp_camera.PORTA
+        ativo = True
+    except Exception:
+        senha, porta, ativo = None, None, False
+    ao_vivo = next((e["code"] for e in store.eventos_de(c["email"]) if e["status"] == "live"), None)
+    return {"ativo": ativo, "servidor": os.environ.get("FOTON_HOST", "getfoton.duckdns.org"),
+            "porta": porta, "usuario": c["email"], "senha": senha, "modo": "FTP passivo",
+            "evento_ao_vivo": ao_vivo,
+            "aviso": None if ao_vivo else "Crie/abra um evento antes de fotografar — as fotos vão para o evento ao vivo."}
 
 # ============================ LGPD ============================
 RET_BIO = int(os.environ.get("FOTON_RET_BIOMETRIA_DIAS", "7"))    # biometria: vida curta

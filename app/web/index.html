@@ -445,6 +445,7 @@ input{font-family:inherit}
       <button class="tab on" onclick="guiaMarca('canon',this)">Canon</button>
       <button class="tab" onclick="guiaMarca('nikon',this)">Nikon</button>
       <button class="tab" onclick="guiaMarca('sony',this)">Sony</button>
+      <button class="tab" onclick="guiaDireto(this)">⚡ Direto</button>
     </div>
     <div id="guia-conteudo"></div>
 
@@ -1782,6 +1783,41 @@ function guiaMarca(m,btn){
      <p class="note" style="margin-top:8px;text-align:left;color:var(--dim);font-size:11.5px">Compatível: ${g.modelos}</p>`;
 }
 guiaMarca('canon');
+
+/* modo DIRETO: a camera envia sozinha, sem passar pelo celular */
+async function guiaDireto(btn){
+  document.querySelectorAll('.guia-tabs .tab').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  const box=document.getElementById('guia-conteudo');
+  if(!SESSAO){ box.innerHTML='<div class="empty">Entre como fotógrafo para ver os dados da sua câmera.</div>'; return; }
+  box.innerHTML='<p class="muted" style="font-size:13px">Carregando seus dados…</p>';
+  try{
+    const r=await fetch(API+'/camera/config',{headers:auth()});
+    if(!r.ok){ box.innerHTML='<div class="empty">Não consegui carregar.</div>'; return; }
+    const c=await r.json();
+    if(!c.ativo){ box.innerHTML='<div class="empty">O envio direto ainda não está ativo neste servidor.</div>'; return; }
+    const linha=(k,v)=>`<div class="c-row"><b>${k}</b><span style="font-family:var(--mono);color:var(--accent)">${v}</span></div>`;
+    box.innerHTML=`
+      <p class="subtitle" style="margin:0 0 12px">Sua câmera envia cada foto <b>sozinha</b>, sem passar pelo celular. Configure uma vez.</p>
+      <div class="tips"><b>Dados para a câmera (FTP)</b>
+        <div class="contatos">
+          ${linha('Servidor',c.servidor)}${linha('Porta',c.porta)}
+          ${linha('Usuário',c.usuario)}${linha('Senha',c.senha)}
+          ${linha('Modo','Passivo (PASV)')}
+        </div>
+      </div>
+      <div class="card" style="padding:6px 18px;margin-top:12px">
+        <div class="passo"><span class="n">1</span><span class="t">Na câmera: <b>MENU → Rede → Configurações FTP</b> (ou "Transferência FTP").</span></div>
+        <div class="passo"><span class="n">2</span><span class="t">Preencha com os dados acima. Marque <b>modo passivo</b>.</span></div>
+        <div class="passo"><span class="n">3</span><span class="t">Conecte a câmera ao <b>Wi-Fi com internet</b> (o hotspot do seu celular serve).</span></div>
+        <div class="passo"><span class="n">4</span><span class="t">Ative <b>"Transferência automática"</b> — cada foto vai sozinha para o Fóton.</span></div>
+        <div class="passo"><span class="n">5</span><span class="t"><b>Abra um evento antes de fotografar.</b> As fotos entram no evento que estiver ao vivo.</span></div>
+      </div>
+      ${c.aviso?`<p class="note" style="margin-top:12px;text-align:left;color:var(--warn)">⚠ ${c.aviso}</p>`
+               :`<p class="note" style="margin-top:12px;text-align:left;color:var(--ok)">✓ Evento <b>${c.evento_ao_vivo}</b> ao vivo — as fotos vão para ele.</p>`}
+      <p class="note" style="margin-top:8px;text-align:left;font-size:11.5px;color:var(--dim)">Compatível com Canon R8/R6/R5, Nikon Z (com FTP) e Sony com FTP. Câmeras sem FTP continuam pelo celular.</p>`;
+  }catch(e){ box.innerHTML='<div class="empty">Erro de conexão.</div>'; }
+}
 
 /* palco da landing — uma foto real de fundo (troca a cada abertura) */
 (()=>{const el=document.getElementById('stage-bg'); if(!el)return;
