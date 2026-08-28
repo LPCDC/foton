@@ -149,6 +149,29 @@ monitor externo (GitHub Actions) — **falta só a chave do WhatsApp**.
    Sai de ~99% para ~99,7%.
 5. Login com Google · cobrança (créditos hoje são manuais) · domínio próprio.
 
+### Pedidos do dono ainda não feitos (2026-08-28)
+
+**a) Garantir que a Canon R8 e a T6s conectem — NUNCA foi testado com câmera real.**
+   - R8: tem Wi-Fi + **FTP nativo** → deve usar o **envio direto** (`/camera/config`).
+   - T6s (760D): tem Wi-Fi mas **não tem FTP** → caminho é Camera Connect → celular → app.
+   - **É o maior risco em aberto.** Fazer um ensaio presencial com as duas câmeras
+     antes de qualquer evento pago. Usar o "testar foto" do admin para validar na hora.
+
+**b) Deixar explícito que serve para os DOIS públicos** (hoje a comunicação só fala
+   de fotógrafo com DSLR):
+   - **Fotógrafo profissional** com DSLR/mirrorless (Canon, Nikon, Sony).
+   - **Quem fotografa com o celular mesmo** — o app já aceita, mas isso não está
+     dito em lugar nenhum. Precisa aparecer na home e no site de marca.
+
+**c) FREEMIUM com nossa marca na foto** (modelo de negócio):
+   - Pessoa comum (ex.: alguém numa balada) cria conta grátis e usa o Fóton no
+     próprio rolê; as fotos saem com a **marca d'água do Fóton** = propaganda nossa
+     circulando nas redes.
+   - O **plano pago troca a marca pela do fotógrafo** — é exatamente o gatilho de
+     conversão já identificado (nenhum profissional aceita marca de terceiro).
+   - Isso transforma cada usuário grátis em canal de aquisição. Definir limites do
+     grátis (nº de eventos/fotos, retenção) junto com o preço.
+
 **Riscos conhecidos**
 - **1 vCPU / 1 GB** é o gargalo real. Migrar para ARM quando houver estoque, ou VM paga.
 - **Always Free não tem SLA.** Expectativa honesta: ~99%.
