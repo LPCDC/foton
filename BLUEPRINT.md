@@ -112,6 +112,11 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/foton.key ubuntu@152.67.46.113 \
 | **Firewall em 2 camadas** | Security List (nuvem) **e** iptables (VM). Abrir só um não funciona. |
 | **Cloud Shell em FIPS** | Recusa chave ed25519 → usar RSA. |
 | **Repo privado quebra deploy** | Auto-update e instalador baixam do GitHub público. Privatizar exige **deploy key na VM antes**. |
+| **Rotas destrutivas sem dono** | `/event/delete`, `/event/close`, `/photo/delete`, `/ingest` e `/contatos` eram **abertas**: com o código do QR (projetado na parede) qualquer convidado apagava o evento ou injetava foto. Hoje passam por `_pode()`. **Rota que muda dado precisa de dono.** |
+| **FTP engolia foto sem evento** | Sem evento ao vivo o arquivo ficava parado na pasta e nunca era processado — perda silenciosa. Hoje vai para fila de pendentes e entra ao abrir o evento. |
+| **Usuário de FTP só no boot** | Conta criada depois não conectava a câmera até reiniciar o serviço. Hoje o login é conferido no banco na hora. |
+| **Selfie "invertida"** | O preview mostrava a cena como a lente vê; quem se olha espera espelho. Espelha-se **só o preview** (CSS) — a foto salva fica na orientação real. |
+| **Deploy tem ~25 s de 502** | O auto-update reinicia o serviço. **Não fazer deploy durante evento da cliente.** |
 
 ## 8. Estado atual (o que funciona hoje)
 
@@ -150,6 +155,16 @@ monitor externo (GitHub Actions) — **falta só a chave do WhatsApp**.
 5. Login com Google · cobrança (créditos hoje são manuais) · domínio próprio.
 
 ### Pedidos do dono ainda não feitos (2026-08-28)
+
+**Feito em 2026-08-28 (com teste real, ver `docs/TESTES.md`):** autorização das rotas ·
+fila de pendentes do FTP · login de FTP conferido na hora · espelho da selfie.
+**Caminho FTP validado de ponta a ponta em produção** (login de conta recém-criada,
+envio, foto entrando sozinha no evento em ~7 s) — mas **com cliente FTP de script,
+ainda não com a Canon**.
+
+**Pendências abertas:** semente do FTP (`FOTON_FTP_SEED`) não definida em produção →
+a senha do FTP é derivável do repo público · sem rate limit no `/login` · fotos são
+BLOB no SQLite × 7 backups (disco).
 
 **a) Garantir que a Canon R8 e a T6s conectem — NUNCA foi testado com câmera real.**
    - R8: tem Wi-Fi + **FTP nativo** → deve usar o **envio direto** (`/camera/config`).
