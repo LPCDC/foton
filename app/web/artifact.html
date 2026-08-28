@@ -1,3 +1,8 @@
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fóton">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Satisfy&family=Instrument+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -409,7 +414,10 @@ input{font-family:inherit}
     <div class="eyebrow-sm">Seus eventos</div>
     <div id="evt-list"></div>
     <div class="sticky"><button class="btn primary block" onclick="go('create')">＋&nbsp; Criar evento</button></div>
-    <p class="note" style="margin-top:14px"><button class="link" onclick="logout()">Sair da conta</button></p>
+    <p class="note" style="margin-top:14px">
+      <button class="link btn-instalar" style="display:none" onclick="instalarApp()">📲 Instalar o Fóton no celular</button>
+    </p>
+    <p class="note" style="margin-top:6px"><button class="link" onclick="logout()">Sair da conta</button></p>
   </section>
 
   <!-- ================= CREATE ================= -->
@@ -469,6 +477,11 @@ input{font-family:inherit}
     <div class="grid" id="ev-grid">
       <div class="empty" id="ev-empty">Nenhuma foto ainda.</div>
     </div>
+    <div class="tips" id="box-falhas" style="display:none;border-color:rgba(255,207,122,.4)">
+      <b style="color:var(--warn)">Envio incompleto</b>
+      <p class="muted" id="falhas-txt" style="font-size:12.5px;margin-bottom:10px"></p>
+      <button class="btn ghost sm block" onclick="reenviarFalhas()">Reenviar agora</button>
+    </div>
     <div class="tips" id="box-contatos" style="display:none">
       <b>Contatos deixados pelos convidados</b>
       <div class="contatos" id="lista-contatos"></div>
@@ -510,7 +523,11 @@ input{font-family:inherit}
       <span class="pill livepill"><span class="livedot"></span> ao vivo</span>
     </div>
     <h1 class="title" style="font-size:25px">Receba suas fotos na hora</h1>
-    <p class="subtitle" style="margin:6px 0 14px">Tire 1 selfie — suas fotos chegam sozinhas aqui.</p>
+    <p class="subtitle" style="margin:6px 0 12px">
+      <b style="color:var(--text)">1.</b> Tire 1 selfie &nbsp;·&nbsp;
+      <b style="color:var(--text)">2.</b> O fotógrafo clica &nbsp;·&nbsp;
+      <b style="color:var(--text)">3.</b> Suas fotos chegam sozinhas
+    </p>
     <div class="cam cam-compact" id="cam2">
       <div class="ph-txt" id="cam2-ph"><span class="k">🤳</span>Toque em <b>Ativar câmera</b><br>e enquadre seu rosto</div>
       <video id="cam2-video" autoplay playsinline muted style="display:none"></video>
@@ -599,12 +616,26 @@ input{font-family:inherit}
     <p class="subtitle" id="g-hint" style="margin:12px 0 14px">Novas fotos entram sozinhas enquanto a festa acontece.</p>
     <div class="grid" id="g-grid2"></div>
     <div class="sticky"><button class="btn primary block" id="g-download" onclick="shareSheet('todas')">Baixar todas as fotos</button></div>
-    <p class="note" style="margin-top:12px"><button class="link" onclick="refazerSelfie()">Não sou eu — tirar outra selfie</button></p>
+    <p class="note" style="margin-top:12px">
+      <button class="link btn-instalar" style="display:none" onclick="instalarApp()">📲 Guardar na tela inicial</button>
+    </p>
+    <p class="note" style="margin-top:6px"><button class="link" onclick="refazerSelfie()">Não sou eu — tirar outra selfie</button></p>
   </section>
 
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- RESUMO do evento encerrado -->
+<div class="sheet" id="resumo" onclick="if(event.target===this)fecharResumo()">
+  <div class="inner">
+    <div class="grab"></div>
+    <h3>Evento encerrado</h3>
+    <div class="ss" id="res-nome">—</div>
+    <div class="stats" id="res-grid" style="flex-wrap:wrap;margin-top:16px"></div>
+    <button class="btn primary block" style="margin-top:16px" onclick="fecharResumo()">Fechar</button>
+  </div>
+</div>
 
 <!-- VISUALIZADOR de foto (lightbox) -->
 <div class="lb" id="lb" onclick="if(event.target===this)fecharFoto()">
@@ -779,27 +810,52 @@ async function registerEvent(code,tries=8,brand=''){
   toast('Servidor demorou — se a foto não subir, recarregue e tente de novo');
 }
 /* upload REAL da foto (modo ao vivo): camera -> celular -> /ingest */
+let filaFalhas=[];                       // fotos que nao subiram (rede ruim) -> reenviar
+async function enviarUma(ev,file,tentativas=3){
+  for(let t=0;t<tentativas;t++){
+    try{
+      const fd=new FormData(); fd.append('event',ev.code); fd.append('file',file);
+      const r=await fetch(API+'/ingest',{method:'POST',body:fd});
+      if(r.ok) return await r.json();
+      if(r.status>=400&&r.status<500&&r.status!==429) return null;   // erro do arquivo: nao adianta insistir
+    }catch(err){}
+    await new Promise(r=>setTimeout(r,700*(t+1)));                   // espera crescente
+  }
+  return null;
+}
 async function uploadPhoto(e){
   const files=[...(e.target.files||[])]; if(!files.length)return; e.target.value='';
+  await enviarLote(files);
+}
+async function enviarLote(files){
   const ev=state.live; if(!ev)return;
-  let ok=0, semRosto=0, erro=0;
+  let ok=0, semRosto=0; const falhou=[];
   for(let i=0;i<files.length;i++){
     toast(files.length>1?`Enviando ${i+1} de ${files.length}…`:'Enviando foto…');
-    try{
-      const fd=new FormData(); fd.append('event',ev.code); fd.append('file',files[i]);
-      const r=await fetch(API+'/ingest',{method:'POST',body:fd});
-      if(!r.ok){ erro++; continue; }
-      const j=await r.json();
-      ev._photos.push({id:j.photo_id, src:`${API}/img/${ev.code}/${j.photo_id}.jpg`, faces:j.n_faces});
-      ev.photos=(ev.photos||0)+1; ok++; if(!j.n_faces) semRosto++;
-      document.getElementById('ev-nphotos').textContent=ev.photos; renderEventGrid();
-    }catch(err){ erro++; }
+    const j=await enviarUma(ev,files[i]);
+    if(!j){ falhou.push(files[i]); continue; }
+    ev._photos.push({id:j.photo_id, src:`${API}/img/${ev.code}/${j.photo_id}.jpg`, faces:j.n_faces});
+    ev.photos=(ev.photos||0)+1; ok++; if(!j.n_faces) semRosto++;
+    document.getElementById('ev-nphotos').textContent=ev.photos; renderEventGrid();
   }
+  filaFalhas=falhou; renderFalhas();
   saveEvents(); atualizarStats();
   const p=[]; if(ok)p.push(`${ok} foto(s) publicada(s)`);
-  if(semRosto)p.push(`${semRosto} sem rosto reconhecível`);
-  if(erro)p.push(`${erro} falhou(ram)`);
+  if(semRosto)p.push(`${semRosto} sem rosto`);
+  if(falhou.length)p.push(`${falhou.length} não subiu(ram) — toque em reenviar`);
   toast(p.join(' · ')||'Nada enviado');
+}
+function renderFalhas(){
+  const box=document.getElementById('box-falhas'); if(!box)return;
+  if(!filaFalhas.length){ box.style.display='none'; return; }
+  box.style.display='';
+  document.getElementById('falhas-txt').textContent=
+    `${filaFalhas.length} foto(s) não subiram (rede instável). Elas não se perderam.`;
+}
+async function reenviarFalhas(){
+  if(!filaFalhas.length)return;
+  const lote=filaFalhas.slice(); filaFalhas=[]; renderFalhas();
+  await enviarLote(lote);
 }
 /* acoes do evento */
 function guestURL(){ return state.live?`${API}/?evento=${state.live.code}`:''; }
@@ -824,11 +880,31 @@ async function copiarLink(){
   try{ await navigator.clipboard.writeText(guestURL()); toast('Link copiado ✓'); }
   catch(e){ toast(guestURL()); }
 }
-function encerrarEvento(){
+async function encerrarEvento(){
   const ev=state.live; if(!ev)return;
   if(!confirm(`Encerrar "${ev.name}"?\n\nO evento sai do ar para novos convidados. As fotos continuam no seu painel.`))return;
-  ev.status='done'; saveEvents(); stopEvent(); toast('Evento encerrado'); go('dash');
+  let convidados=ev.guests||0, contatos=0, comRosto=0;
+  try{
+    const [s,c]=await Promise.all([
+      fetch(`${API}/stats?event=${encodeURIComponent(ev.code)}`).then(r=>r.json()).catch(()=>null),
+      fetch(`${API}/contatos?event=${encodeURIComponent(ev.code)}`).then(r=>r.json()).catch(()=>null)]);
+    if(s) convidados=s.guests; if(c) contatos=(c.contatos||[]).length;
+  }catch(e){}
+  comRosto=(ev._photos||[]).filter(p=>p.faces>0).length;
+  ev.status='done'; ev.resumo={fotos:ev.photos||0, comRosto, convidados, contatos};
+  saveEvents(); stopEvent(); go('dash');
+  mostrarResumo(ev);
 }
+function mostrarResumo(ev){
+  const r=ev.resumo||{};
+  document.getElementById('res-nome').textContent=ev.name;
+  const cel=(n,l)=>`<div class="stat" style="flex:1 1 42%"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+  document.getElementById('res-grid').innerHTML=
+    cel(r.fotos||0,'Fotos enviadas')+cel(r.comRosto||0,'Com rosto reconhecido')+
+    cel(r.convidados||0,'Convidados')+cel(r.contatos||0,'Contatos deixados');
+  document.getElementById('resumo').classList.add('show');
+}
+function fecharResumo(){ document.getElementById('resumo').classList.remove('show'); }
 /* apagar 1 foto */
 async function deletarFoto(pid,ev){
   if(!confirm('Apagar esta foto? Ela sai também da galeria dos convidados.'))return;
@@ -1294,6 +1370,25 @@ const _bb=document.querySelector('.brand-badge'); if(_bb) _bb.innerHTML=badgeSVG
 (()=>{const el=document.getElementById('stage-bg'); if(!el)return;
   const escolhidas=[PHOTOS[3],PHOTOS[0],PHOTOS[8],PHOTOS[1]];
   el.style.backgroundImage=`url("${escolhidas[Math.floor(Math.random()*escolhidas.length)]}")`;})();
+
+/* ============ PWA: instalar na tela inicial ============ */
+let _instalar=null;
+if('serviceWorker' in navigator && location.protocol!=='file:'){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault(); _instalar=e;
+  document.querySelectorAll('.btn-instalar').forEach(b=>b.style.display='');
+});
+async function instalarApp(){
+  if(_instalar){ _instalar.prompt(); const r=await _instalar.userChoice;
+    if(r.outcome==='accepted'){ toast('Fóton instalado ✓'); document.querySelectorAll('.btn-instalar').forEach(b=>b.style.display='none'); }
+    _instalar=null; return; }
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  toast(ios ? 'No Safari: toque em Compartilhar → "Adicionar à Tela de Início"'
+            : 'No menu do navegador: "Instalar app" ou "Adicionar à tela inicial"');
+}
+window.addEventListener('appinstalled',()=>document.querySelectorAll('.btn-instalar').forEach(b=>b.style.display='none'));
 
 /* volta do bloqueio de tela / troca de app: retoma o feed na hora */
 document.addEventListener('visibilitychange',()=>{
