@@ -123,3 +123,16 @@ Provider de nuvem, linguagem do backend, storage/CDN e feed ao vivo saíram de "
 
 ## Ainda adiado (aguarda dado)
 Preço final (aguarda EXP-10, custo por evento real) · gateway de pagamento (pós-validação) · edge/offline, NFC, edição por IA (pós-MVP).
+
+## ADR-0014 — Infraestrutura própria: Oracle Cloud Always Free (São Paulo)
+- **Status:** ACCEPTED — em uso
+- **Data:** 2026-08-28
+- **Decisão:** o Fóton passa a rodar em **VM própria na Oracle Cloud Always Free**, região **sa-saopaulo-1** (baixa latência no Brasil), com SQLite em disco persistente da VM. Render fica como ambiente de teste/backup.
+- **Contexto:** o free tier da Render tem **disco efêmero** — um deploy zerava o banco (álbum da fotógrafa sumia). A Oracle Always Free dá VM de verdade, disco persistente, 10 TB de tráfego/mês e **não expira**.
+- **Como ficou:** VM `foton-server` (`VM.Standard.E2.1.Micro`, 1 vCPU / 1 GB + **2 GB de swap**), IP `152.67.46.113`. Ubuntu + nginx (80) → uvicorn (127.0.0.1:8000) → SQLite em `/opt/foton/data`. systemd com `Restart=always` e boot automático.
+- **Alternativas:** Turso/Neon/Supabase (bancos gerenciados, mas free tier alheio e Supabase pausa em 7 dias) · Litestream+R2 (elegante, peça extra) · Render pago (~R$40/mês).
+- **Aprendizados (registrados para não repetir):**
+  1. **ARM sem estoque em São Paulo** — `VM.Standard.A1.Flex` deu "out of capacity" em 2/12 e 1/6. O script cai para **x86 E2.1.Micro** automaticamente (2 dessas são Always Free e quase sempre têm estoque).
+  2. **Firewall em dois níveis** — Security List (nuvem) **e** iptables (dentro da VM). Abrir só um não funciona; o instalador faz os dois.
+  3. **Cloud Shell em modo FIPS** recusa chaves ed25519 → usar **RSA**.
+- **Consequências:** 1 GB de RAM é apertado para o ArcFace (~380 MB medidos) — daí o swap; se faltar fôlego, migrar para ARM quando houver estoque (o script já tenta ARM primeiro). **Falta HTTPS** (obrigatório para a câmera do convidado ligar) — próximo passo, com domínio.
