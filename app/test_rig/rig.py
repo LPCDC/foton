@@ -99,6 +99,19 @@ def _startup():
     store.conn()
     try: _face(); log.info('{"stage":"warm","status":"ready"}')
     except Exception as e: log.info('{"stage":"warm","status":"fail","err":"%s"}' % str(e)[:140])
+    # LGPD: expiração roda no boot e a cada 12h, sem depender de ninguém lembrar
+    import threading
+    def _limpeza():
+        while True:
+            try:
+                r = store.expirar(RET_BIO, RET_FOTO)
+                if r["convidados"] or r["fotos"]:
+                    log.info('{"stage":"lgpd","acao":"expirou","convidados":%d,"fotos":%d}'
+                             % (r["convidados"], r["fotos"]))
+            except Exception:
+                pass
+            time.sleep(12 * 3600)
+    threading.Thread(target=_limpeza, daemon=True).start()
 
 @app.get("/health")
 def health():
@@ -314,6 +327,42 @@ def admin_testar_foto(file: UploadFile = File(...), authorization: str = Header(
             "Nenhum rosto lido. Aproxime a pessoa, use luz melhor e rosto de frente.")
     return {"n_faces": len(faces), "dims": dims, "processing_ms": round(pms, 1),
             "total_ms": int((time.time() - t0) * 1000), "dica": dica}
+
+# ============================ LGPD ============================
+RET_BIO = int(os.environ.get("FOTON_RET_BIOMETRIA_DIAS", "7"))    # biometria: vida curta
+RET_FOTO = int(os.environ.get("FOTON_RET_FOTOS_DIAS", "90"))      # fotos: retenção do plano
+
+@app.get("/privacidade")
+def privacidade():
+    """Transparência (LGPD Art. 9º): o que coletamos, por quê e por quanto tempo."""
+    return {
+        "controlador": "Fóton — fotos na hora",
+        "contato": os.environ.get("FOTON_CONTATO", "luizoak@gmail.com"),
+        "dados_do_convidado": {
+            "selfie": "usada apenas para gerar o código facial e DESCARTADA em seguida; nunca é armazenada",
+            "codigo_facial": "vetor matemático (não permite reconstruir o rosto), usado só para achar suas fotos neste evento",
+            "nome_e_contato": "opcionais; só se você preencher",
+        },
+        "base_legal": "consentimento específico e destacado para dado sensível (LGPD Art. 11, I)",
+        "retencao": {"codigo_facial_dias": RET_BIO, "fotos_do_evento_dias": RET_FOTO},
+        "compartilhamento": "nenhum. O reconhecimento roda em servidor próprio, sem enviar rostos a terceiros",
+        "seus_direitos": "confirmar, acessar, corrigir e EXCLUIR seus dados a qualquer momento (Art. 18)",
+        "como_excluir": "POST /convidado/excluir com o seu guest_id, ou peça pelo contato acima",
+        "servidores": "Brasil (São Paulo)",
+    }
+
+@app.post("/convidado/excluir")
+def convidado_excluir(guest_id: str = Form(...)):
+    """Direito de exclusão do titular — sem burocracia, o próprio app chama."""
+    ok = store.apagar_dados_do_convidado(guest_id)
+    log.info('{"stage":"lgpd","acao":"exclusao","achou":%s}' % str(ok).lower())
+    return {"ok": True, "removido": ok}
+
+@app.post("/admin/expirar")
+def admin_expirar(authorization: str = Header(None)):
+    _admin(authorization)
+    r = store.expirar(RET_BIO, RET_FOTO)
+    return {"ok": True, **r, "politica": {"biometria_dias": RET_BIO, "fotos_dias": RET_FOTO}}
 
 @app.get("/qr")
 def qr(data: str):

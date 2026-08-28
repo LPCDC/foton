@@ -405,8 +405,34 @@ input{font-family:inherit}
         <p class="note" style="margin-top:18px">
           <button class="link" onclick="go('guia')">📷 Como conectar minha câmera ao Fóton</button>
         </p>
+        <p class="note" style="margin-top:8px">
+          <button class="link" style="color:var(--dim);font-weight:500" onclick="abrirPrivacidade()">Privacidade e seus dados</button>
+        </p>
       </div>
     </div>
+  </section>
+
+  <!-- ================= PRIVACIDADE (LGPD) ================= -->
+  <section class="screen" id="s-privacidade">
+    <button class="back" onclick="voltarDaPrivacidade()">←&nbsp; voltar</button>
+    <h1 class="title">Privacidade</h1>
+    <p class="subtitle">O que fazemos com a sua selfie — em português claro.</p>
+
+    <div class="card" style="padding:6px 18px">
+      <div class="passo"><span class="n">1</span><span class="t"><b>Sua selfie não é guardada.</b> Ela vira um código matemático e é apagada na hora. Esse código não permite reconstruir seu rosto.</span></div>
+      <div class="passo"><span class="n">2</span><span class="t"><b>Serve só para achar suas fotos</b> neste evento. Não é usada para mais nada, nem cruzada com outros eventos.</span></div>
+      <div class="passo"><span class="n">3</span><span class="t"><b>Ninguém mais recebe.</b> O reconhecimento roda em servidor próprio, no Brasil. Nada é enviado para outras empresas.</span></div>
+      <div class="passo"><span class="n">4</span><span class="t"><b>Some sozinho.</b> O código do seu rosto é apagado em <b id="pri-bio">7</b> dias; as fotos do evento, em <b id="pri-fotos">90</b> dias.</span></div>
+      <div class="passo"><span class="n">5</span><span class="t"><b>Você manda nos seus dados.</b> Pode pedir a exclusão a qualquer momento, aqui mesmo.</span></div>
+    </div>
+
+    <p class="note" style="margin-top:14px;text-align:left;line-height:1.7">
+      Base legal: <b>consentimento</b> específico para dado sensível (LGPD, Art. 11).<br>
+      Contato do responsável: <span id="pri-contato" class="link"></span>
+    </p>
+
+    <button class="btn ghost block" style="margin-top:16px" onclick="excluirMeusDados()">Excluir meus dados agora</button>
+    <p class="note" style="margin-top:10px">Isso remove seu código facial, seus contatos e desfaz o vínculo com as fotos.</p>
   </section>
 
   <!-- ================= GUIA DE CÂMERAS ================= -->
@@ -627,7 +653,8 @@ input{font-family:inherit}
     </div>
     <div class="consent" style="margin:12px 0 0;padding:11px 13px">
       <input type="checkbox" id="g-consent2" checked>
-      <label for="g-consent2">Autorizo usar minha selfie <b>apenas</b> para achar minhas fotos. Ela não é guardada.</label>
+      <label for="g-consent2">Autorizo usar minha selfie <b>apenas</b> para achar minhas fotos. Ela não é guardada.
+        <a class="link" onclick="event.preventDefault();abrirPrivacidade()">Como funciona</a></label>
     </div>
     <div class="lead-box" id="lead-box" style="display:none">
       <div class="lb-t">Quer que o fotógrafo saiba quem é você? <b style="color:var(--dim);font-weight:500">(opcional)</b></div>
@@ -1456,6 +1483,35 @@ function renderGuestGrid(){
   wrap('g-grid');wrap('g-grid2');
   const c=guestState.photos.length;document.getElementById('g-count').textContent=c+(c===1?' foto':' fotos');
   const dl=document.getElementById('g-download'); if(dl) dl.style.display=(todasAba?guestState.todas.length:c)?'':'none';
+}
+
+/* ========================= PRIVACIDADE (LGPD) ========================= */
+let _voltaPrivacidade='landing';
+async function abrirPrivacidade(){
+  _voltaPrivacidade=document.querySelector('.screen.active').id.replace(/^s-/,'');
+  go('privacidade');
+  if(!LIVE)return;
+  try{
+    const p=await (await fetch(API+'/privacidade')).json();
+    document.getElementById('pri-bio').textContent=p.retencao.codigo_facial_dias;
+    document.getElementById('pri-fotos').textContent=p.retencao.fotos_do_evento_dias;
+    const c=document.getElementById('pri-contato'); c.textContent=p.contato;
+    c.onclick=()=>{ location.href='mailto:'+p.contato; };
+  }catch(e){}
+}
+function voltarDaPrivacidade(){ go(_voltaPrivacidade||'landing'); }
+async function excluirMeusDados(){
+  if(!guestState.id){ toast('Você ainda não registrou uma selfie neste aparelho.'); return; }
+  if(!confirm('Excluir seus dados?\n\nSeu código facial e seus contatos serão apagados, e você deixa de receber as fotos deste evento.'))return;
+  try{
+    const fd=new FormData(); fd.append('guest_id',guestState.id);
+    const r=await fetch(API+'/convidado/excluir',{method:'POST',body:fd});
+    if(!r.ok){ toast('Não consegui excluir. Tente de novo.'); return; }
+    clearGuestSession(guestState.event); clearInterval(state._poll);
+    guestState.id=null; guestState.photos=[]; guestState.todas=[];
+    toast('Seus dados foram excluídos ✓');
+    go('landing');
+  }catch(e){ toast('Erro de conexão.'); }
 }
 
 /* ========================= ADMIN ========================= */

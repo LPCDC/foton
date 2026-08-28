@@ -151,6 +151,36 @@ def adota_evento(code, dono):
     q("UPDATE event SET dono=?, auto=0 WHERE code=?", (dono, code))
     return True
 
+def expirar(dias_biometria=7, dias_fotos=90):
+    """LGPD — minimização e retenção: biometria some rápido; fotos seguem a retenção
+    do plano. Roda diariamente. Retorna o que foi apagado (para o log)."""
+    import time as _t
+    agora = _t.time()
+    lim_bio = agora - dias_biometria * 86400
+    lim_fot = agora - dias_fotos * 86400
+    # 1) biometria dos convidados (dado sensível) — vida curta
+    gs = q("SELECT id FROM guest WHERE criado < ?", (lim_bio,), "all")
+    for g in gs:
+        q("DELETE FROM match WHERE guest_id=?", (g["id"],))
+        q("DELETE FROM guest WHERE id=?", (g["id"],))
+    # 2) contatos deixados voluntariamente seguem a retenção das fotos
+    q("DELETE FROM contact WHERE ts < ?", (lim_fot,))
+    # 3) fotos e rostos delas
+    ps = q("SELECT id FROM photo WHERE criado < ?", (lim_fot,), "all")
+    for p in ps:
+        q("DELETE FROM face WHERE photo_id=?", (p["id"],))
+        q("DELETE FROM match WHERE photo_id=?", (p["id"],))
+        q("DELETE FROM photo WHERE id=?", (p["id"],))
+    return {"convidados": len(gs), "fotos": len(ps)}
+
+def apagar_dados_do_convidado(gid):
+    """Direito de exclusão (LGPD Art. 18): o titular pede e sai tudo dele."""
+    achou = bool(q("SELECT 1 FROM guest WHERE id=?", (gid,), "one"))
+    q("DELETE FROM match WHERE guest_id=?", (gid,))
+    q("DELETE FROM contact WHERE guest_id=?", (gid,))
+    q("DELETE FROM guest WHERE id=?", (gid,))
+    return achou
+
 def orfaos():
     rs = q("""SELECT e.code, e.nome, e.criado,
                      (SELECT COUNT(*) FROM photo WHERE event_code=e.code) fotos
