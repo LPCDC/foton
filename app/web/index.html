@@ -748,7 +748,10 @@ function photoNext(){ if(!_bag.length) _bag=[...PHOTOS].sort(()=>Math.random()-.
 /* ===== MODO AO VIVO — fala com o test-rig (?live=1). Sem ?live=1 = demo simulada ===== */
 const _params = new URLSearchParams(location.search);
 /* AO VIVO sempre que servido pela Render/rig (ou ?live=1). Só é demo no Netlify. */
-const LIVE = _params.get('live') === '1' || /onrender\.com$/i.test(location.hostname) || location.port === '8770';
+/* AO VIVO em qualquer servidor real (Oracle/Render/local). Só é demo no Netlify/artifact. */
+const _DEMO_HOSTS = /(netlify\.app|claude\.ai|claudeusercontent\.com)$/i;
+const LIVE = _params.get('live') === '1' ||
+             (!_DEMO_HOSTS.test(location.hostname) && location.protocol.startsWith('http'));
 const API = (_params.get('api') || location.origin).replace(/\/$/,'');
 if(LIVE) setInterval(()=>fetch(API+'/health').catch(()=>{}), 240000); // keep-alive: servidor nao dorme enquanto o painel esta aberto
 
@@ -839,9 +842,17 @@ async function carregarConta(){
   if(!LIVE||!tokenSalvo())return false;
   try{
     const r=await fetch(API+'/me',{headers:auth()});
-    if(!r.ok){ salvarToken(null); SESSAO=null; return false; }
+    if(r.status===401){ salvarToken(null); SESSAO=null; return false; }  // só desloga se o servidor disser
+    if(!r.ok) return !!SESSAO;                                           // erro de rede: mantém a sessão
     SESSAO=await r.json(); return true;
-  }catch(e){ return false; }
+  }catch(e){ return !!SESSAO; }                                          // offline: não desloga
+}
+/* sessão do fotógrafo expirou: avisa e leva ao login, sem apagar a lista local */
+function sessaoFotografoExpirou(){
+  salvarToken(null); SESSAO=null;
+  toast('Sua sessão expirou — entre de novo');
+  if(modoCadastro) alternarCadastro();
+  go('login');
 }
 function logout(){ stopEvent(); salvarToken(null); SESSAO=null; state.events=[]; saveEvents(); go('landing'); }
 async function entrarComoFotografo(){
@@ -1066,7 +1077,9 @@ function loadEvents(){ if(!LIVE)return; try{ const s=localStorage.getItem('foton
 async function sincronizarEventos(){
   if(!LIVE)return;
   try{
-    const r=await fetch(API+'/events',{headers:auth()}); if(!r.ok)return;
+    const r=await fetch(API+'/events',{headers:auth()});
+    if(r.status===401){ sessaoFotografoExpirou(); return; }   // nunca apagar a lista por sessão inválida
+    if(!r.ok) return;                                          // erro de rede: mantém o que já está na tela
     const remotos=(await r.json()).events||[];
     const porCodigo={}; state.events.forEach(e=>porCodigo[e.code]=e);
     remotos.forEach(rm=>{
@@ -1077,8 +1090,10 @@ async function sincronizarEventos(){
              date:rm.date||'', photos:rm.photos, guests:rm.guests, brand:rm.brand||'', status:'live'};
     });
     const codigosRemotos=new Set(remotos.map(e=>e.code));
-    state.events=Object.values(porCodigo)
-      .filter(e=>codigosRemotos.has(e.code))       // some o que ja nao existe no servidor
+    const todos=Object.values(porCodigo);
+    // só remove locais quando o servidor DE FATO respondeu com uma lista (evita
+    // apagar tudo por uma resposta vazia inesperada)
+    state.events=(remotos.length ? todos.filter(e=>codigosRemotos.has(e.code)) : todos)
       .sort((a,b)=>(b.id>a.id?1:-1));
     saveEvents();
     await carregarConta();                       // totais reais junto com a lista

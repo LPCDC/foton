@@ -145,7 +145,9 @@ def create_event(code: str = Form(...), brand: str = Form("FÓTON"),
 @app.get("/events")
 def events(authorization: str = Header(None)):
     c = _dono(authorization)
-    if not c: return {"events": []}          # sem login, nenhum evento (nao vaza de outros)
+    # 401 explicito: devolver lista vazia com 200 fazia o app achar que o fotografo
+    # nao tem eventos e APAGAR a lista local. Sessao invalida tem que ser erro.
+    if not c: raise HTTPException(401, "sessão expirada")
     return {"events": [{"code": e["code"], "name": e["nome"], "date": e["data"], "brand": e["marca"],
                         "photos": e["fotos"], "guests": e["convidados"], "status": e["status"]}
                        for e in store.eventos_de(c["email"])]}
