@@ -218,6 +218,17 @@ input{font-family:inherit}
 .tab{flex:1;padding:10px 8px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--muted);transition:.16s}
 .tab.on{background:var(--surface-2);color:var(--text);box-shadow:0 2px 8px -2px rgba(0,0,0,.5)}
 .tab:active{transform:scale(.98)}
+.guia-tabs{display:flex;gap:6px;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px}
+.passo{display:flex;gap:13px;padding:13px 0;border-bottom:1px solid var(--line-soft)}
+.passo:last-child{border-bottom:none}
+.passo .n{width:26px;height:26px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);
+  display:grid;place-items:center;font-size:12.5px;font-weight:700;color:var(--accent);flex-shrink:0}
+.passo .t{font-size:14px;line-height:1.55;color:var(--muted)}
+.passo .t b{color:var(--text);font-weight:600}
+.guia-app{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-sm);padding:13px 15px;margin-bottom:14px}
+.guia-app .ap{font-size:13.5px;font-weight:600}
+.guia-app .mod{font-size:12px;color:var(--dim);margin-top:2px}
 .lead-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 15px;margin-top:12px}
 .lead-box .lb-t{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px}
 .lead-box input{width:100%;background:var(--ink-2);border:1px solid var(--line);color:var(--text);
@@ -362,7 +373,7 @@ input{font-family:inherit}
         <h1 class="display">A foto no celular do convidado, <em>na hora.</em></h1>
         <p class="lede">Você fotografa. A imagem é tratada, reconhece quem está nela e cai sozinha na galeria da pessoa — ao vivo, sem ninguém instalar nada.</p>
         <div class="entry">
-          <button class="entry-card" onclick="go('login')">
+          <button class="entry-card" onclick="entrarComoFotografo()">
             <span class="ec-t">Sou fotógrafo</span>
             <span class="ec-s">Criar evento e enviar fotos</span>
             <span class="ec-go">→</span>
@@ -373,22 +384,55 @@ input{font-family:inherit}
             <span class="ec-go">→</span>
           </button>
         </div>
+        <p class="note" style="margin-top:18px">
+          <button class="link" onclick="go('guia')">📷 Como conectar minha câmera ao Fóton</button>
+        </p>
       </div>
     </div>
+  </section>
+
+  <!-- ================= GUIA DE CÂMERAS ================= -->
+  <section class="screen" id="s-guia">
+    <button class="back" onclick="home()">←&nbsp; início</button>
+    <h1 class="title">Conectar sua câmera</h1>
+    <p class="subtitle">A foto vai da câmera para o seu celular pelo app do fabricante — e do celular para o Fóton. Configure uma vez; depois é só usar.</p>
+
+    <div class="guia-tabs">
+      <button class="tab on" onclick="guiaMarca('canon',this)">Canon</button>
+      <button class="tab" onclick="guiaMarca('nikon',this)">Nikon</button>
+      <button class="tab" onclick="guiaMarca('sony',this)">Sony</button>
+    </div>
+    <div id="guia-conteudo"></div>
+
+    <div class="tips" style="margin-top:16px">
+      <b>Regra de ouro do envio</b>
+      <ul>
+        <li>O Wi-Fi da câmera <b>não tem internet</b>. Baixe as fotos primeiro, depois <b>volte para os dados móveis (4G/5G)</b> e envie.</li>
+        <li>Envie <b>várias de uma vez</b> — o Fóton processa em lote.</li>
+        <li>Rosto <b>nítido, de frente e próximo</b> é o que garante o reconhecimento.</li>
+      </ul>
+    </div>
+    <p class="note" style="margin-top:14px">Não achou sua câmera? Qualquer câmera com Wi-Fi e app do fabricante funciona — o caminho é sempre o mesmo.</p>
   </section>
 
   <!-- ================= LOGIN ================= -->
   <section class="screen" id="s-login">
     <button class="back" onclick="go('landing')">←&nbsp; voltar</button>
-    <h1 class="title">Entrar no painel</h1>
-    <p class="subtitle">Acesse com seu login e senha.</p>
+    <h1 class="title" id="log-title">Entrar no painel</h1>
+    <p class="subtitle" id="log-sub">Use seu e-mail e senha.</p>
     <div class="card">
-      <div class="field"><label>E-mail</label><input id="in-email" type="email" placeholder="voce@estudio.com" autocomplete="username" value="patricia@fotonahora.com"></div>
-      <div class="field"><label>Senha</label><input id="in-pass" type="password" placeholder="••••••••" autocomplete="current-password" value="demo1234"></div>
-      <button class="btn primary block" onclick="login()">Entrar</button>
-      <p class="hint">Conta de demonstração já preenchida.</p>
+      <div class="field"><label>E-mail</label><input id="in-email" type="email" placeholder="voce@estudio.com" autocomplete="username"></div>
+      <div class="field"><label>Senha</label><input id="in-pass" type="password" placeholder="mínimo 6 caracteres" autocomplete="current-password"></div>
+      <div id="campos-cadastro" style="display:none">
+        <div class="field"><label>Seu nome</label><input id="in-nome" placeholder="Ex.: Patrícia Vargas" autocomplete="name"></div>
+        <div class="field"><label>Marca nas fotos</label><input id="in-marca" placeholder="Ex.: Patrícia Vargas Fotografia" maxlength="40"></div>
+      </div>
+      <button class="btn primary block" id="btn-login" onclick="autenticar()">Entrar</button>
     </div>
-    <p class="note" style="margin-top:20px">Esqueceu a senha? <a class="link" onclick="toast('No produto: recuperação por e-mail (Supabase Auth).')">Recuperar acesso</a></p>
+    <p class="note" style="margin-top:18px">
+      <span id="txt-alterna">Ainda não tem conta?</span>
+      <button class="link" id="btn-alterna" onclick="alternarCadastro()">Criar conta</button>
+    </p>
   </section>
 
   <!-- ================= DASHBOARD ================= -->
@@ -413,7 +457,7 @@ input{font-family:inherit}
 
     <div class="eyebrow-sm">Seus eventos</div>
     <div id="evt-list"></div>
-    <div class="sticky"><button class="btn primary block" onclick="go('create')">＋&nbsp; Criar evento</button></div>
+    <div class="sticky"><button class="btn primary block" onclick="abrirCriarEvento()">＋&nbsp; Criar evento</button></div>
     <p class="note" style="margin-top:14px">
       <button class="link btn-instalar" style="display:none" onclick="instalarApp()">📲 Instalar o Fóton no celular</button>
     </p>
@@ -743,14 +787,73 @@ function go(id){
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 
-function login(){if(!document.getElementById('in-email').value.trim()){toast('Digite o e-mail.');return;}go('dash');}
-function logout(){stopEvent();go('landing');}
+/* ================== CONTA REAL (login/cadastro com senha) ================== */
+let SESSAO=null;
+function tokenSalvo(){ try{ return localStorage.getItem('foton_token'); }catch(e){ return null; } }
+function salvarToken(t){ try{ t?localStorage.setItem('foton_token',t):localStorage.removeItem('foton_token'); }catch(e){} }
+function auth(){ const t=tokenSalvo(); return t?{Authorization:'Bearer '+t}:{}; }
+
+let modoCadastro=false;
+function alternarCadastro(){
+  modoCadastro=!modoCadastro;
+  document.getElementById('campos-cadastro').style.display=modoCadastro?'':'none';
+  document.getElementById('log-title').textContent=modoCadastro?'Criar sua conta':'Entrar no painel';
+  document.getElementById('log-sub').textContent=modoCadastro?'Leva 10 segundos. Seus eventos ficam guardados na sua conta.':'Use seu e-mail e senha.';
+  document.getElementById('btn-login').textContent=modoCadastro?'Criar conta':'Entrar';
+  document.getElementById('txt-alterna').textContent=modoCadastro?'Já tem conta?':'Ainda não tem conta?';
+  document.getElementById('btn-alterna').textContent=modoCadastro?'Entrar':'Criar conta';
+}
+async function autenticar(){
+  const email=document.getElementById('in-email').value.trim();
+  const senha=document.getElementById('in-pass').value;
+  if(!email||!senha){ toast('Preencha e-mail e senha.'); return; }
+  if(modoCadastro&&senha.length<6){ toast('A senha precisa de pelo menos 6 caracteres.'); return; }
+  if(!LIVE){ SESSAO={nome:'Demo',credits:18,credits_total:20}; go('dash'); return; }
+  const b=document.getElementById('btn-login'); const txt=b.textContent; b.textContent='Aguarde…'; b.disabled=true;
+  try{
+    const fd=new FormData(); fd.append('email',email); fd.append('senha',senha);
+    if(modoCadastro){ fd.append('nome',document.getElementById('in-nome').value.trim());
+                      fd.append('marca',document.getElementById('in-marca').value.trim()); }
+    const r=await fetch(API+(modoCadastro?'/signup':'/login'),{method:'POST',body:fd});
+    if(!r.ok){
+      if(r.status===409){ toast('Você já tem conta — entre com sua senha.'); if(modoCadastro) alternarCadastro(); return; }
+      toast(r.status===401?'E-mail ou senha incorretos.'
+           :r.status===400?'Senha muito curta (mínimo 6).':'Não consegui conectar. Tente de novo.');
+      return;
+    }
+    const j=await r.json(); salvarToken(j.token); SESSAO=j;
+    state.events=[]; await carregarConta();     // pega os totais reais (fotos/convidados)
+    go('dash');
+  }catch(e){ toast('Servidor indisponível. Tente de novo.'); }
+  finally{ b.textContent=txt; b.disabled=false; }
+}
+async function carregarConta(){
+  if(!LIVE||!tokenSalvo())return false;
+  try{
+    const r=await fetch(API+'/me',{headers:auth()});
+    if(!r.ok){ salvarToken(null); SESSAO=null; return false; }
+    SESSAO=await r.json(); return true;
+  }catch(e){ return false; }
+}
+function logout(){ stopEvent(); salvarToken(null); SESSAO=null; state.events=[]; saveEvents(); go('landing'); }
+async function entrarComoFotografo(){
+  if(LIVE && await carregarConta()){ go('dash'); return; }   // ja logado -> direto pro painel
+  if(modoCadastro) alternarCadastro();                       // sempre abre no modo ENTRAR
+  document.getElementById('in-pass').value='';
+  go('login');
+}
 
 function renderDash(){
-  document.getElementById('credit-n').textContent=state.credits;
-  document.getElementById('credit-bar').style.width=(state.credits/state.totalCredits*100)+'%';
-  document.getElementById('st-photos').textContent=state.totPhotos;
-  document.getElementById('st-guests').textContent=state.totGuests;
+  // numeros REAIS da conta (quando ao vivo); no modo demo, os do mock
+  const cr = SESSAO ? SESSAO.credits : state.credits;
+  const tot = SESSAO ? SESSAO.credits_total : state.totalCredits;
+  document.getElementById('credit-n').textContent=cr;
+  document.querySelector('.credit .of').textContent='de '+tot+' eventos';
+  document.getElementById('credit-bar').style.width=(tot?cr/tot*100:0)+'%';
+  document.getElementById('st-photos').textContent=SESSAO?(SESSAO.total_fotos||0):state.totPhotos;
+  document.getElementById('st-guests').textContent=SESSAO?(SESSAO.total_convidados||0):state.totGuests;
+  const nomeEl=document.querySelector('#s-dash .word');
+  if(nomeEl&&SESSAO&&SESSAO.nome) nomeEl.childNodes[0].nodeValue=SESSAO.nome;
   const box=document.getElementById('evt-list');box.innerHTML='';
   if(!state.events.length){
     box.innerHTML='<div class="empty">Nenhum evento ainda.<br>Toque em <b>Criar evento</b> para começar.</div>';return;
@@ -790,21 +893,31 @@ async function checarServidor(){
 }
 function fmtDate(s){if(!s)return'';const[y,m,d]=s.split('-');return `${d}/${m}/${y}`;}
 
+function abrirCriarEvento(){
+  const b=document.getElementById('ev-brand');
+  if(b&&!b.value&&SESSAO&&SESSAO.marca) b.value=SESSAO.marca;   // marca da conta ja preenchida
+  go('create');
+}
 function criarEvento(){
   const name=document.getElementById('ev-name').value.trim()||'Evento sem nome';
   const date=document.getElementById('ev-date').value||new Date().toISOString().slice(0,10);
-  if(state.credits<=0){toast('Sem créditos. Compre um novo pacote.');return;}
-  const brand=(document.getElementById('ev-brand').value||'').trim().slice(0,40);
+  const creditos = SESSAO ? SESSAO.credits : state.credits;
+  if(creditos<=0){toast('Seus créditos acabaram. Fale com o Fóton para renovar.');return;}
+  const brand=(document.getElementById('ev-brand').value||'').trim().slice(0,40) || (SESSAO&&SESSAO.marca)||'';
   const leads=document.getElementById('ev-leads').checked;
   const ev={id:'e'+Date.now(),name,date,photos:0,guests:0,status:'live',code:genCode(),brand,leads};
-  state.events.unshift(ev);state.credits--;saveEvents();openEvent(ev);   // abre a tela do QR NA HORA (não trava) e persiste
+  state.events.unshift(ev);
+  if(SESSAO) SESSAO.credits=Math.max(0,SESSAO.credits-1); else state.credits--;
+  saveEvents();openEvent(ev);   // abre a tela do QR NA HORA (não trava) e persiste
   if(LIVE) registerEvent(ev.code,8,brand,name,date);        // registra no servidor em 2º plano (com retry no cold start)
 }
 async function registerEvent(code,tries=8,brand='',name='',date=''){
   for(let i=0;i<tries;i++){
     try{ const fd=new FormData(); fd.append('code',code); if(brand) fd.append('brand',brand);
       if(name) fd.append('name',name); if(date) fd.append('date',date);
-      const r=await fetch(API+'/event',{method:'POST',body:fd}); if(r.ok) return; }catch(e){}
+      const r=await fetch(API+'/event',{method:'POST',body:fd,headers:auth()});
+      if(r.ok){ carregarConta().then(()=>{ if(document.getElementById('s-dash').classList.contains('active')) renderDash(); }); return; }
+    }catch(e){}
     if(i===0) toast('Acordando o servidor…');
     await new Promise(r=>setTimeout(r,2500));
   }
@@ -893,6 +1006,7 @@ async function encerrarEvento(){
   }catch(e){}
   comRosto=(ev._photos||[]).filter(p=>p.faces>0).length;
   ev.status='done'; ev.resumo={fotos:ev.photos||0, comRosto, convidados, contatos};
+  if(LIVE){ try{ const fd=new FormData(); fd.append('code',ev.code); await fetch(API+'/event/close',{method:'POST',body:fd}); }catch(e){} }
   saveEvents(); stopEvent(); go('dash');
   mostrarResumo(ev);
 }
@@ -944,7 +1058,7 @@ function loadEvents(){ if(!LIVE)return; try{ const s=localStorage.getItem('foton
 async function sincronizarEventos(){
   if(!LIVE)return;
   try{
-    const r=await fetch(API+'/events'); if(!r.ok)return;
+    const r=await fetch(API+'/events',{headers:auth()}); if(!r.ok)return;
     const remotos=(await r.json()).events||[];
     const porCodigo={}; state.events.forEach(e=>porCodigo[e.code]=e);
     remotos.forEach(rm=>{
@@ -959,6 +1073,7 @@ async function sincronizarEventos(){
       .filter(e=>codigosRemotos.has(e.code))       // some o que ja nao existe no servidor
       .sort((a,b)=>(b.id>a.id?1:-1));
     saveEvents();
+    await carregarConta();                       // totais reais junto com a lista
     if(document.getElementById('s-dash').classList.contains('active')) renderDash();
   }catch(e){}
 }
@@ -1388,6 +1503,50 @@ function badgeSVG(full){
 document.querySelectorAll('.mark').forEach(m=>{m.innerHTML=badgeSVG(false);m.onclick=home;m.setAttribute('role','button');m.setAttribute('tabindex','0');m.setAttribute('aria-label','Início — Fóton');
   m.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();home();}});});
 const _bb=document.querySelector('.brand-badge'); if(_bb) _bb.innerHTML=badgeSVG(true);
+
+/* ============ GUIA DE CÂMERAS (dados oficiais dos fabricantes) ============ */
+const GUIAS={
+  canon:{app:'Canon Camera Connect', loja:'grátis na Play Store / App Store',
+    modelos:'EOS R8, R6, R5, R50, RP · T6s/760D, T7i, 90D · PowerShot com Wi-Fi',
+    passos:[
+      'Instale o <b>Canon Camera Connect</b> no celular.',
+      'Na câmera: <b>MENU → (rede) → Configurações de Wi-Fi → Ativar</b>, depois <b>Conectar a smartphone</b>.',
+      'No app, toque em <b>conectar</b> e escolha a sua câmera. Na primeira vez o celular pede para entrar no Wi-Fi da câmera — aceite.',
+      'Toque em <b>Imagens na câmera</b>, selecione as fotos e <b>baixe</b> para o celular.',
+      '<b>Volte para os dados móveis</b> (saia do Wi-Fi da câmera) e envie pelo Fóton.'],
+    dica:'Na R8 dá para deixar o Bluetooth pareado: a reconexão fica quase instantânea nas próximas vezes.'},
+  nikon:{app:'SnapBridge', loja:'grátis na Play Store / App Store',
+    modelos:'Z6/Z7/Z8/Z50/Zf · D780, D850, D7500, D5600',
+    passos:[
+      'Instale o <b>SnapBridge</b> e <b>ligue o Bluetooth</b> do celular antes de começar.',
+      'No app: <b>ícone de engrenagem → Adicionar câmera</b>, escolha o tipo e <b>Pareamento (Bluetooth)</b>.',
+      'Quando a câmera achar o celular, confirme <b>OK</b> na câmera e toque em <b>Parear</b> no app.',
+      'Em <b>Baixar imagens</b>, selecione as fotos e transfira. <b>Importante:</b> o envio automático manda versão reduzida (2 MP) — para o Fóton, prefira baixar <b>em tamanho original</b>.',
+      '<b>Volte para os dados móveis</b> e envie pelo Fóton.'],
+    dica:'O pareamento por Bluetooth fica salvo: nos próximos eventos ele reconecta sozinho.'},
+  sony:{app:'Creators\' App (antigo Imaging Edge Mobile)', loja:'grátis na Play Store / App Store',
+    modelos:'A7 III/IV, A7R, A6400, A6600, ZV-E10, FX30',
+    passos:[
+      'Instale o <b>Creators\' App</b> da Sony no celular.',
+      'Na câmera: <b>MENU → Rede → Conex. Smartphone</b> e siga o pareamento indicado no app.',
+      'No app, abra a câmera conectada e vá em <b>Importar</b>.',
+      'Selecione as fotos e <b>transfira em tamanho original</b> (não a versão reduzida).',
+      '<b>Volte para os dados móveis</b> e envie pelo Fóton.'],
+    dica:'A Sony tem transferência automática em segundo plano: as fotos vão chegando ao celular enquanto você fotografa.'}
+};
+function guiaMarca(m,btn){
+  document.querySelectorAll('.guia-tabs .tab').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  const g=GUIAS[m];
+  document.getElementById('guia-conteudo').innerHTML=
+    `<div class="guia-app"><div><div class="ap">${g.app}</div><div class="mod">${g.loja}</div></div></div>
+     <div class="card" style="padding:6px 18px">
+       ${g.passos.map((p,i)=>`<div class="passo"><span class="n">${i+1}</span><span class="t">${p}</span></div>`).join('')}
+     </div>
+     <p class="note" style="margin-top:12px;text-align:left"><b style="color:var(--accent-2)">Dica:</b> ${g.dica}</p>
+     <p class="note" style="margin-top:8px;text-align:left;color:var(--dim);font-size:11.5px">Compatível: ${g.modelos}</p>`;
+}
+guiaMarca('canon');
 
 /* palco da landing — uma foto real de fundo (troca a cada abertura) */
 (()=>{const el=document.getElementById('stage-bg'); if(!el)return;

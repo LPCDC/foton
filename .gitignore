@@ -68,3 +68,7 @@ logs/
 !app/test_rig/models/
 !app/test_rig/models/buffalo_s/
 !app/test_rig/models/buffalo_s/*.onnx
+
+# banco local do rig (dados de teste, nunca versionar)
+app/test_rig/foton.db
+app/test_rig/foton.db-*
