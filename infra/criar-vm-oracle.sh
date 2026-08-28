@@ -49,29 +49,46 @@ echo "firewall da nuvem (22/80/443): ok"
 echo "chave SSH: ok"
 
 # 6) cria a instância — tenta 2/12, depois 1/6 se faltar capacidade
-criar () {
+criar_arm () {
   oci compute instance launch -c "$C" --display-name foton-server \
     --image-id "$IMG" --shape VM.Standard.A1.Flex \
     --shape-config "{\"ocpus\":$1,\"memoryInGBs\":$2}" \
-    --subnet-id "$SUB" --assign-public-ip true \
-    --availability-domain "$AD" \
+    --subnet-id "$SUB" --assign-public-ip true --availability-domain "$AD" \
     --ssh-authorized-keys-file ~/.ssh/foton.key.pub \
     --wait-for-state RUNNING --query 'data.id' --raw-output 2>/dev/null
 }
-OK=""
-for AD in $(oci iam availability-domain list -c "$C" --query 'data[].name' --raw-output | tr -d '[",]'); do
+criar_x86 () {
+  IMGX=$(oci compute image list -c "$C" --operating-system "Canonical Ubuntu" \
+         --operating-system-version "22.04" --shape VM.Standard.E2.1.Micro \
+         --sort-by TIMECREATED --query 'data[0].id' --raw-output)
+  oci compute instance launch -c "$C" --display-name foton-server \
+    --image-id "$IMGX" --shape VM.Standard.E2.1.Micro \
+    --subnet-id "$SUB" --assign-public-ip true --availability-domain "$AD" \
+    --ssh-authorized-keys-file ~/.ssh/foton.key.pub \
+    --wait-for-state RUNNING --query 'data.id' --raw-output 2>/dev/null
+}
+OK=""; TIPO=""
+ADS=$(oci iam availability-domain list -c "$C" --query 'data[].name' --raw-output | tr -d '[",]')
+for AD in $ADS; do
   for CFG in "2 12" "1 6"; do
     set -- $CFG
-    echo "tentando ${1} OCPU / ${2}GB em $AD ..."
-    if ID=$(criar "$1" "$2"); then OK="$ID"; break 2; fi
+    echo "tentando ARM ${1} OCPU / ${2}GB em $AD ..."
+    if ID=$(criar_arm "$1" "$2"); then OK="$ID"; TIPO="ARM ${1}vCPU/${2}GB"; break 2; fi
   done
 done
-[ -z "$OK" ] && { echo; echo "!! SEM CAPACIDADE ARM agora (comum em São Paulo)."; echo "   Rode este script de novo mais tarde — o resto já está configurado."; exit 2; }
+if [ -z "$OK" ]; then
+  echo "ARM sem estoque — indo para o plano B (x86 Always Free, quase sempre disponível)"
+  for AD in $ADS; do
+    echo "tentando x86 E2.1.Micro (1 vCPU / 1GB) em $AD ..."
+    if ID=$(criar_x86); then OK="$ID"; TIPO="x86 1vCPU/1GB"; break; fi
+  done
+fi
+[ -z "$OK" ] && { echo; echo "!! Sem capacidade em ARM e x86 agora. Rode de novo mais tarde."; echo "   Rede, firewall e chave JÁ estão configurados."; exit 2; }
 
 IP=$(oci compute instance list-vnics --instance-id "$OK" --query 'data[0]."public-ip"' --raw-output)
 echo
 echo "=========================================="
-echo " VM CRIADA COM SUCESSO"
+echo " VM CRIADA COM SUCESSO  ($TIPO)"
 echo " IP público : $IP"
 echo "=========================================="
 echo
