@@ -188,6 +188,12 @@ def create_event(code: str = Form(...), brand: str = Form("FÓTON"),
                       data=date, marca=brand, auto=0)
     if c: store.gasta_credito(c["email"])
     log.info('{"stage":"event","code":"%s","status":"created"}' % code)
+    if c:
+        # Fotos que a câmera mandou ANTES do evento existir entram agora, sozinhas.
+        try:
+            import ftp_camera; ftp_camera.drenar(c["email"])
+        except Exception:
+            pass
     return {"event": code, "brand": (brand or "FÓTON")}
 
 @app.get("/events")

@@ -330,6 +330,11 @@ input{font-family:inherit}
 .cam{aspect-ratio:3/4;border-radius:var(--r);overflow:hidden;background:#000;position:relative;
   display:grid;place-items:center;margin-bottom:16px;border:1px solid var(--line)}
 .cam video,.cam img{width:100%;height:100%;object-fit:cover}
+/* Espelho: a câmera frontal mostra o mundo como a lente vê, e quem se olha espera
+   um ESPELHO — sem isto a pessoa move a mão para a direita e a imagem vai para a
+   esquerda ("a câmera abre invertida"). Espelha só o que aparece na tela; a foto
+   que sai do canvas continua na orientação real, igual às fotos do evento. */
+.cam video{transform:scaleX(-1)}
 .cam .frame{position:absolute;inset:30px;border:2px dashed rgba(255,255,255,.3);border-radius:110px 110px 90px 90px;pointer-events:none}
 .cam .ph-txt{color:var(--dim);font-size:13px;text-align:center;padding:22px;line-height:1.7}
 .cam .ph-txt .k{font-size:30px;display:block;margin-bottom:10px}

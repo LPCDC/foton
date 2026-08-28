@@ -8,8 +8,8 @@ Como funciona: cada fotógrafo tem um usuário FTP e uma pasta. Quando um arquiv
 termina de chegar, ele entra no MESMO pipeline do upload pelo app (watermark,
 reconhecimento, match) e cai no evento que estiver AO VIVO daquele fotógrafo.
 """
-import os, time, threading, logging
-from pyftpdlib.authorizers import DummyAuthorizer
+import os, time, threading, logging, secrets
+from pyftpdlib.authorizers import DummyAuthorizer, AuthenticationFailed
 from pyftpdlib.handlers import FTPHandler
 from pyftpdlib.servers import FTPServer
 
@@ -18,13 +18,61 @@ import store
 log = logging.getLogger("foton.ftp")
 RAIZ = os.environ.get("FOTON_FTP_DIR", "/var/lib/foton/ftp")
 PORTA = int(os.environ.get("FOTON_FTP_PORT", "2121"))
+JANELA_H = float(os.environ.get("FOTON_FTP_JANELA_HORAS", "6"))   # foto pendente entra no evento se for desta janela
+DESCARTE_H = float(os.environ.get("FOTON_FTP_DESCARTE_HORAS", "24"))  # mais velha que isso: some (a foto segue no cartão)
 _ingerir = None          # injetado pelo rig (evita import circular)
+_drenando = threading.Lock()
 
 
 def _pasta_do(email):
     p = os.path.join(RAIZ, email.replace("@", "_at_").replace("/", "_"))
     os.makedirs(p, exist_ok=True)
     return p
+
+
+def _pendentes_do(email):
+    """Fotos que chegaram ANTES de existir evento ao vivo. Ficam aqui esperando —
+    antes elas eram deixadas na pasta e nunca mais processadas (foto perdida em
+    silêncio, justo no ensaio em que a fotógrafa testa a câmera)."""
+    p = os.path.join(RAIZ, "_pendentes", email.replace("@", "_at_").replace("/", "_"))
+    os.makedirs(p, exist_ok=True)
+    return p
+
+
+def drenar(email):
+    """Manda para o evento ao vivo o que ficou pendente. Chamado quando chega foto
+    nova e quando a fotógrafa abre um evento. Roda numa thread para não travar o
+    FTP (o servidor é de laço único: ingerir 20 fotos aqui pararia de receber)."""
+    def _trabalho():
+        if not _drenando.acquire(blocking=False):
+            return                                    # já tem um drenando; não empilha
+        try:
+            pasta = _pendentes_do(email)
+            agora = time.time()
+            for nome in sorted(os.listdir(pasta)):
+                caminho = os.path.join(pasta, nome)
+                try:
+                    idade_h = (agora - os.path.getmtime(caminho)) / 3600
+                    if idade_h > DESCARTE_H:
+                        os.remove(caminho)
+                        log.info('{"stage":"ftp","status":"pendente_descartada","idade_h":%.1f}' % idade_h)
+                        continue
+                    if idade_h > JANELA_H:
+                        continue                      # velha demais para este evento; espera o descarte
+                    code = _evento_ao_vivo(email)
+                    if not code:
+                        return                        # ainda não há evento: fica pendente
+                    with open(caminho, "rb") as f:
+                        raw = f.read()
+                    pid, n = _ingerir(code, raw)
+                    os.remove(caminho)
+                    log.info('{"stage":"ftp","status":"pendente_entregue","photo_id":"%s","event":"%s","n_faces":%d}'
+                             % (pid, code, n))
+                except Exception as e:
+                    log.info('{"stage":"ftp","status":"pendente_erro","err":"%s"}' % str(e)[:120])
+        finally:
+            _drenando.release()
+    threading.Thread(target=_trabalho, daemon=True).start()
 
 
 def _evento_ao_vivo(email):
@@ -44,13 +92,18 @@ class _Handler(FTPHandler):
                 os.remove(arquivo); return
             code = _evento_ao_vivo(email)
             if not code:
-                log.info('{"stage":"ftp","status":"sem_evento_ao_vivo","user":"%s"}' % email)
-                return                                   # guarda o arquivo para depois
+                # Sem evento ao vivo a foto vai para a fila de pendentes e entra
+                # assim que a fotógrafa abrir o evento. Antes ela sumia.
+                destino = os.path.join(_pendentes_do(email), "%d_%s" % (time.time() * 1000, os.path.basename(arquivo)))
+                os.replace(arquivo, destino)
+                log.info('{"stage":"ftp","status":"pendente_guardada","user":"%s"}' % email)
+                return
             with open(arquivo, "rb") as f:
                 raw = f.read()
             pid, n = _ingerir(code, raw)
             os.remove(arquivo)                           # já está no banco
             log.info('{"stage":"ftp","photo_id":"%s","event":"%s","n_faces":%d}' % (pid, code, n))
+            drenar(email)                                # leva junto o que ficou para trás
         except Exception as e:
             log.info('{"stage":"ftp","status":"erro","err":"%s"}' % str(e)[:120])
 
@@ -66,18 +119,45 @@ def senha_ftp(email):
     return hashlib.sha256((seg + email).encode()).hexdigest()[:12]
 
 
+class _Auth(DummyAuthorizer):
+    """Confere o login contra o banco NA HORA.
+
+    Antes, os usuários eram cadastrados uma única vez no boot: quem criasse conta
+    depois não conseguia conectar a câmera até alguém reiniciar o serviço — e a
+    fotógrafa não teria como saber disso no meio do evento.
+    """
+    def validate_authentication(self, username, password, handler):
+        c = store.conta((username or "").strip().lower())
+        if not c or not secrets.compare_digest(senha_ftp(c["email"]), password or ""):
+            raise AuthenticationFailed("usuario ou senha do FTP incorretos")
+
+    def get_home_dir(self, username):
+        return _pasta_do((username or "").strip().lower())
+
+    def has_user(self, username):
+        return store.conta((username or "").strip().lower()) is not None
+
+    def has_perm(self, username, perm, path=None):
+        return perm in "elw"                             # entrar, listar, escrever
+
+    def get_perms(self, username):
+        return "elw"
+
+    def get_msg_login(self, username):
+        return "Foton pronto"
+
+    def get_msg_quit(self, username):
+        return "ate logo"
+
+
 def iniciar(ingerir):
     """Sobe o servidor FTP numa thread. `ingerir(code, bytes) -> (photo_id, n_faces)`."""
     global _ingerir
     _ingerir = ingerir
     os.makedirs(RAIZ, exist_ok=True)
 
-    aut = DummyAuthorizer()
-    for f in store.todos_fotografos():                   # um usuário por fotógrafo
-        aut.add_user(f["email"], senha_ftp(f["email"]), _pasta_do(f["email"]), perm="elw")
-
     h = _Handler
-    h.authorizer = aut
+    h.authorizer = _Auth()
     h.banner = "Foton FTP"
     h.passive_ports = range(30000, 30021)                # faixa fixa (firewall)
     srv = FTPServer(("0.0.0.0", PORTA), h)
