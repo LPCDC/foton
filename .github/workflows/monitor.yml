@@ -1,0 +1,40 @@
+name: Monitor do Fóton
+# Roda FORA do servidor (GitHub) — se a VM cair, este monitor continua vivo e avisa.
+on:
+  schedule:
+    - cron: '*/5 * * * *'      # a cada 5 minutos
+  workflow_dispatch:            # permite rodar na mão pelo site do GitHub
+
+jobs:
+  checar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checar se o Fóton responde
+        id: check
+        run: |
+          echo "verificando https://getfoton.duckdns.org/health"
+          OK=0
+          for i in 1 2 3; do   # 3 tentativas antes de gritar (evita alarme falso)
+            if curl -sf -m 25 https://getfoton.duckdns.org/health | grep -q '"ok":true'; then
+              OK=1; break
+            fi
+            sleep 20
+          done
+          echo "ok=$OK" >> $GITHUB_OUTPUT
+          [ "$OK" = "1" ] && echo "Fóton no ar" || echo "Fóton FORA DO AR"
+
+      - name: Avisar no WhatsApp se caiu
+        if: steps.check.outputs.ok != '1' && env.WA_PHONE != ''
+        env:
+          WA_PHONE: ${{ secrets.WA_PHONE }}
+          WA_KEY: ${{ secrets.WA_APIKEY }}
+        run: |
+          MSG="🔴 FOTON FORA DO AR — https://getfoton.duckdns.org nao respondeu em 3 tentativas ($(date -u '+%d/%m %H:%M UTC'))"
+          curl -s -G "https://api.callmebot.com/whatsapp.php" \
+            --data-urlencode "phone=$WA_PHONE" \
+            --data-urlencode "text=$MSG" \
+            --data-urlencode "apikey=$WA_KEY" || true
+
+      - name: Falhar o job (fica vermelho no GitHub)
+        if: steps.check.outputs.ok != '1'
+        run: exit 1
