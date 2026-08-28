@@ -133,7 +133,23 @@ input{font-family:inherit}
 .btn.ghost{background:var(--surface);border:1px solid var(--line);color:var(--text)}
 .btn.ghost:hover{border-color:var(--dim)}
 .btn.block{width:100%}
-.btn.sm{padding:10px 15px;font-size:13px;border-radius:11px}
+.btn.sm{padding:12px 16px;font-size:13.5px;border-radius:11px;min-height:44px}
+/* a fotógrafa usa isto de pé, no escuro, com a câmera na mão: alvos maiores */
+.btn{min-height:52px}
+.btn.sm{min-height:44px}
+.actions-row .btn{min-height:48px}
+.evt{min-height:70px}
+.evt-del{min-width:52px}
+/* faixa fixa com o código do evento — é o que ela mais mostra/dita */
+.faixa-ev{position:sticky;top:0;z-index:12;display:flex;align-items:center;justify-content:space-between;
+  gap:10px;background:rgba(11,10,13,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+  margin:-26px -22px 16px;padding:12px 22px}
+.faixa-ev .cod{font-family:var(--mono);font-weight:600;font-size:19px;letter-spacing:.22em;color:var(--accent);padding-left:.22em}
+.faixa-ev .lb{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:2px}
+.faixa-ev .ok{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--ok)}
+.faixa-ev .ok i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:block;
+  box-shadow:0 0 0 3px rgba(90,209,155,.18)}
+.faixa-ev .ok.off{color:var(--live)} .faixa-ev .ok.off i{background:var(--live);box-shadow:0 0 0 3px rgba(255,85,96,.18)}
 .btn .k{font-size:17px}
 .btn svg{width:19px;height:19px;flex-shrink:0}
 .note{margin-top:22px;text-align:center;color:var(--dim);font-size:12px;line-height:1.7}
@@ -286,6 +302,20 @@ input{font-family:inherit}
 .ph .tag{position:absolute;left:6px;top:6px;z-index:2;background:rgba(10,8,12,.6);backdrop-filter:blur(6px);
   font-size:8.5px;font-weight:600;padding:3px 7px;border-radius:999px;color:#fff;display:flex;align-items:center;gap:3px}
 @keyframes phin{from{opacity:0;transform:scale(.86) translateY(6px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+/* momento de encanto: a foto CHEGANDO (é o clímax do produto pro convidado) */
+.ph.nova{animation:chega .9s cubic-bezier(.2,.9,.25,1.2) both}
+.ph.nova::before{content:"";position:absolute;inset:0;z-index:3;border-radius:13px;
+  box-shadow:0 0 0 2px var(--accent), 0 0 28px 4px rgba(232,217,176,.55);
+  animation:brilho 1.6s ease-out forwards;pointer-events:none}
+@keyframes chega{0%{opacity:0;transform:scale(.6) translateY(24px) rotate(-4deg);filter:blur(8px)}
+  60%{opacity:1;transform:scale(1.04) translateY(0) rotate(1deg);filter:blur(0)}
+  100%{transform:none}}
+@keyframes brilho{0%{opacity:1}100%{opacity:0}}
+.chegou{position:fixed;left:50%;top:22%;transform:translate(-50%,-50%) scale(.8);z-index:80;
+  background:var(--grad);color:#1a1608;font-family:var(--serif);font-weight:600;font-size:16px;
+  padding:12px 22px;border-radius:999px;box-shadow:0 14px 40px -10px rgba(203,181,131,.7);
+  opacity:0;pointer-events:none;transition:.4s cubic-bezier(.2,.9,.2,1.3)}
+.chegou.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .empty{grid-column:1/-1;text-align:center;color:var(--dim);padding:36px 16px;font-size:13.5px;line-height:1.65;
   border:1px dashed var(--line);border-radius:var(--r-sm)}
 .empty b{color:var(--muted);font-weight:600}
@@ -557,6 +587,10 @@ input{font-family:inherit}
 
   <!-- ================= EVENT LIVE ================= -->
   <section class="screen" id="s-event">
+    <div class="faixa-ev">
+      <div><span class="lb">Código do evento</span><button class="cod" id="faixa-cod" onclick="copiarCodigo()" style="background:none;border:none;padding:0">— — — —</button></div>
+      <div class="ok" id="faixa-ok"><i></i><span>recebendo</span></div>
+    </div>
     <button class="back" onclick="stopEvent();go('dash')">←&nbsp; encerrar e voltar</button>
     <h1 class="title" id="ev-title">Evento</h1>
     <p class="subtitle"><span class="pill livepill" style="margin-right:4px"><span class="livedot"></span><span class="live-txt">AO VIVO</span></span> <span id="ev-date-lbl">hoje</span></p>
@@ -1142,10 +1176,13 @@ async function deletarFoto(pid,ev){
 /* convidados conectados (real) */
 async function atualizarStats(){
   if(!LIVE||!state.live)return;
-  try{ const r=await fetch(`${API}/stats?event=${encodeURIComponent(state.live.code)}`); if(!r.ok)return;
+  const fo=document.getElementById('faixa-ok');
+  try{ const r=await fetch(`${API}/stats?event=${encodeURIComponent(state.live.code)}`);
+    if(!r.ok)throw 0;
     const j=await r.json(); state.live.guests=j.guests;
     const el=document.getElementById('ev-nguests'); if(el) el.textContent=j.guests;
-  }catch(e){}
+    if(fo){ fo.className='ok'; fo.querySelector('span').textContent='recebendo'; }   // ela vê que está tudo certo
+  }catch(e){ if(fo){ fo.className='ok off'; fo.querySelector('span').textContent='sem conexão'; } }
   carregarContatos();
 }
 async function carregarContatos(){
@@ -1212,6 +1249,7 @@ function openEvent(ev,opts){
   document.getElementById('ev-title').textContent=ev.name;
   document.getElementById('ev-date-lbl').textContent=fmtDate(ev.date);
   document.getElementById('ev-code').textContent=(ev.code||'DEMO').split('').join(' ');
+  const fc=document.getElementById('faixa-cod'); if(fc) fc.textContent=(ev.code||'DEMO').split('').join(' ');
   document.getElementById('ev-nphotos').textContent=ev.photos;
   document.getElementById('ev-nguests').textContent=ev.guests;
   drawQR(ev.code||'DEMO');renderEventGrid();go('event');
@@ -1411,6 +1449,10 @@ function startPolling(){
       const r=await fetch(`${API}/feed?event=${encodeURIComponent(guestState.event)}&guest_id=${guestState.id}`);
       if(!r.ok)return; const j=await r.json();
       if(j.known===false){ sessaoExpirou(); return; }
+      // quantas fotos existem no evento (dá vida à tela de espera)
+      fetch(`${API}/stats?event=${encodeURIComponent(guestState.event)}`).then(r=>r.ok&&r.json())
+        .then(s=>{ if(s&&s.photos!==guestState.totalEvento){ guestState.totalEvento=s.photos;
+          if(!guestState.photos.length) renderGuestGrid(); } }).catch(()=>{});
       const have=new Set(guestState.photos.map(p=>p.src));
       (j.photos||[]).forEach(id=>{ const s=`${API}/img/${guestState.event}/${id}.jpg`; if(!have.has(s)) pushToGuest({src:s}); });
     }catch(e){}
@@ -1434,8 +1476,19 @@ function goGallery(){
     state._gfeed=setInterval(()=>{if(k++>6){clearInterval(state._gfeed);return;}pushToGuest({src:photoNext(),faces:1});},3200);}
 }
 function pushToGuest(p){
+  p._nova=true;                       // marca para a animação de chegada
   guestState.photos.push(p);renderGuestGrid();
   avisarFotoNova();
+  if(document.getElementById('s-g-gallery').classList.contains('active')) celebrar();
+  setTimeout(()=>{ p._nova=false; },1200);
+}
+/* o clímax: "Chegou uma foto sua!" */
+function celebrar(){
+  let el=document.getElementById('chegou');
+  if(!el){ el=document.createElement('div'); el.id='chegou'; el.className='chegou'; document.body.appendChild(el); }
+  el.textContent='✨ Chegou uma foto sua!';
+  el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2200);
 }
 /* avisa mesmo com o celular no bolso: vibra + marca o titulo da aba */
 let _naoVistas=0, _tituloBase='Fóton';
@@ -1470,15 +1523,28 @@ async function carregarTodas(){
 function renderGuestGrid(){
   const todasAba = guestState.aba==='todas';
   const lista = todasAba ? guestState.todas : guestState.photos;
+  const noEvento = guestState.totalEvento||0;
+  // estado vazio VIVO: mostra que a festa está rolando e dá saída (antes era um beco)
+  const vazioMinhas = `<div class="empty" style="grid-column:1/-1">
+      <div style="font-size:15px;color:var(--text);font-weight:600;margin-bottom:8px">Você está no evento ✓</div>
+      ${noEvento
+        ? `<div style="color:var(--accent);font-weight:600;margin-bottom:8px">${noEvento} foto${noEvento>1?'s':''} já ${noEvento>1?'foram tiradas':'foi tirada'} na festa</div>
+           Assim que você aparecer em uma, ela chega aqui <b>sozinha</b>.`
+        : 'Assim que o fotógrafo começar, suas fotos chegam aqui <b>sozinhas</b>.'}
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn ghost sm" onclick="trocarAba('todas')">Ver as fotos da festa</button>
+        ${noEvento>2?'<button class="btn ghost sm" onclick="refazerSelfie()">Não achou você? Tente outra selfie</button>':''}
+      </div>
+    </div>`;
   const empty = todasAba
     ? '<div class="empty" style="grid-column:1/-1">Ainda não há fotos neste evento.<br>Assim que o fotógrafo enviar, elas aparecem aqui.</div>'
-    : '<div class="empty" style="grid-column:1/-1">Você está no evento ✓<br>Suas fotos aparecem aqui <b>sozinhas</b> assim que o fotógrafo clicar em você.<br>Deixe esta tela aberta.</div>';
+    : vazioMinhas;
   const wrap=id=>{const g=document.getElementById(id);if(!g)return;
     if(!lista.length){g.innerHTML=empty;return;}
     g.innerHTML='';
     const ordem=lista.slice().reverse();
     g.innerHTML='';
-    ordem.forEach((p,i)=>{const d=document.createElement('div');d.className='ph';
+    ordem.forEach((p,i)=>{const d=document.createElement('div');d.className='ph'+(p._nova?' nova':'');
       d.onclick=()=>abrirFoto(ordem,i);                       // toque abre a FOTO (não o menu)
       d.innerHTML=`<img src="${p.src}" alt="Foto ${i+1}" loading="lazy">`;g.appendChild(d);});};
   wrap('g-grid');wrap('g-grid2');
@@ -1675,7 +1741,10 @@ async function compartilharFoto(){
     const blob=await fetchBlob(src);
     const file=new File([blob],`foton-${Date.now()}.jpg`,{type:blob.type||'image/jpeg'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-      await navigator.share({files:[file],title:'Minha foto — Fóton'});
+      // texto junto = marketing gratuito para a fotógrafa
+      const marca=(state.live&&state.live.brand)||'';
+      await navigator.share({files:[file], title:'Minha foto',
+        text:`📸 Recebi minha foto na hora${marca?` — ${marca}`:''} ✨`});
       return;                                    // menu nativo: WhatsApp, Instagram, etc.
     }
     saveBlob(blob,file.name);                    // desktop/sem suporte: baixa e explica
