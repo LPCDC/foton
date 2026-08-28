@@ -166,13 +166,36 @@ ainda não com a Canon**.
 a senha do FTP é derivável do repo público · sem rate limit no `/login` · fotos são
 BLOB no SQLite × 7 backups (disco).
 
-**a) Garantir que as câmeras conectem — NUNCA foi testado com câmera real.**
-   - ⚠️ **CORREÇÃO (2026-08-28): a R8 NÃO tem transferência FTP.** A premissa antiga
-     deste documento estava errada. O FTP no menu é dos corpos superiores
-     (R5, R3, R6/R6 II). A própria fotógrafa desconfiou disso antes de nós.
-   - T6s (760D): tem Wi-Fi mas **não tem FTP** → Camera Connect → celular → app.
-   - **Consequência:** o caminho garantido do piloto é **celular → app**. O FTP é
-     bônus, e só se ela tiver um R6/R6 II. Confirmar o modelo exato olhando o corpo.
+**a) ENCONTRO PRESENCIAL FEITO (2026-08-28) — resultado real**
+
+   ✅ **O produto funcionou.** A Patrícia aprovou o protótipo. Tudo que foi enviado
+   pelo celular funcionou: 35 fotos, 4 eventos, 19 convidados registrados em produção.
+   Nada falhou no pipeline.
+
+   ❌ **As câmeras não conectaram.** É a única frustração do dia, e virou a
+   **prioridade nº 1**: o dono prometeu fazer a R8 e a T6s "clicarem e a foto já ir
+   pro Fóton".
+
+   **Inventário definitivo (não perguntar de novo):** ela tem **Canon R8 + Canon T6s
+   (760D)**. Ela **NÃO tem R6** — hipótese levantada e descartada pelo dono.
+   **Nenhuma das duas tem FTP** — verificado no menu das duas, presencialmente.
+   Logo, o servidor FTP do Fóton (que funciona) **não serve para esta cliente**.
+
+   **Causa raiz da frustração no encontro: o tutorial do nosso app estava errado.**
+   Ele mandava procurar `MENU → (rede) → Configurações de Wi-Fi`, que **não existe
+   com esse nome na R8**. O caminho certo (manual oficial Canon, C013) é:
+   `MENU → Funções de comunicação → Conectar a smartphone(tablet)`. Corrigido no app.
+
+   **Descoberta que muda o jogo — a R8 TEM envio automático:**
+   `Funções de comunicação → Conectar a smartphone(tablet) → Enviar para smartphone
+   após o disparo → Envio automático: Ativar`. Com isso **cada foto cai sozinha no
+   celular dela**, sem tocar na câmera. Metade do caminho já está resolvida.
+
+   **O elo que falta:** celular → Fóton, automático. Hoje ela ainda precisa
+   selecionar e enviar à mão. Opções em `docs/PILOTO-1.md`.
+
+   T6s (760D, 2015): envio automático após disparo provavelmente **não existe**
+   (recurso de gerações novas) — `UNKNOWN — REQUIRES EXPERIMENT`.
    - **É o maior risco em aberto.** Fazer um ensaio presencial com as duas câmeras
      antes de qualquer evento pago. Usar o "testar foto" do admin para validar na hora.
 
