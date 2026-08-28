@@ -127,3 +127,26 @@ Todos `UNKNOWN` até o S0.
 - **Método:** brute-force cosseno em CPU/numpy, embeddings 128-d (dim do SFace), 200 iters/tamanho.
 - **Resultado:** galeria 1k = 0,015 ms · 10k = 0,13 ms · **100k = 0,6 ms (P95 0,7)**; memória 100k = 51 MB.
 - **Conclusão:** busca vetorial é **desprezível** no orçamento; **não precisa de FAISS/índice** nessa escala. Caminho do convidado (selfie detect+embed ~5ms + match <1ms) ≈ **~6 ms**.
+
+**2026-08-28 · Reduzir a foto NO CELULAR antes de subir** — produção (`getfoton.duckdns.org`, VM 1 vCPU / 1 GB)
+- **Hipótese:** o servidor já reduz para 2048 px de lado maior. Reduzir antes de enviar não perde
+  qualidade e tira bytes da rede **e** a decodificação de 24 MP do único núcleo.
+- **Método:** mesma imagem, 4000×3000. Envio real por HTTPS, de fora. Rajada = 4 envios em paralelo.
+- **Cuidado obrigatório:** o canvas descarta o EXIF → sem `imageOrientation:'from-image'` a foto chega
+  deitada e o rosto não é detectado. Verificado no navegador (10,5 MB → 1,91 MB, 4000×3000 deitada →
+  1536×2048 em pé, 159 ms no aparelho).
+
+| | 11,6 MB (como era) | 2,1 MB (como é agora) | ganho |
+|---|---|---|---|
+| 1 foto, ponta a ponta | **9,07 s** | **3,17 s** | 2,9× |
+| processamento no servidor | 3.701 ms | 993 ms | 3,7× |
+| rajada de 4 | **25,1 s** | **9,3 s** | 2,7× |
+
+- **Leitura honesta:** foto isolada passou a caber folgado no SLA de 10 s. Rajada de 4 = 9,3 s;
+  extrapolando, 20 fotos ≈ 46 s (antes ~125 s). **Rajada grande ainda não cabe em 10 s.**
+- **Assimetria importante:** isto vale para o caminho **celular → app**. A câmera por **FTP manda o
+  arquivo original**, sem redução possível no cliente — continua em ~9 s por foto. Hoje o celular é
+  o caminho MAIS RÁPIDO, não o contrário.
+- **Próximo experimento proposto:** `Image.draft()` do Pillow decodifica o JPEG já em escala reduzida.
+  Deve derrubar os 3,7 s de processamento da foto grande e beneficiaria os **dois** caminhos.
+  `UNKNOWN — REQUIRES EXPERIMENT`.
