@@ -94,6 +94,18 @@ def _dono(token):
 app = FastAPI(title="Fóton", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+@app.middleware("http")
+async def _sem_cache_na_api(request, call_next):
+    """Defesa em profundidade: nenhuma resposta de API pode ser cacheada.
+    Um cache em /me ou /events mostra os dados de OUTRA conta depois de trocar
+    de login — foi exatamente o bug do 'entrei como admin e apareceu a Patrícia'."""
+    resp = await call_next(request)
+    p = request.url.path
+    if not p.startswith("/img/") and ("." not in p.rsplit("/", 1)[-1] or p.endswith((".json",))):
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+    return resp
+
 @app.on_event("startup")
 def _startup():
     store.conn()
