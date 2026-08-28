@@ -241,6 +241,57 @@ def photo_delete(event: str = Form(...), photo_id: str = Form(...)):
     log.info('{"stage":"photo","photo_id":"%s","status":"deleted"}' % photo_id)
     return {"ok": True}
 
+# ============================ ADMIN ============================
+ADMINS = {e.strip().lower() for e in os.environ.get("FOTON_ADMINS", "admin@foton.com").split(",")}
+
+def _admin(authorization):
+    c = _dono(authorization)
+    if not c or c["email"].lower() not in ADMINS:
+        raise HTTPException(403, "acesso restrito")
+    return c
+
+@app.get("/admin/resumo")
+def admin_resumo(authorization: str = Header(None)):
+    _admin(authorization)
+    import shutil
+    du = shutil.disk_usage("/")
+    return {**store.resumo_geral(),
+            "disco_livre_gb": round(du.free / 1e9, 1), "disco_total_gb": round(du.total / 1e9, 1),
+            "fotografos_lista": store.todos_fotografos()}
+
+@app.post("/admin/creditos")
+def admin_creditos(email: str = Form(...), quantidade: int = Form(...), authorization: str = Header(None)):
+    _admin(authorization)
+    c = store.da_creditos(email, max(-999, min(999, quantidade)))
+    if not c: raise HTTPException(404, "fotógrafo não encontrado")
+    log.info('{"stage":"admin","acao":"creditos","alvo":"%s","n":%d}' % (email, quantidade))
+    return {"ok": True, "credits": c["credits"], "credits_total": c["credits_total"]}
+
+@app.post("/admin/senha")
+def admin_senha(email: str = Form(...), nova: str = Form(...), authorization: str = Header(None)):
+    _admin(authorization)
+    if len(nova) < 6: raise HTTPException(400, "senha muito curta (mínimo 6)")
+    if not store.conta(email.strip().lower()): raise HTTPException(404, "fotógrafo não encontrado")
+    store.troca_senha(email, nova)
+    log.info('{"stage":"admin","acao":"senha","alvo":"%s"}' % email)
+    return {"ok": True}
+
+@app.post("/admin/testar-foto")
+def admin_testar_foto(file: UploadFile = File(...), authorization: str = Header(None)):
+    """Canivete suíço da visita presencial: manda uma foto da câmera da fotógrafa e
+    diz na hora se o rosto seria reconhecido — valida o setup dela em segundos."""
+    _admin(authorization)
+    import asyncio
+    raw = asyncio.run(file.read()) if False else file.file.read()
+    t0 = time.time()
+    treated, dims, pms = process_image(raw)
+    faces = detect_embed(treated)
+    dica = ("Perfeito — rosto reconhecido." if len(faces) == 1 else
+            f"{len(faces)} rostos reconhecidos." if faces else
+            "Nenhum rosto lido. Aproxime a pessoa, use luz melhor e rosto de frente.")
+    return {"n_faces": len(faces), "dims": dims, "processing_ms": round(pms, 1),
+            "total_ms": int((time.time() - t0) * 1000), "dica": dica}
+
 @app.get("/qr")
 def qr(data: str):
     img = qrcode.make(data)

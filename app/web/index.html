@@ -245,6 +245,16 @@ input{font-family:inherit}
 .contatos .c-row{display:flex;justify-content:space-between;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line-soft);font-size:13.5px}
 .contatos .c-row:last-child{border-bottom:none}
 .contatos .c-row span{color:var(--muted);font-size:12.5px}
+/* barra de progresso do envio */
+.prog{position:fixed;left:0;right:0;bottom:0;z-index:65;background:var(--surface);
+  border-top:1px solid var(--line);padding:13px 20px calc(14px + env(safe-area-inset-bottom));
+  transform:translateY(110%);transition:transform .3s cubic-bezier(.2,.8,.2,1);box-shadow:0 -8px 30px rgba(0,0,0,.5)}
+.prog.show{transform:none}
+.prog .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+.prog .t{font-size:13.5px;font-weight:600}
+.prog .c{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.prog .bar{height:6px;background:var(--ink-2);border-radius:999px;overflow:hidden}
+.prog .bar i{display:block;height:100%;width:0;background:var(--grad);border-radius:999px;transition:width .3s}
 .tips{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:13px 15px;margin-top:12px}
 .tips b{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);display:block;margin-bottom:7px}
 .tips ul{margin:0;padding-left:16px;color:var(--muted);font-size:12.5px;line-height:1.7}
@@ -450,6 +460,7 @@ input{font-family:inherit}
       <div class="word">Patrícia<small>painel do fotógrafo</small></div>
       <div class="grow"></div>
       <span class="srv" id="srv-status"><i></i><span>servidor</span></span>
+      <button class="tag-btn" id="btn-admin" style="display:none;margin-left:6px" onclick="abrirAdmin()">admin</button>
     </div>
 
     <div class="credit">
@@ -470,6 +481,31 @@ input{font-family:inherit}
       <button class="link btn-instalar" style="display:none" onclick="instalarApp()">📲 Instalar o Fóton no celular</button>
     </p>
     <p class="note" style="margin-top:6px"><button class="link" onclick="logout()">Sair da conta</button></p>
+  </section>
+
+  <!-- ================= ADMIN ================= -->
+  <section class="screen" id="s-admin">
+    <button class="back" onclick="go('dash')">←&nbsp; painel</button>
+    <h1 class="title">Administração</h1>
+    <p class="subtitle">Suporte, créditos e diagnóstico.</p>
+
+    <div class="stats" id="adm-stats" style="flex-wrap:wrap"></div>
+
+    <div class="eyebrow-sm">Testar câmera do fotógrafo</div>
+    <div class="tips">
+      <p class="muted" style="font-size:13px;margin-bottom:10px">Envie uma foto tirada pela câmera dele e veja na hora se o rosto seria reconhecido.</p>
+      <input type="file" id="adm-foto" accept="image/*" style="display:none" onchange="admTestarFoto(event)">
+      <button class="btn ghost sm block" onclick="document.getElementById('adm-foto').click()">Escolher foto e testar</button>
+      <div id="adm-resultado" style="margin-top:12px"></div>
+    </div>
+
+    <div class="eyebrow-sm">Fotógrafos</div>
+    <div id="adm-lista"></div>
+
+    <div class="tips" style="margin-top:14px">
+      <b>Servidor</b>
+      <div class="contatos" id="adm-servidor"></div>
+    </div>
   </section>
 
   <!-- ================= CREATE ================= -->
@@ -678,6 +714,12 @@ input{font-family:inherit}
 
 <div class="toast" id="toast"></div>
 
+<!-- progresso do envio (a foto nao "some" mais durante o upload) -->
+<div class="prog" id="prog">
+  <div class="top"><span class="t" id="prog-t">Enviando…</span><span class="c" id="prog-c"></span></div>
+  <div class="bar"><i id="prog-i"></i></div>
+</div>
+
 <!-- RESUMO do evento encerrado -->
 <div class="sheet" id="resumo" onclick="if(event.target===this)fecharResumo()">
   <div class="inner">
@@ -873,6 +915,7 @@ function renderDash(){
   document.getElementById('st-guests').textContent=SESSAO?(SESSAO.total_convidados||0):state.totGuests;
   const nomeEl=document.querySelector('#s-dash .word');
   if(nomeEl&&SESSAO&&SESSAO.nome) nomeEl.childNodes[0].nodeValue=SESSAO.nome;
+  const ba=document.getElementById('btn-admin'); if(ba) ba.style.display=EH_ADMIN()?'':'none';
   const box=document.getElementById('evt-list');box.innerHTML='';
   if(!state.events.length){
     box.innerHTML='<div class="empty">Nenhum evento ainda.<br>Toque em <b>Criar evento</b> para começar.</div>';return;
@@ -960,17 +1003,33 @@ async function uploadPhoto(e){
   const files=[...(e.target.files||[])]; if(!files.length)return; e.target.value='';
   await enviarLote(files);
 }
+/* barra de progresso: mostra o que esta acontecendo (antes parecia travado) */
+function progresso(feito,total,texto){
+  const p=document.getElementById('prog');
+  p.classList.add('show');
+  document.getElementById('prog-t').textContent=texto||'Enviando fotos…';
+  document.getElementById('prog-c').textContent=total>1?`${feito} de ${total}`:'';
+  document.getElementById('prog-i').style.width=(total?Math.round(feito/total*100):0)+'%';
+}
+function progressoFim(msg){
+  document.getElementById('prog-i').style.width='100%';
+  if(msg) document.getElementById('prog-t').textContent=msg;
+  setTimeout(()=>document.getElementById('prog').classList.remove('show'),1400);
+}
 async function enviarLote(files){
   const ev=state.live; if(!ev)return;
   let ok=0, semRosto=0; const falhou=[];
+  progresso(0,files.length, files.length>1?`Enviando ${files.length} fotos…`:'Enviando foto…');
   for(let i=0;i<files.length;i++){
-    toast(files.length>1?`Enviando ${i+1} de ${files.length}…`:'Enviando foto…');
+    progresso(i,files.length, `Tratando e reconhecendo rostos…`);
     const j=await enviarUma(ev,files[i]);
+    progresso(i+1,files.length, `Tratando e reconhecendo rostos…`);
     if(!j){ falhou.push(files[i]); continue; }
     ev._photos.push({id:j.photo_id, src:`${API}/img/${ev.code}/${j.photo_id}.jpg`, faces:j.n_faces});
     ev.photos=(ev.photos||0)+1; ok++; if(!j.n_faces) semRosto++;
     document.getElementById('ev-nphotos').textContent=ev.photos; renderEventGrid();
   }
+  progressoFim(ok?`${ok} foto(s) publicada(s)`:'Nada foi publicado');
   filaFalhas=falhou; renderFalhas();
   saveEvents(); atualizarStats();
   const p=[]; if(ok)p.push(`${ok} foto(s) publicada(s)`);
@@ -1387,6 +1446,65 @@ function renderGuestGrid(){
   const dl=document.getElementById('g-download'); if(dl) dl.style.display=(todasAba?guestState.todas.length:c)?'':'none';
 }
 
+/* ========================= ADMIN ========================= */
+const EH_ADMIN = () => !!(SESSAO && /^admin@/i.test(SESSAO.email||''));
+async function abrirAdmin(){
+  go('admin');
+  try{
+    const r=await fetch(API+'/admin/resumo',{headers:auth()});
+    if(r.status===403){ toast('Sua conta não é administradora.'); go('dash'); return; }
+    if(!r.ok){ toast('Não consegui carregar.'); return; }
+    const j=await r.json();
+    const cel=(n,l)=>`<div class="stat" style="flex:1 1 30%"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+    document.getElementById('adm-stats').innerHTML=
+      cel(j.fotografos,'Fotógrafos')+cel(j.eventos,'Eventos')+cel(j.fotos,'Fotos')+
+      cel(j.convidados,'Convidados')+cel(j.contatos,'Contatos');
+    document.getElementById('adm-servidor').innerHTML=
+      `<div class="c-row"><b>Disco livre</b><span>${j.disco_livre_gb} GB de ${j.disco_total_gb} GB</span></div>`+
+      `<div class="c-row"><b>Reconhecimento</b><span>ArcFace (buffalo_s)</span></div>`;
+    document.getElementById('adm-lista').innerHTML=(j.fotografos_lista||[]).map(f=>`
+      <div class="tips" style="margin-bottom:8px">
+        <b style="color:var(--text);text-transform:none;letter-spacing:0;font-size:14px">${(f.nome||f.email).replace(/[<>]/g,'')}</b>
+        <p class="muted" style="font-size:12px;margin:2px 0 10px">${f.email} · ${f.eventos} evento(s) · ${f.credits}/${f.credits_total} créditos</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn ghost sm" onclick="admCreditos('${f.email}',10)">+10 créditos</button>
+          <button class="btn ghost sm" onclick="admSenha('${f.email}')">Trocar senha</button>
+        </div>
+      </div>`).join('') || '<div class="empty">Nenhum fotógrafo ainda.</div>';
+  }catch(e){ toast('Servidor indisponível.'); }
+}
+async function admCreditos(email,n){
+  try{ const fd=new FormData(); fd.append('email',email); fd.append('quantidade',n);
+    const r=await fetch(API+'/admin/creditos',{method:'POST',body:fd,headers:auth()});
+    if(!r.ok){ toast('Não consegui dar créditos.'); return; }
+    const j=await r.json(); toast(`+${n} créditos — agora ${j.credits}`); abrirAdmin();
+  }catch(e){ toast('Erro de conexão.'); }
+}
+async function admSenha(email){
+  const nova=prompt(`Nova senha para ${email} (mínimo 6):`); if(!nova)return;
+  if(nova.length<6){ toast('Mínimo 6 caracteres.'); return; }
+  try{ const fd=new FormData(); fd.append('email',email); fd.append('nova',nova);
+    const r=await fetch(API+'/admin/senha',{method:'POST',body:fd,headers:auth()});
+    toast(r.ok?'Senha trocada ✓':'Não consegui trocar.');
+  }catch(e){ toast('Erro de conexão.'); }
+}
+async function admTestarFoto(e){
+  const f=e.target.files[0]; if(!f)return; e.target.value='';
+  const box=document.getElementById('adm-resultado');
+  box.innerHTML='<p class="muted" style="font-size:13px">Analisando…</p>';
+  try{
+    const fd=new FormData(); fd.append('file',f);
+    const r=await fetch(API+'/admin/testar-foto',{method:'POST',body:fd,headers:auth()});
+    if(!r.ok){ box.innerHTML='<p class="muted" style="font-size:13px">Falhou ('+r.status+')</p>'; return; }
+    const j=await r.json();
+    const cor=j.n_faces?'var(--ok)':'var(--warn)';
+    box.innerHTML=`<div style="border-left:3px solid ${cor};padding-left:12px">
+      <b style="color:${cor};font-size:14px">${j.n_faces} rosto(s) reconhecido(s)</b>
+      <p class="muted" style="font-size:12.5px;margin-top:4px">${j.dica}</p>
+      <p class="muted" style="font-size:11.5px;margin-top:4px;color:var(--dim)">${j.dims[0]}×${j.dims[1]} · ${j.total_ms}ms</p></div>`;
+  }catch(err){ box.innerHTML='<p class="muted" style="font-size:13px">Erro de conexão.</p>'; }
+}
+
 /* ===================== VISUALIZADOR DE FOTO (lightbox) ===================== */
 let lbLista=[], lbIdx=0;
 function abrirFoto(lista, idx){
@@ -1450,15 +1568,36 @@ function closeSheet(){document.getElementById('sheet').classList.remove('show');
 async function fetchBlob(src){ const r=await fetch(src,{mode:'cors'}); if(!r.ok) throw new Error(r.status); return r.blob(); }
 function saveBlob(blob,nome){
   const url=URL.createObjectURL(blob), a=document.createElement('a');
-  a.href=url; a.download=nome; document.body.appendChild(a); a.click();
+  a.href=url; a.download=nome; a.style.display='none';
+  document.body.appendChild(a); a.click();
   setTimeout(()=>{URL.revokeObjectURL(url); a.remove();},1500);
 }
-/* baixar 1 foto */
+/* iOS/Safari e alguns navegadores ignoram <a download>: usar o menu nativo */
+function ehIOS(){ return /iP(hone|ad|od)/.test(navigator.userAgent) ||
+  (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); }
+
+/* baixar 1 foto — agora SEMPRE dá retorno (sucesso, alternativa ou erro) */
 async function baixarFoto(){
-  const src=sheetTarget&&sheetTarget.src; if(!src)return; closeSheet();
-  toast('Baixando…');
-  try{ saveBlob(await fetchBlob(src), `foton-${Date.now()}.jpg`); toast('Foto salva ✓'); }
-  catch(e){ toast('Não consegui baixar — tente segurar a foto e "salvar imagem"'); }
+  const src=sheetTarget&&sheetTarget.src;
+  if(!src){ toast('Nenhuma foto selecionada.'); return; }
+  closeSheet(); toast('Salvando…');
+  let blob;
+  try{ blob=await fetchBlob(src); }
+  catch(e){ toast('Não consegui buscar a foto. Verifique a conexão.'); return; }
+  const nome=`foton-${Date.now()}.jpg`;
+  // no iOS o download direto não salva na galeria: usa o menu nativo de compartilhar
+  if(ehIOS() && navigator.canShare){
+    try{
+      const file=new File([blob],nome,{type:blob.type||'image/jpeg'});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file]});
+        toast('Escolha "Salvar imagem" para guardar na galeria');
+        return;
+      }
+    }catch(e){ if(e&&e.name==='AbortError')return; }
+  }
+  try{ saveBlob(blob,nome); toast('Foto salva ✓ (veja em Downloads)'); }
+  catch(e){ toast('Seu navegador bloqueou o download — segure a foto e escolha "Salvar imagem"'); }
 }
 /* compartilhar 1 foto (WhatsApp/Instagram/etc via menu nativo) */
 async function compartilharFoto(){
@@ -1500,16 +1639,21 @@ function makeZip(files){                          // files: [{name, data:Uint8Ar
 async function baixarTodas(){
   const fotos = guestState.aba==='todas' ? guestState.todas : guestState.photos;
   if(!fotos.length){toast('Nenhuma foto para baixar ainda.');return;}
-  closeSheet(); toast(`Preparando ${fotos.length} foto(s)…`);
+  closeSheet();
   const arquivos=[];
+  progresso(0,fotos.length,'Preparando suas fotos…');
   for(let i=0;i<fotos.length;i++){
+    progresso(i,fotos.length,'Preparando suas fotos…');
     try{ const b=await fetchBlob(fotos[i].src);
       arquivos.push({name:`foton-${String(i+1).padStart(2,'0')}.jpg`, data:new Uint8Array(await b.arrayBuffer())});
     }catch(e){}
   }
-  if(!arquivos.length){toast('Não consegui baixar as fotos.');return;}
-  saveBlob(makeZip(arquivos), `foton-minhas-fotos.zip`);
-  toast(`${arquivos.length} foto(s) baixadas ✓`);
+  progresso(fotos.length,fotos.length,'Montando o arquivo…');
+  if(!arquivos.length){ progressoFim('Não consegui baixar'); toast('Não consegui baixar as fotos.'); return; }
+  try{ saveBlob(makeZip(arquivos), `foton-minhas-fotos.zip`);
+    progressoFim(`${arquivos.length} foto(s) baixadas`);
+    toast(`${arquivos.length} foto(s) baixadas ✓ (veja em Downloads)`);
+  }catch(e){ progressoFim('Falhou'); toast('Seu navegador bloqueou o download.'); }
 }
 
 /* home (voltar pra home de qualquer subpagina) */

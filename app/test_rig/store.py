@@ -99,6 +99,33 @@ def conta(email):
 def gasta_credito(email):
     q("UPDATE photographer SET credits=MAX(0,credits-1) WHERE email=?", (email,))
 
+# ---------------- admin ----------------
+def todos_fotografos():
+    rs = q("""SELECT p.email, p.nome, p.marca, p.credits, p.credits_total, p.criado,
+                     (SELECT COUNT(*) FROM event WHERE dono=p.email AND auto=0) eventos
+              FROM photographer p ORDER BY p.criado DESC""", (), "all")
+    return [dict(r) for r in rs]
+
+def da_creditos(email, n):
+    q("""UPDATE photographer SET credits=credits+?, credits_total=credits_total+?
+         WHERE email=?""", (n, n, email.strip().lower()))
+    return conta(email.strip().lower())
+
+def troca_senha(email, nova):
+    q("UPDATE photographer SET senha=? WHERE email=?", (hash_senha(nova), email.strip().lower()))
+    q("DELETE FROM session WHERE email=?", (email.strip().lower(),))   # derruba sessões antigas
+
+def resumo_geral():
+    def n(sql):
+        r = q(sql, (), "one"); return list(r)[0] if r else 0
+    return {
+        "fotografos": n("SELECT COUNT(*) FROM photographer"),
+        "eventos":    n("SELECT COUNT(*) FROM event WHERE auto=0"),
+        "fotos":      n("SELECT COUNT(*) FROM photo"),
+        "convidados": n("SELECT COUNT(*) FROM guest"),
+        "contatos":   n("SELECT COUNT(*) FROM contact"),
+    }
+
 # ---------------- eventos ----------------
 def cria_evento(code, dono=None, nome="Evento", data="", marca="FÓTON", auto=0):
     q("""INSERT OR REPLACE INTO event(code,dono,nome,data,marca,status,auto,criado)
