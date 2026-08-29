@@ -264,3 +264,81 @@ aparelho Android nesta sessão. A contagem abaixo vem do fluxo documentado do An
   Isso exige o app instalado como PWA num Android real — `UNKNOWN — REQUIRES EXPERIMENT`.
   Todo o resto da cadeia (POST do Android → service worker → cache → app → `/ingest` →
   reconhecimento) está verificado em produção acima.
+
+---
+
+**2026-08-29 · TESTE DE CARGA — 30 selfies simultâneas + rajada de 50 fotos** — produção
+(`https://app.foton.app.br`, VM 1 vCPU / 1 GB), evento dedicado, apagado no fim
+
+**Por que:** o piloto nunca provou que aguenta um evento de verdade. Os números anteriores
+eram rajadas de 4 e 5 fotos, e uma extrapolação (20 fotos ≈ 46 s) que ninguém tinha medido.
+
+**Método:** script `carga.py` / `carga2.py` (scratchpad da sessão). Cargas com o peso real:
+foto de **2.122 KB** a 2048 px (o mesmo peso da foto de câmera já reduzida no celular pelo
+`reduzir()`), selfie de **70 KB** a 480×640 (a geometria exata que o front captura).
+Rajada de foto **sequencial**, porque é assim que o `enviarLote` envia. Selfies
+**simultâneas**, porque é assim que a fila do QR se comporta. Sonda em `/health` a cada 1 s
+durante tudo. O evento já tinha **64 convidados** na rajada pesada — custo de match realista.
+
+### Rajada de 50 fotos de 2,1 MB (sequencial)
+
+| | ms |
+|---|---|
+| mínimo | 879 |
+| **P50** | **1.008** |
+| **P95** | **1.914** |
+| P99 | 2.310 |
+| máximo | 2.523 |
+| processamento no servidor (P50 / P95) | 404 / 988 |
+
+- **50 fotos em 55,6 s** — 1,11 s por foto.
+- **Zero foto perdida** (50 enviadas, 50 no servidor). **Zero erro** em 110 requisições.
+- `/health` durante a rajada: P50 99 ms, **P95 983 ms** — o app continua respondendo ao
+  convidado enquanto ela dispara.
+
+### 30 selfies simultâneas
+
+| | servidor livre | **durante a rajada de fotos** |
+|---|---|---|
+| mínimo | 558 ms | 1.408 ms |
+| P50 | 4.867 ms | 5.693 ms |
+| **P95** | **8.171 ms** | **9.036 ms** |
+| máximo | 8.177 ms | 9.058 ms |
+| as 30 terminaram em | 8,2 s | 9,1 s |
+
+- Zero erro, zero convidado perdido (64 registrados, 64 esperados).
+- ~270 ms por selfie, **serializadas no único núcleo**: o P95 de 8 s é **posição na fila**,
+  não lentidão por selfie. Convidada sozinha: **558 ms**.
+
+### Leitura honesta
+
+- **A rajada cabe no critério do piloto.** O critério #4 é P95 ≤ 30 s do disparo até
+  aparecer no celular. Medido: **P95 de 1,9 s no servidor** + até 2,5 s do poll do
+  convidado ≈ **4,5 s**. Folgado. A extrapolação antiga de ~46 s para 20 fotos estava
+  **muito pessimista** — foi feita antes do `reduzir()` no celular e do `Image.draft()`.
+- **Zero foto perdida em 100 fotos** (as duas rodadas somadas) — critério #2 do piloto.
+- **O gargalo mudou de lugar: agora é a selfie, não a foto.** 30 convidados escaneando o QR
+  ao mesmo tempo (o que acontece quando o QR sobe no telão) fazem a última esperar **~8 s**.
+  Não quebra nada e ninguém se perde, mas é o pior momento da experiência do convidado.
+  A mitigação que estava no BENCHMARKS — "fila com prioridade para selfies" — continua
+  fazendo sentido, e agora tem número que a justifica.
+- **Viés medido e limitado, não escondido:** para chegar aos 2,1 MB usei ruído sobre as
+  fotos de demonstração, e o ruído derrubou a detecção para **18/50**. Foto sem rosto pula
+  o embedding e sai mais barata. Separando: **com rosto P50 1.111 / P95 2.154 ms**; sem
+  rosto P50 968 / P95 1.759. **O embedding custa ~195 ms por rosto.** Num evento real, onde
+  quase toda foto tem gente, a rajada de 50 dá **~62 s** em vez de 55,6 s.
+- **`UNKNOWN — REQUIRES EXPERIMENT`:** as fotos do teste têm ~1 rosto. Foto de festa costuma
+  ter 3–5. Cada rosto a mais deve somar ~195 ms — a rajada de 50 com 4 rostos por foto seria
+  **~+30 s**. Não medido; precisa de fotos de grupo reais.
+- **Não medido:** rajada **concorrente** (FTP + celular ao mesmo tempo). O caminho do piloto
+  é sequencial (`enviarLote` é um laço), então é o que foi medido.
+
+### Comparação com o que estava registrado
+
+| | antes (2026-08-28) | agora (2026-08-29) |
+|---|---|---|
+| rajada de 4 fotos | 9,3 s | — |
+| 20 fotos | ~46 s (extrapolado) | ~22 s (medido, por interpolação de 50) |
+| **50 fotos** | ~4 min (extrapolado) | **55,6 s (medido)** |
+| 8 selfies | 1 s no total | — |
+| **30 selfies** | nunca medido | **8,2 s no total, P95 8,2 s** |

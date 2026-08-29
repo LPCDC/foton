@@ -257,6 +257,11 @@ token inválido) e devolve **só a senha da própria conta**. ~~Sem rate limit n
 | 1 foto de câmera (24 MP, 13 MB) | **2,9 s** (upload + tratamento + reconhecimento) |
 | 4 fotos de câmera em rajada | **19 s no total** (~4,8 s cada — enfileiram no único núcleo) |
 
+**⚠ SUPERADO — ver a medição de 2026-08-29 em `docs/BENCHMARKS.md`.** A leitura abaixo
+foi feita antes do `reduzir()` no celular e do `Image.draft()` no servidor, e era
+**pessimista**. Medido depois: **50 fotos de 2,1 MB em 55,6 s, P95 de 1,9 s, zero
+perdida**; e **30 selfies simultâneas em 8,2 s** — a selfie virou o gargalo, não a foto.
+
 **Leitura honesta:** foto isolada cumpre o SLA de 10 s. **Em rajada, não.** 20 fotos de
 uma vez levam ~1,5 min; 50 fotos, ~4 min. Selfies de convidados são baratas; **o custo
 está no upload de fotos grandes**. Mitigações, em ordem: reduzir a foto no celular antes
