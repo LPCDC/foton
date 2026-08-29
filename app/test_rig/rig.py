@@ -133,6 +133,20 @@ def _dono(token):
     t = token.replace("Bearer ", "").strip()
     return store.por_token(t)
 
+def _senha_de_admin(senha):
+    """A senha informada e a de ALGUM login da lista de admins?"""
+    if not senha: return False
+    return any(store.autentica(a, senha) for a in ADMINS)
+
+def _exige_elevacao(c, senha_admin):
+    """Conta de EMPRESA e login compartilhado pela equipe: ve e baixa tudo, mas nao
+    cria nem apaga sem a senha de admin. A trava vive no SERVIDOR — esconder o botao
+    na tela nao segura ninguem que saiba abrir o console."""
+    if not c or not c.get("empresa"): return
+    if c["email"].lower() in ADMINS: return
+    if not _senha_de_admin(senha_admin):
+        raise HTTPException(403, "esta conta é de empresa: peça a senha de administrador")
+
 def _pode(code, authorization):
     """Portão das ações destrutivas: só o DONO do evento (ou admin) mexe nele.
 
@@ -274,6 +288,7 @@ def me(authorization: str = Header(None)):
     if not c: raise HTTPException(401, "sessão expirada")
     evs = store.eventos_de(c["email"])
     return {"nome": c["nome"], "marca": c["marca"], "email": c["email"],
+            "empresa": bool(c.get("empresa")), "admin": c["email"].lower() in ADMINS,
             "credits": c["credits"], "credits_total": c["credits_total"],
             "total_fotos": sum(e["fotos"] for e in evs),
             "total_convidados": sum(e["convidados"] for e in evs),
@@ -282,11 +297,18 @@ def me(authorization: str = Header(None)):
 # ============================ EVENTOS ============================
 @app.post("/event")
 def create_event(code: str = Form(...), brand: str = Form("FÓTON"),
-                 name: str = Form(""), date: str = Form(""), authorization: str = Header(None)):
+                 name: str = Form(""), date: str = Form(""), senha_admin: str = Form(""),
+                 authorization: str = Header(None)):
     c = _dono(authorization)
+    _exige_elevacao(c, senha_admin)
+    # Credito so sai quando o evento e NOVO. Antes saia em toda chamada, e o app tenta
+    # ate 8 vezes quando a rede esta ruim (cold start): um unico evento podia queimar 8
+    # creditos. `cria_evento` usa INSERT OR REPLACE, entao reenviar o mesmo codigo nao
+    # duplicava o evento — so o credito ia embora, em silencio.
+    ja_existia = store.evento(code) is not None
     store.cria_evento(code, dono=(c["email"] if c else None), nome=(name or "Evento"),
                       data=date, marca=brand, auto=0)
-    if c: store.gasta_credito(c["email"])
+    if c and not ja_existia: store.gasta_credito(c["email"])
     log.info('{"stage":"event","code":"%s","status":"created"}' % code)
     if c:
         # Fotos que a câmera mandou ANTES do evento existir entram agora, sozinhas.
@@ -330,8 +352,8 @@ def admin_adotar_todos(email: str = Form(...), authorization: str = Header(None)
     return {"ok": True, "adotados": n}
 
 @app.post("/event/delete")
-def event_delete(code: str = Form(...), authorization: str = Header(None)):
-    _pode(code, authorization)
+def event_delete(code: str = Form(...), senha_admin: str = Form(""), authorization: str = Header(None)):
+    _exige_elevacao(_pode(code, authorization), senha_admin)
     existed = store.evento(code) is not None
     store.apaga_evento(code)
     log.info('{"stage":"event","code":"%s","status":"deleted"}' % code)
@@ -465,8 +487,9 @@ def img(event: str, photo_id: str):
     return Response(b, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
 
 @app.post("/photo/delete")
-def photo_delete(event: str = Form(...), photo_id: str = Form(...), authorization: str = Header(None)):
-    _pode(event, authorization)
+def photo_delete(event: str = Form(...), photo_id: str = Form(...), senha_admin: str = Form(""),
+                 authorization: str = Header(None)):
+    _exige_elevacao(_pode(event, authorization), senha_admin)
     store.apaga_foto(event, photo_id)
     log.info('{"stage":"photo","photo_id":"%s","status":"deleted"}' % photo_id)
     return {"ok": True}
@@ -670,6 +693,17 @@ def admin_zerar(confirmacao: str = Form(...), authorization: str = Header(None))
     log.info('{"stage":"admin","acao":"zerar","fotos":%d,"convidados":%d}' % (r["photo"], r["guest"]))
     return {"ok": True, **{k: v for k, v in r.items() if not k.startswith("bytes")},
             "antes_mb": round(r["bytes_antes"] / 1e6, 1), "depois_mb": round(r["bytes_depois"] / 1e6, 1)}
+
+@app.post("/admin/empresa")
+def admin_empresa(email: str = Form(...), ligado: str = Form("1"), authorization: str = Header(None)):
+    """Marca a conta como de EMPRESA (album interno, login compartilhado)."""
+    _admin(authorization)
+    alvo = email.strip().lower()
+    if not store.conta(alvo): raise HTTPException(404, "conta não encontrada")
+    lig = str(ligado).strip() not in ("0", "", "false", "False")
+    store.define_empresa(alvo, lig)
+    log.info('{"stage":"admin","acao":"empresa","ligado":%s}' % ("true" if lig else "false"))
+    return {"ok": True, "email": alvo, "empresa": lig}
 
 @app.post("/admin/retencao")
 def admin_retencao(email: str = Form(...), dias: str = Form(""), authorization: str = Header(None)):

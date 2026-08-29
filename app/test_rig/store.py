@@ -54,6 +54,11 @@ def conn():
         # toda semana e refazer a selfie a cada 7 dias inviabilizaria o uso.
         try: _conn.execute("ALTER TABLE photographer ADD COLUMN ret_bio_dias INTEGER")
         except sqlite3.OperationalError: pass
+        # Conta de EMPRESA: album interno, login compartilhado pela equipe. Quem entra
+        # ve e baixa tudo, mas NAO cria nem apaga sem a senha de admin. Sem isto, a
+        # senha do salao (que circula entre colaboradoras) apagaria o acervo inteiro.
+        try: _conn.execute("ALTER TABLE photographer ADD COLUMN empresa INTEGER DEFAULT 0")
+        except sqlite3.OperationalError: pass
         _conn.commit()
     return _conn
 
@@ -169,10 +174,14 @@ def todos_fotografos():
                 (SELECT COALESCE(SUM(LENGTH(bytes)),0) FROM photo WHERE event_code IN
                     (SELECT code FROM event WHERE dono=p.email)) bytes,
                 p.ret_bio_dias,
+                p.empresa,
                 (SELECT MAX(criado) FROM photo WHERE event_code IN
                     (SELECT code FROM event WHERE dono=p.email)) ultima_foto
               FROM photographer p ORDER BY p.criado DESC""", (), "all")
     return [dict(r) for r in rs]
+
+def define_empresa(email, ligado):
+    q("UPDATE photographer SET empresa=? WHERE email=?", (1 if ligado else 0, (email or "").strip().lower()))
 
 def define_retencao_bio(email, dias):
     """dias=0 -> biometria NAO expira nessa conta. dias=None -> volta a politica geral."""

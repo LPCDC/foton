@@ -451,7 +451,7 @@ input{font-family:inherit}
         <button class="brand-badge" onclick="home()" aria-label="Fóton — início"></button>
         <div class="eyebrow"><span class="dot"></span>entrega durante a festa</div>
         <h1 class="display">A foto no celular do convidado, <em>na hora.</em></h1>
-        <p class="lede">Você fotografa. A imagem é tratada, reconhece quem está nela e cai sozinha na galeria da pessoa — ao vivo, sem ninguém instalar nada.</p>
+        <p class="lede">Você fotografa. Quem aparece na foto recebe, sozinho, durante a festa.</p>
         <div class="entry">
           <button class="entry-card" onclick="entrarComoFotografo()">
             <span class="ec-t">Vou fotografar</span>
@@ -461,6 +461,11 @@ input{font-family:inherit}
           <button class="entry-card ghost" onclick="entrarConvidado()">
             <span class="ec-t">Sou convidado</span>
             <span class="ec-s">Entrar e receber minhas fotos</span>
+            <span class="ec-go">→</span>
+          </button>
+          <button class="entry-card ghost" onclick="entrarComoEmpresa()">
+            <span class="ec-t">Sou empresa</span>
+            <span class="ec-s">Ver a galeria da minha equipe</span>
             <span class="ec-go">→</span>
           </button>
         </div>
@@ -736,7 +741,7 @@ input{font-family:inherit}
          video, bem pior com pouca luz — que e a luz de festa. -->
     <input type="file" id="live-camera" accept="image/*" capture="environment" style="display:none" onchange="uploadPhoto(event)">
     <div class="actions-row" id="ev-envio" style="margin-bottom:12px">
-      <button class="btn primary" id="ev-shoot" onclick="shootPhoto()">Simular disparo</button>
+      <button class="btn primary" id="ev-shoot" onclick="tirarFotoAgora()">Simular disparo</button>
       <button class="btn ghost" id="ev-galeria" style="display:none" onclick="document.getElementById('live-upload').click()">🖼&nbsp; Da galeria</button>
     </div>
     <p class="note" id="ev-semtoque" style="display:none;text-align:left;margin:-4px 0 14px">
@@ -1245,6 +1250,29 @@ function sessaoFotografoExpirou(){
   go('login');
 }
 function logout(){ stopEvent(); lembrarEvento(''); salvarToken(null); SESSAO=null; state.events=[]; saveEvents(); go('landing'); }
+/* Terceira porta. A conta de empresa e a MESMA maquina do fotografo — o que muda e o
+   vocabulario (album, nao evento) e a trava: quem entra ve e baixa tudo, mas criar e
+   apagar pedem a senha de administrador. A trava de verdade esta no servidor
+   (_exige_elevacao); aqui e so a tela contando a verdade. */
+async function entrarComoEmpresa(){
+  MODO_EMPRESA_PEDIDO=true;
+  if(LIVE && await carregarConta()){ go('dash'); return; }
+  if(modoCadastro) alternarCadastro();
+  document.getElementById('in-pass').value='';
+  const t=document.getElementById('log-title'), sb=document.getElementById('log-sub');
+  if(t) t.textContent='Entrar na galeria da empresa';
+  if(sb) sb.textContent='Use o login da empresa. Para criar ou apagar álbum, o app pede a senha de administrador.';
+  go('login');
+}
+let MODO_EMPRESA_PEDIDO=false;
+function ehEmpresa(){ return !!(SESSAO && SESSAO.empresa); }
+function ehAdmin(){ return !!(SESSAO && SESSAO.admin); }
+/* Pede a senha de admin so quando ela e mesmo necessaria. Conta comum nunca ve isso. */
+function senhaAdminSeNecessario(acao){
+  if(!ehEmpresa() || ehAdmin()) return '';
+  const s=prompt(`Para ${acao} nesta conta de empresa, digite a senha de administrador:`);
+  return s||'';
+}
 async function entrarComoFotografo(){
   if(LIVE && await carregarConta()){ go('dash'); return; }   // ja logado -> direto pro painel
   if(modoCadastro) alternarCadastro();                       // sempre abre no modo ENTRAR
@@ -1286,12 +1314,28 @@ function renderDash(){
 }
 /* apagar evento (com confirmacao) — some do painel e do servidor */
 async function deletarEvento(ev){
-  if(!confirm(`Apagar "${ev.name}"?\n\nAs fotos e os convidados deste evento serão removidos. Não dá para desfazer.`))return;
+  // Ordem importa: o SERVIDOR decide primeiro. Antes a lista local era limpa antes da
+  // resposta — se o servidor recusasse (senha de admin errada), o album sumia da tela
+  // e continuava no servidor.
+  const emp=ehEmpresa(), adm=ehAdmin();
+  const aviso = emp
+    ? `Apagar o album "${ev.name}"? Vai pedir a senha de administrador.`
+    : `Apagar "${ev.name}"?\n\nAs fotos e os convidados serao removidos. Nao da para desfazer.`;
+  if(!confirm(aviso)) return;
+  const sa = senhaAdminSeNecessario(emp ? "apagar o album" : "apagar");
+  if(emp && !adm && !sa){ toast("Cancelado."); return; }
+  if(LIVE){
+    try{
+      const fd=new FormData(); fd.append("code",ev.code); if(sa) fd.append("senha_admin",sa);
+      const r=await fetch(API+"/event/delete",{method:"POST",headers:auth(),body:fd});
+      if(r.status===403){ toast("Senha de administrador incorreta — nada foi apagado."); return; }
+      if(!r.ok){ toast("Nao consegui apagar. Tente de novo."); return; }
+    }catch(e){ toast("Sem conexao — nada foi apagado."); return; }
+  }
   state.events=state.events.filter(x=>x.code!==ev.code);
   if(state.live&&state.live.code===ev.code) state.live=null;
-  if(ultimoEvento()===ev.code) lembrarEvento('');   // apagado: nao pode continuar sendo o destino
-  saveEvents(); renderDash(); toast('Evento apagado');
-  if(LIVE){ try{ const fd=new FormData(); fd.append('code',ev.code); await fetch(API+'/event/delete',{method:'POST',headers:auth(),body:fd}); }catch(e){} }
+  if(ultimoEvento()===ev.code) lembrarEvento("");
+  saveEvents(); renderDash(); toast(emp?"Album apagado":"Evento apagado");
 }
 /* status do servidor no painel */
 async function checarServidor(){
@@ -1361,16 +1405,25 @@ function criarEvento(){
   openEvent(ev,{novo:true});        // registra no servidor em 2º plano (com retry no cold start)
 }
 async function registerEvent(code,tries=8,brand='',name='',date=''){
+  // A senha de admin e pedida UMA vez, FORA do laco. Dentro dele, o app perguntaria
+  // ate 8 vezes seguidas numa rede ruim. Bug meu, introduzido nesta mesma sessao.
+  const sa=senhaAdminSeNecessario('criar um album');
+  if(ehEmpresa() && !ehAdmin() && !sa){ toast('Cancelado.'); return; }
   for(let i=0;i<tries;i++){
-    try{ const fd=new FormData(); fd.append('code',code); if(brand) fd.append('brand',brand);
-      if(name) fd.append('name',name); if(date) fd.append('date',date);
+    try{
+      const fd=new FormData(); fd.append('code',code);
+      if(brand) fd.append('brand',brand);
+      if(name) fd.append('name',name);
+      if(date) fd.append('date',date);
+      if(sa) fd.append('senha_admin',sa);
       const r=await fetch(API+'/event',{method:'POST',body:fd,headers:auth()});
+      if(r.status===403){ toast('Senha de administrador incorreta — o album nao foi criado.'); return; }
       if(r.ok){ carregarConta().then(()=>{ if(document.getElementById('s-dash').classList.contains('active')) renderDash(); }); return; }
     }catch(e){}
     if(i===0) toast('Acordando o servidor…');
     await new Promise(r=>setTimeout(r,2500));
   }
-  toast('Servidor demorou — se a foto não subir, recarregue e tente de novo');
+  toast('Servidor demorou — se a foto nao subir, recarregue e tente de novo');
 }
 /* upload REAL da foto (modo ao vivo): camera -> celular -> /ingest */
 let filaFalhas=[];                       // fotos que nao subiram (rede ruim) -> reenviar
@@ -1687,10 +1740,7 @@ function openEvent(ev,opts){
   // resolucao cheia) ou escolher da galeria. Antes era um botao so, e nao ficava claro
   // que dava para fotografar na hora pelo proprio app.
   const sb=document.getElementById('ev-shoot');
-  if(sb){
-    sb.textContent = LIVE ? '📷  Tirar foto agora' : 'Simular disparo';
-    sb.onclick = LIVE ? ()=>document.getElementById('live-camera').click() : shootPhoto;
-  }
+  if(sb) sb.textContent = LIVE ? '📷  Tirar foto agora' : 'Simular disparo';
   ['ev-galeria','ev-semtoque'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=LIVE?'':'none'; });
   const bp=document.getElementById('btn-preview'); if(bp) bp.style.display=LIVE?'none':'';
   const ac=document.getElementById('ev-actions'); if(ac) ac.style.display=LIVE?'flex':'none';
@@ -1725,6 +1775,14 @@ function renderEventGrid(){
     d.onclick=()=>abrirFoto(ordem,i);
     g.appendChild(d);
   });
+}
+/* Um caminho so, sem disputa entre o onclick do HTML e um .onclick atribuido depois —
+   era isso que fazia o botao abrir o seletor de ARQUIVOS em vez da camera.
+   `capture` so tem efeito em CELULAR: no computador o navegador nao tem app de camera
+   e cai no seletor de arquivos. Isso e do navegador, nao do app. */
+function tirarFotoAgora(){
+  if(!LIVE) return shootPhoto();
+  document.getElementById('live-camera').click();
 }
 function shootPhoto(){
   const ev=state.live;if(!ev)return;
@@ -2732,6 +2790,14 @@ document.addEventListener('visibilitychange',()=>{
 });
 /* carrega eventos persistidos do fotografo (sobrevive a sair/voltar) */
 loadEvents();
+/* Recarregar a pagina (ou o "puxar para atualizar" do celular) jogava de volta para a
+   tela inicial mesmo com a sessao valida — parecia que o app tinha deslogado sozinho.
+   Se o token ainda vale, volta direto para o painel. */
+(async()=>{
+  if(!LIVE || !tokenSalvo()) return;
+  if(_params.get('evento') || _params.get('foto') || _params.get('compartilhado')) return;
+  if(await carregarConta()) go('dash');
+})();
 /* sentinela do historico: sem ela o Voltar do celular sai do app (ver VOLTAR_PARA) */
 armarVoltar();
 /* deep-link ?evento=CODE abre como convidado (o que o QR faz) */

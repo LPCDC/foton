@@ -403,5 +403,41 @@ checa("sobreposicao consome o Voltar", "fecharSobreposicao" in _h, True)
 checa("o popstate checa a sobreposicao ANTES da tela",
       _h.index("if(fecharSobreposicao())") < _h.index("const t=telaAtiva(), f=VOLTAR_PARA[t];"), True)
 
+
+print("")
+print("[21] Credito so sai em evento NOVO")
+_tk = C.post("/signup", data={"email": "cred@t.com", "senha": "senha123"}).json()["token"]
+_c0 = C.get("/me", headers=h(_tk)).json()["credits"]
+# o app tenta ate 8 vezes quando a rede esta ruim; antes cada tentativa queimava 1
+for _ in range(8): C.post("/event", data={"code": "REPET"}, headers=h(_tk))
+checa("8 tentativas do MESMO evento = 1 credito", _c0 - C.get("/me", headers=h(_tk)).json()["credits"], 1)
+C.post("/event", data={"code": "OUTRO1"}, headers=h(_tk))
+checa("evento diferente gasta mais 1", _c0 - C.get("/me", headers=h(_tk)).json()["credits"], 2)
+checa("entrar na conta NAO gasta credito",
+      C.post("/login", data={"email": "cred@t.com", "senha": "senha123"}).json()["credits"],
+      C.get("/me", headers=h(_tk)).json()["credits"])
+
+print("")
+print("[22] Conta de EMPRESA: ve e baixa tudo, mas nao cria nem apaga sem senha de admin")
+_et = C.post("/signup", data={"email": "salao@t.com", "senha": "senha123"}).json()["token"]
+checa("so admin marca conta como empresa", C.post("/admin/empresa", data={"email": "salao@t.com"}, headers=h(dona)).status_code, 403)
+checa("admin marca", C.post("/admin/empresa", data={"email": "salao@t.com", "ligado": "1"}, headers=h(chefe)).json()["empresa"], True)
+checa("o app fica sabendo pelo /me", C.get("/me", headers=h(_et)).json()["empresa"], True)
+checa("e sabe que NAO e admin", C.get("/me", headers=h(_et)).json()["admin"], False)
+# a trava vive no SERVIDOR: esconder o botao na tela nao segura ninguem
+checa("criar album SEM senha de admin", C.post("/event", data={"code": "ALB1"}, headers=h(_et)).status_code, 403)
+checa("criar com senha ERRADA", C.post("/event", data={"code": "ALB1", "senha_admin": "chutei"}, headers=h(_et)).status_code, 403)
+checa("criar com a senha do admin", C.post("/event", data={"code": "ALB1", "senha_admin": "senha123"}, headers=h(_et)).status_code, 200)
+checa("apagar album SEM senha", C.post("/event/delete", data={"code": "ALB1"}, headers=h(_et)).status_code, 403)
+checa("apagar foto SEM senha", C.post("/photo/delete", data={"event": "ALB1", "photo_id": "x"}, headers=h(_et)).status_code, 403)
+# o que a EQUIPE pode: ver, e receber foto normalmente
+checa("equipe ve os albuns", C.get("/events", headers=h(_et)).status_code, 200)
+checa("equipe manda foto para o album", C.post("/ingest", data={"event": "ALB1"},
+      files={"file": ("f.jpg", jpeg(), "image/jpeg")}, headers=h(_et)).status_code, 200)
+checa("apagar com a senha do admin funciona", C.post("/event/delete", data={"code": "ALB1", "senha_admin": "senha123"}, headers=h(_et)).status_code, 200)
+# conta comum nao e afetada por nada disso
+checa("conta comum cria sem senha nenhuma", C.post("/event", data={"code": "NORM1"}, headers=h(dona)).status_code, 200)
+checa("conta comum apaga sem senha nenhuma", C.post("/event/delete", data={"code": "NORM1"}, headers=h(dona)).status_code, 200)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)
