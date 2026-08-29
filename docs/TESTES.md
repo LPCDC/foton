@@ -23,7 +23,12 @@ ali ele é o que está sendo testado. Nas camadas acima ele é dublado, porque p
 `cv2` e `insightface`. Cobre: portão anônimo, portão de outra conta, caminho feliz da
 fotógrafa, caminho do convidado, evento nasce com dono, encerrar/apagar, faixa do
 evento ("está chegando?"), freio de login, torre de controle do admin, encerrar conta.
-**63 checagens, 63 passando.**
+**91 checagens, 91 passando.**
+
+A seção [12] cobre a **troca de login e senha pela própria fotógrafa**: senha atual
+obrigatória · login inválido/curto/já usado · **não dá para virar admin renomeando a conta**
+· credenciais velhas param de funcionar · sessões antigas caem · e o que mais quebraria:
+**os eventos e a marca d'água PNG seguem junto com o login novo**.
 
 A seção [11] do `test_autorizacao.py` cobre o **Web Share Target**: o manifest declara
 `share_target` com o campo `fotos` dentro do scope · o service worker atende o POST e
@@ -69,6 +74,8 @@ perderam, o que a fotógrafa precisou digitar.
 | LGPD (exclusão, expiração automática) | contrato | ⚠️ parcial | exclusão manual coberta; expiração por tempo (`store.expirar`) sem teste |
 | Disco / rajada | carga | ✅ medido em produção | ver BENCHMARKS.md 2026-08-28: 1 foto e rajada de 4, com e sem redução no celular |
 | Compartilhar (Web Share Target) | contrato + navegador | ✅ 17 checagens + ponta a ponta em produção | ver `docs/BENCHMARKS.md` 2026-08-29 |
+| Trocar login/senha (autosserviço) | contrato | ✅ 28 checagens | inclui escalada de privilégio e eventos seguindo o dono |
+| QR por foto (convidado) | navegador | ✅ testado local e em produção | link, foto expirada, foto de demo, navegação |
 | Fóton no menu Compartilhar de um Android real | ensaio real | ❌ nunca feito | exige o PWA instalado no celular dela |
 | Câmera Canon física | ensaio real | ❌ nunca feito | `docs/ROTEIRO-CAMERAS.md` — bloqueador do piloto |
 | Front (galeria, lightbox, seleção múltipla) | manual | manual | fica manual por ora — 1 página, sem framework |

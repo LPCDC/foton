@@ -225,6 +225,15 @@ checa("o evento veio junto com o login novo", [e["code"] for e in evs], ["MUD1"]
 checa("a foto continua no evento", len(C.get("/photos?event=MUD1").json()["photos"]), 1)
 checa("e ela ainda manda no evento", C.post("/event/close", data={"code": "MUD1"}, headers=h(novo)).status_code, 200)
 checa("a conta velha sumiu de vez", rig.store.conta("muda@t.com"), None)
+# a marca d'agua em PNG e coluna de photographer: nao pode sumir na renomeacao
+_png = io.BytesIO(); Image.new("RGBA", (40, 40), (255, 0, 0, 255)).save(_png, "PNG")
+tk2 = C.post("/signup", data={"email": "comlogo@t.com", "senha": "senha123"}).json()["token"]
+C.post("/conta/logo", files={"file": ("l.png", _png.getvalue(), "image/png")}, headers=h(tk2))
+checa("tem logo antes de renomear", C.get("/me", headers=h(tk2)).json()["tem_logo"], True)
+r3 = C.post("/conta/credenciais", data={"atual": "senha123", "novo_login": "semarroba"}, headers=h(tk2))
+checa("renomeou", r3.status_code, 200)
+checa("o logo sobreviveu a renomeacao", C.get("/me", headers=h(r3.json()["token"])).json()["tem_logo"], True)
+checa("e o PNG ainda e servido", C.get("/conta/logo", headers=h(r3.json()["token"])).status_code, 200)
 
 r2 = C.post("/conta/credenciais", data={"atual": "outrasenha", "nova_senha": "terceira1"}, headers=h(novo))
 checa("troca so a senha", r2.status_code, 200)

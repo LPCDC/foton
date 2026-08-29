@@ -33,12 +33,14 @@ aparece caem na galeria dele ao vivo.
 
 **Contas**
 ```
-Fotógrafa (cliente real): patricia@vargas.com / (senha com o dono — NÃO escrever aqui)
+Fotógrafa (cliente real): patriciavargas       / (senha com o dono — NÃO escrever aqui)
 Admin:                    admin@foton.com     / (senha com o dono — NÃO escrever aqui)
 ```
-> ⚠️ **Este repo é público.** Nenhuma senha entra neste arquivo. A senha da Patrícia
-> esteve aqui em texto puro até 2026-08-29 e **continua no histórico do git** — só uma
-> troca de senha resolve de verdade. Ver §"Pendências abertas".
+> ⚠️ **Este repo é público. Nenhuma senha entra neste arquivo.** A senha da Patrícia
+> esteve aqui em texto puro até 2026-08-29 e continua no histórico do git — por isso
+> **login e senha foram trocados em produção** naquele dia. O que está no histórico
+> não abre mais nada. A fotógrafa troca a própria senha em **Painel → Minha conta e
+> senha** (ADR-0019); o admin ainda pode, por `/admin/senha`.
 
 ## 3. Como funciona (pipeline)
 
@@ -128,12 +130,14 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/foton.key ubuntu@152.67.46.113 \
 QR (tela cheia + imprimível) · upload em lote com barra de progresso e retry ·
 **receber fotos pelo menu "Compartilhar" do Android (PWA instalado)** ·
 apagar foto · convidados ao vivo · contatos · resumo ao encerrar · **FTP da câmera** ·
-créditos · PWA · faixa fixa com código + status "recebendo".
+créditos · PWA · faixa fixa com código + status "recebendo" ·
+**trocar o próprio login e a própria senha** (Painel → Minha conta e senha).
 
 **Convidado:** QR → 1 tela (selfie + consentimento) · galeria ao vivo com abas
 (minhas / todas) · **animação de chegada** + "Chegou uma foto sua!" · espera viva
 ("N fotos já na festa") · saídas quando não reconhece · lightbox com navegação ·
-salvar/compartilhar/ZIP · sessão persistente (volta sem refazer selfie) · PWA.
+salvar/compartilhar/ZIP · **QR por foto** (a amiga que aparece junto escaneia e leva a
+foto no próprio celular, na hora) · sessão persistente (volta sem refazer selfie) · PWA.
 
 **Admin** (`admin@foton.com`): resumo geral · disco · lista de fotógrafos ·
 +créditos · trocar senha · **testar foto da câmera** (valida o setup em segundos) ·
@@ -168,13 +172,13 @@ envio, foto entrando sozinha no evento em ~7 s) — mas **com cliente FTP de scr
 ainda não com a Canon**.
 
 **Pendências abertas:**
-- 🔴 **A senha da conta da Patrícia esteve em texto puro neste arquivo, num repo público**
-  (a senha em si não se repete aqui). Removida do arquivo em 2026-08-29, mas **está
-  no histórico do git e não sai de lá** sem reescrever a história. Com ela, qualquer um
-  entra na conta da cliente e vê eventos, convidados e a senha de FTP dela.
-  **Correção real = trocar a senha dela.** É conta de cliente e ela usa em piloto —
-  decisão do dono, não do agente. Enquanto não trocar, isto vale mais que qualquer outro
-  item desta lista.
+- ✅ ~~Senha da Patrícia em texto puro num repo público~~ — **RESOLVIDO em 2026-08-29**:
+  login e senha **trocados em produção** (o login virou `patriciavargas`). As credenciais
+  antigas dão 401 — o que ficou no histórico do git não abre mais nada.
+  ⚠ **Ela precisa das credenciais novas**: a sessão do celular dela caiu junto (a troca
+  derruba todas as sessões, de propósito). E a **senha do FTP mudou** com o login.
+  Daqui pra frente ela mesma troca a própria senha em **Painel → Minha conta e senha**
+  (ADR-0019), sem depender do dono.
 - Fotos são BLOB no SQLite × 7 backups completos (disco) — medido, com folga hoje.
 
 **Já corrigido (não é mais pendência):** ~~semente do FTP derivável do repo público~~ — a

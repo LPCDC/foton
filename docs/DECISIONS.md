@@ -239,3 +239,60 @@ Preço final (aguarda EXP-10, custo por evento real) · gateway de pagamento (p�
     menu não aparece e o botão "Enviar foto da câmera" continua sendo o caminho.
   - PWA **já instalado** pode precisar ser reinstalado para o Chrome reler o manifest e
     registrar o alvo de compartilhamento.
+
+## ADR-0019 — A fotógrafa troca o próprio login e a própria senha
+- **Status:** ACCEPTED — em produção
+- **Data:** 2026-08-29
+- **Decisão:** rota `POST /conta/credenciais` (autosserviço) que troca login e/ou senha,
+  exigindo a **senha atual** além da sessão. Renomear a conta migra `event.dono`,
+  `session` e a chave `ftp_visto:<login>`. O campo de login do app deixa de exigir
+  formato de e-mail.
+- **Contexto:** só o admin trocava senha (`/admin/senha`). Quando a senha da cliente
+  apareceu em texto puro num repo público, ela **dependia do dono** para se proteger —
+  numa madrugada, num fim de semana, no meio de um evento. Isso é falha de produto, não
+  só de higiene.
+- **Alternativas:** só admin (o que havia — a cliente refém do fornecedor) · e-mail de
+  recuperação (exige servidor de e-mail, dependência nova, e ela nem sempre tem o
+  e-mail à mão no evento) · **autosserviço com a senha atual** (nada novo no stack).
+- **Justificativa:** menor stack que resolve. Não adiciona dependência nenhuma.
+- **Consequências:**
+  - **Pede a senha atual mesmo com sessão válida.** Celular destravado esquecido na mesa
+    da festa não pode virar "troco a senha e tranco a dona fora da própria conta".
+  - **Renomear-se para um login de `FOTON_ADMINS` seria virar admin sem senha de admin.**
+    Bloqueado com 403 e com teste dedicado — era o buraco real desta rota.
+  - O login **é a chave primária** da conta. Sem migrar `event.dono`, os eventos dela
+    virariam órfãos: convidado vendo as fotos e a fotógrafa sem ver o evento — exatamente
+    a armadilha já paga. A `logo` é coluna de `photographer` e viaja sozinha (com teste).
+  - **A senha do FTP muda junto**, porque é derivada do login. O app avisa na tela.
+  - A troca **derruba todas as sessões**, inclusive a de quem trocou — a rota devolve um
+    token novo para não expulsar a própria dona no meio do evento.
+  - O login não precisa mais ser e-mail. O servidor **sempre** aceitou (`cria_conta` só
+    normaliza); era o `input type="email"` que barrava.
+
+## ADR-0020 — QR por foto: a amiga que aparece junto leva a foto na hora
+- **Status:** ACCEPTED — em produção
+- **Data:** 2026-08-29
+- **Decisão:** o visualizador de foto do convidado ganha um botão **QR**, ao lado de
+  Salvar e Compartilhar. O QR aponta para o **próprio app** com aquela foto aberta
+  (`/?ev=CODE&foto=ID`), não para o `.jpg` cru.
+- **Contexto:** cena real de festa — a convidada abre a foto e a amiga do lado também
+  aparece nela. Hoje a saída é "me manda depois", que quase sempre não acontece. O
+  Compartilhar do sistema resolve quando as duas têm WhatsApp aberto e se conhecem; o QR
+  resolve **de celular para celular, sem trocar contato**.
+- **Alternativas:** só o Compartilhar do sistema (exige app de mensagem e contato) · QR
+  apontando direto para o `.jpg` (abre uma imagem solta numa aba, sem botão de salvar e
+  sem marca do Fóton) · **QR apontando para o app** com a foto aberta.
+- **Justificativa:** reaproveita o que já existe — a rota `/qr` do servidor e o próprio
+  visualizador. Zero dependência nova. E quem escaneia **vê o Fóton**, com a marca
+  d'água da fotógrafa na foto: cada QR desses é propaganda das duas.
+- **Consequências:**
+  - **Não abre nada que já não estivesse aberto.** `/img/{evento}/{foto}.jpg` sempre foi
+    público; o QR só torna prático o que a convidada quer fazer com a própria foto.
+  - **A retenção de 90 dias continua valendo.** Passou disso, o link morre e quem
+    escanear vê "esta foto não está mais disponível" — aviso, não erro.
+  - Foto de demonstração (`assets/pXX.jpg`) não tem endereço público: o botão **some
+    sozinho** em vez de gerar um QR quebrado.
+  - Com 3 ações na barra, o contador "1 / 8" se esconde abaixo de 400 px de tela.
+  - **Aberto:** se um dia a foto deixar de ser pública (link com escopo/expiração, como
+    a §7 do CLAUDE.md prevê), este QR passa a precisar de um token próprio.
+    `UNKNOWN — REQUIRES EXPERIMENT` até haver decisão sobre link temporário.
