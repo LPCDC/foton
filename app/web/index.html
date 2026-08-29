@@ -978,6 +978,22 @@ input{font-family:inherit}
   </div>
 </div>
 
+<!-- CAMERA DENTRO DO APP. O capture="environment" depende do Android querer abrir a
+     camera, e em muito aparelho ele so mostra o seletor de arquivos. Aqui a camera
+     abre sempre, e cada disparo sobe na hora — sem sair da tela. -->
+<div class="qrfull" id="camfoto">
+  <div class="qrfull-card" style="padding:10px;background:#000;position:relative">
+    <video id="cam-video" playsinline muted style="width:min(88vw,420px);height:min(112vw,540px);object-fit:cover;border-radius:14px;background:#111"></video>
+    <div id="cam-flash" style="position:absolute;inset:10px;border-radius:14px;background:#fff;opacity:0;pointer-events:none;transition:opacity .18s"></div>
+  </div>
+  <div id="cam-status" class="qf-top" style="color:var(--muted)">Toque no botão para fotografar</div>
+  <div class="qrfull-acts" style="align-items:center">
+    <button class="btn ghost" onclick="fecharCamera()">Fechar</button>
+    <button id="cam-disparo" onclick="dispararFoto()" aria-label="Fotografar"
+      style="width:82px;height:82px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.35);box-shadow:0 8px 30px -8px rgba(0,0,0,.8)"></button>
+  </div>
+</div>
+
 <!-- LEITOR DE QR do convidado -->
 <div class="qrfull" id="scanner" onclick="if(event.target===this)fecharScanner()">
   <div class="qrfull-card" style="padding:14px;background:#000">
@@ -1150,7 +1166,7 @@ let _pedidoDeSaida=0;
    ainda aberta. Era o "sai sem querer" relatado. Da camada mais externa para a mais
    interna: o QR da foto fica por cima do visualizador, que fica por cima da tela. */
 function fecharSobreposicao(){
-  const camadas=[['qrfoto',fecharQRFoto],['qrfull',fecharQR],['scanner',fecharScanner],
+  const camadas=[['camfoto',fecharCamera],['qrfoto',fecharQRFoto],['qrfull',fecharQR],['scanner',fecharScanner],
                  ['sheet',closeSheet],['lb',fecharFoto]];
   for(const [id,fechar] of camadas){
     const el=document.getElementById(id);
@@ -1797,7 +1813,9 @@ function openEvent(ev,opts){
   // resolucao cheia) ou escolher da galeria. Antes era um botao so, e nao ficava claro
   // que dava para fotografar na hora pelo proprio app.
   const sb=document.getElementById('ev-shoot');
-  if(sb) sb.textContent = LIVE ? ico('camera')+'  Tirar foto agora' : 'Simular disparo';
+  // innerHTML, nao textContent: textContent escapa o SVG e o botao mostrava
+  // <svg class="ico" ...> como TEXTO CRU. Visto em producao.
+  if(sb) sb.innerHTML = LIVE ? ico('camera')+'  Tirar foto agora' : 'Simular disparo';
   ['ev-galeria','ev-semtoque'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=LIVE?'':'none'; });
   const bp=document.getElementById('btn-preview'); if(bp) bp.style.display=LIVE?'none':'';
   const ac=document.getElementById('ev-actions'); if(ac) ac.style.display=LIVE?'flex':'none';
@@ -1837,9 +1855,69 @@ function renderEventGrid(){
    era isso que fazia o botao abrir o seletor de ARQUIVOS em vez da camera.
    `capture` so tem efeito em CELULAR: no computador o navegador nao tem app de camera
    e cai no seletor de arquivos. Isso e do navegador, nao do app. */
-function tirarFotoAgora(){
+/* CAMERA DENTRO DO APP.
+   O `capture="environment"` pede ao Android para abrir a camera, mas MUITO aparelho
+   ignora e mostra o seletor de arquivos. Aqui a camera abre sempre.
+   Qualidade: usa ImageCapture.takePhoto() quando existe (a foto sai do sensor, em
+   resolucao cheia); onde nao existe, tira o quadro do video na maior resolucao que o
+   aparelho der. Se nem getUserMedia houver, cai no capture de antes. */
+let _camStream=null, _camCap=null, _camEnviadas=0;
+async function tirarFotoAgora(){
   if(!LIVE) return shootPhoto();
-  document.getElementById('live-camera').click();
+  if(!state.live){ toast('Abra um evento primeiro.'); return; }
+  if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){
+    document.getElementById('live-camera').click(); return;
+  }
+  try{
+    _camStream=await navigator.mediaDevices.getUserMedia({video:{
+      facingMode:{ideal:'environment'},
+      width:{ideal:4096}, height:{ideal:3072}}});
+  }catch(e){
+    document.getElementById('live-camera').click();   // sem permissao: caminho antigo
+    return;
+  }
+  const v=document.getElementById('cam-video');
+  v.srcObject=_camStream; await v.play().catch(()=>{});
+  _camCap=null;
+  try{
+    if(typeof ImageCapture==='function') _camCap=new ImageCapture(_camStream.getVideoTracks()[0]);
+  }catch(e){}
+  _camEnviadas=0;
+  const t=_camStream.getVideoTracks()[0].getSettings();
+  document.getElementById('cam-status').textContent =
+    `Cada foto sobe sozinha · ${t.width||'?'}x${t.height||'?'}`;
+  document.getElementById('camfoto').classList.add('show');
+}
+function fecharCamera(){
+  if(_camStream){ _camStream.getTracks().forEach(t=>t.stop()); _camStream=null; }
+  _camCap=null;
+  const v=document.getElementById('cam-video'); if(v) v.srcObject=null;
+  const el=document.getElementById('camfoto'); if(el) el.classList.remove('show');
+}
+async function dispararFoto(){
+  const b=document.getElementById('cam-disparo'); if(b.disabled) return;
+  b.disabled=true;
+  const fl=document.getElementById('cam-flash');
+  fl.style.opacity='.85'; setTimeout(()=>fl.style.opacity='0',120);
+  let blob=null;
+  try{
+    if(_camCap) blob=await _camCap.takePhoto();          // sensor, resolucao cheia
+  }catch(e){}
+  if(!blob){
+    const v=document.getElementById('cam-video');
+    const cv=document.createElement('canvas');
+    cv.width=v.videoWidth||1280; cv.height=v.videoHeight||960;
+    cv.getContext('2d').drawImage(v,0,0,cv.width,cv.height);
+    blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',.92));
+  }
+  b.disabled=false;
+  if(!blob){ toast('Não consegui capturar. Tente de novo.'); return; }
+  const arq=new File([blob],'foto-'+Date.now()+'.jpg',{type:'image/jpeg'});
+  document.getElementById('cam-status').textContent='Enviando…';
+  await enviarLote([arq]);
+  _camEnviadas++;
+  document.getElementById('cam-status').textContent=
+    `${_camEnviadas} foto(s) enviada(s) · continue fotografando`;
 }
 function shootPhoto(){
   const ev=state.live;if(!ev)return;
