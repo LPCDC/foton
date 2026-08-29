@@ -1868,25 +1868,52 @@ async function tirarFotoAgora(){
   if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){
     document.getElementById('live-camera').click(); return;
   }
+  const st=document.getElementById('cam-status');
+  const v=document.getElementById('cam-video');
+  document.getElementById('camfoto').classList.add('show');
+  st.textContent='Abrindo a câmera…';
   try{
-    _camStream=await navigator.mediaDevices.getUserMedia({video:{
-      facingMode:{ideal:'environment'},
-      width:{ideal:4096}, height:{ideal:3072}}});
+    // NADA de pedir 4096x3072 aqui: varios aparelhos aceitam o pedido e nunca
+    // entregam quadro nenhum — o visor fica PRETO. Pede o basico, que sempre
+    // funciona, e melhora a resolucao depois, se der.
+    _camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
   }catch(e){
-    document.getElementById('live-camera').click();   // sem permissao: caminho antigo
+    fecharCamera();
+    const nome=(e&&e.name)||'';
+    if(nome==='NotAllowedError' || nome==='SecurityError'){
+      toast('Você precisa permitir a câmera. Vou abrir a câmera do celular.');
+    }else{
+      toast('Não consegui abrir a câmera aqui — usando a do celular.');
+    }
+    document.getElementById('live-camera').click();
     return;
   }
-  const v=document.getElementById('cam-video');
-  v.srcObject=_camStream; await v.play().catch(()=>{});
-  _camCap=null;
+  v.srcObject=_camStream;
+  v.setAttribute('playsinline','');  v.muted=true;
+  try{ await v.play(); }catch(e){}
+  // espera QUADRO de verdade. Sem isto, "abriu" e tela preta sao a mesma coisa.
+  const veioImagem=await new Promise(res=>{
+    let pronto=false;
+    const ok=()=>{ if(!pronto && v.videoWidth>0){ pronto=true; res(true); } };
+    v.addEventListener('loadedmetadata',ok); v.addEventListener('playing',ok);
+    const t=setInterval(ok,200);
+    setTimeout(()=>{ clearInterval(t); if(!pronto) res(false); },6000);
+  });
+  if(!veioImagem){
+    fecharCamera();
+    toast('A câmera não respondeu — usando a câmera do celular.');
+    document.getElementById('live-camera').click();
+    return;
+  }
+  // agora que ha imagem, TENTA subir a resolucao. Se falhar, fica a que ja funciona.
   try{
-    if(typeof ImageCapture==='function') _camCap=new ImageCapture(_camStream.getVideoTracks()[0]);
+    await _camStream.getVideoTracks()[0].applyConstraints({width:{ideal:3840},height:{ideal:2160}});
   }catch(e){}
+  _camCap=null;
+  try{ if(typeof ImageCapture==='function') _camCap=new ImageCapture(_camStream.getVideoTracks()[0]); }catch(e){}
   _camEnviadas=0;
-  const t=_camStream.getVideoTracks()[0].getSettings();
-  document.getElementById('cam-status').textContent =
-    `Cada foto sobe sozinha · ${t.width||'?'}x${t.height||'?'}`;
-  document.getElementById('camfoto').classList.add('show');
+  const cfg=_camStream.getVideoTracks()[0].getSettings()||{};
+  st.textContent=`Cada foto sobe sozinha · ${cfg.width||v.videoWidth}x${cfg.height||v.videoHeight}`;
 }
 function fecharCamera(){
   if(_camStream){ _camStream.getTracks().forEach(t=>t.stop()); _camStream=null; }
