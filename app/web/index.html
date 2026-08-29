@@ -260,6 +260,12 @@ input{font-family:inherit}
 .lead-box input{width:100%;background:var(--ink-2);border:1px solid var(--line);color:var(--text);
   padding:11px 13px;border-radius:10px;font-size:14.5px;outline:none;margin-bottom:8px}
 .lead-box input:focus{border-color:var(--accent)}
+/* .c-row e par rotulo/valor. A regra so existia dentro de .contatos, entao fora dali
+   rotulo e valor colavam ('Eventos0', 'Ultima fotonunca'). Vira regra base. */
+.c-row{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;
+  border-bottom:1px solid var(--line-soft);font-size:15.5px}
+.c-row:last-child{border-bottom:none}
+.c-row span{color:var(--muted);font-size:14.5px;text-align:right}
 .contatos{margin-top:10px}
 .contatos .c-row{display:flex;justify-content:space-between;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line-soft);font-size:15.5px}
 .contatos .c-row:last-child{border-bottom:none}
@@ -644,8 +650,18 @@ input{font-family:inherit}
       <div id="adm-resultado" style="margin-top:12px"></div>
     </div>
 
-    <div class="eyebrow-sm">Fotógrafos</div>
+    <div class="eyebrow-sm">Créditos</div>
+    <div class="tips" id="adm-credito"></div>
+
+    <div class="eyebrow-sm">Contas</div>
     <div id="adm-lista"></div>
+
+    <div class="eyebrow-sm">Contatos deixados pelos convidados</div>
+    <div class="tips">
+      <p class="muted" style="font-size:14px;margin:0 0 10px">Nome e telefone que o convidado entregou <b>à fotógrafa dele</b>. Não aparece para convidado nenhum.</p>
+      <button class="btn ghost sm block" id="adm-btn-contatos" onclick="admContatos()">Ver contatos</button>
+      <div class="contatos" id="adm-contatos" style="margin-top:10px"></div>
+    </div>
 
     <div class="tips" style="margin-top:14px">
       <b>Servidor</b>
@@ -2019,15 +2035,35 @@ async function abrirAdmin(){
       `<div class="c-row"><b>Disco livre</b><span>${j.disco_livre_gb} GB de ${j.disco_total_gb} GB</span></div>`+
       `<div class="c-row"><b>Reconhecimento</b><span>ArcFace (buffalo_s)</span></div>`;
     carregarSaude();
-    document.getElementById('adm-lista').innerHTML=(j.fotografos_lista||[]).map(f=>`
+    // quanto credito ja saiu, e para onde — evento vazio e credito jogado fora
+    const c=j.credito||{};
+    document.getElementById('adm-credito').innerHTML=
+      linhaAdm('Créditos concedidos', c.creditos_dados)
+      + linhaAdm('Ainda não usados', c.creditos_livres)
+      + linhaAdm('Já gastos', (c.creditos_dados||0)-(c.creditos_livres||0))
+      + linhaAdm('Eventos criados', c.eventos_criados)
+      + linhaAdm('Eventos SEM nenhuma foto', c.eventos_vazios, c.eventos_vazios>0)
+      + linhaAdm('Eventos órfãos (sem dono)', c.eventos_orfaos, c.eventos_orfaos>0);
+
+    document.getElementById('adm-lista').innerHTML=(j.fotografos_lista||[]).map(f=>{
+      const mb=(f.bytes||0)/1048576;
+      // o backup guarda 7 copias do banco inteiro: no disco cada byte conta 8x
+      const disco=mb*8;
+      return `
       <div class="tips" style="margin-bottom:8px">
-        <b style="color:var(--text);text-transform:none;letter-spacing:0;font-size:15.5px">${(f.nome||f.email).replace(/[<>]/g,'')}</b>
-        <p class="muted" style="font-size:14px;margin:2px 0 10px">${f.email} · ${f.eventos} evento(s) · ${f.credits}/${f.credits_total} créditos</p>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <b style="color:var(--text);text-transform:none;letter-spacing:0;font-size:15.5px">${(f.nome||f.email).replace(/[<>]/g,'')}${f.ao_vivo?' <span class="livedot"></span>':''}</b>
+        <p class="muted" style="font-size:14px;margin:2px 0 8px">${(f.email||'').replace(/[<>]/g,'')}${f.marca?' · '+f.marca.replace(/[<>]/g,''):''}</p>
+        <div class="c-row"><b>Eventos</b><span>${f.eventos}${f.ao_vivo?` · ${f.ao_vivo} ao vivo`:''}</span></div>
+        <div class="c-row"><b>Fotos · convidados</b><span>${f.fotos} · ${f.convidados}</span></div>
+        <div class="c-row"><b>Contatos capturados</b><span>${f.contatos}</span></div>
+        <div class="c-row"><b>Ocupa no banco</b><span>${mb.toFixed(1)} MB <span class="muted">(${disco.toFixed(1)} MB com backup)</span></span></div>
+        <div class="c-row"><b>Créditos</b><span>${f.credits} de ${f.credits_total}</span></div>
+        <div class="c-row"><b>Última foto</b><span>${desde(f.ultima_foto)}</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
           <button class="btn ghost sm" onclick="admCreditos('${f.email}',10)">+10 créditos</button>
           <button class="btn ghost sm" onclick="admSenha('${f.email}')">Trocar senha</button>
         </div>
-      </div>`).join('') || '<div class="empty">Nenhum fotógrafo ainda.</div>';
+      </div>`;}).join('') || '<div class="empty">Nenhuma conta ainda.</div>';
   }catch(e){ toast('Servidor indisponível.'); }
 }
 /* Torre de controle: o que precisa estar verde ANTES e DURANTE um evento.
@@ -2055,6 +2091,34 @@ async function carregarSaude(){
       + linha('Fotos aguardando na fila', n(f.fotos_ftp_aguardando), f.fotos_ftp_aguardando>0)
       + linha('Reconhecimento','ArcFace (buffalo_s)');
   }catch(e){}
+}
+function linhaAdm(k,v,alerta){
+  return `<div class="c-row"><b>${k}</b><span${alerta?' style="color:var(--live);font-weight:600"':''}>${v===undefined||v===null?'—':v}</span></div>`;
+}
+/* "ha 3 h" diz mais que um carimbo de data quando o que importa e se a conta esta viva */
+function desde(ts){
+  if(!ts) return 'nunca';
+  const s=Date.now()/1000-ts;
+  if(s<60) return 'agora';
+  if(s<3600) return `há ${Math.round(s/60)} min`;
+  if(s<86400) return `há ${Math.round(s/3600)} h`;
+  return `há ${Math.round(s/86400)} dia(s)`;
+}
+async function admContatos(){
+  const box=document.getElementById('adm-contatos'), b=document.getElementById('adm-btn-contatos');
+  b.textContent='Carregando…'; b.disabled=true;
+  try{
+    const r=await fetch(API+'/admin/contatos',{headers:auth()});
+    if(!r.ok){ toast('Não consegui carregar os contatos.'); return; }
+    const cs=(await r.json()).contatos||[];
+    const lp=t=>String(t||'').replace(/[<>]/g,'');
+    box.innerHTML = cs.length ? cs.map(c=>`
+      <div class="c-row"><b>${lp(c.nome)||'—'}</b><span>${lp(c.contato)}</span></div>
+      <p class="muted" style="font-size:12.5px;margin:-4px 0 8px">${lp(c.evento)||c.event_code} · ${lp(c.dono)||'sem dono'} · ${desde(c.ts)}</p>`).join('')
+      : '<div class="empty">Nenhum convidado deixou contato ainda.</div>';
+    b.style.display='none';
+  }catch(e){ toast('Erro de conexão.'); }
+  finally{ b.textContent='Ver contatos'; b.disabled=false; }
 }
 async function admCreditos(email,n){
   try{ const fd=new FormData(); fd.append('email',email); fd.append('quantidade',n);

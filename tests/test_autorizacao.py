@@ -268,5 +268,32 @@ checa("o seletor de arquivo veio junto", _i.find('id="live-upload"') < _i.find('
 checa("rotulo nao exclui quem usa o celular", "da câmera':'Simular" in _i, False)
 checa("a landing fala com quem usa o celular", "Com câmera ou com o celular mesmo" in _i, True)
 
+print("")
+print("[15] Painel do admin: numeros por conta e contatos — e o portao continua fechado")
+r = C.get("/admin/resumo", headers=h(chefe))
+checa("admin ve o resumo", r.status_code, 200)
+_j = r.json()
+checa("tem leitura de credito", sorted(_j["credito"].keys()),
+      ["creditos_dados", "creditos_livres", "eventos_criados", "eventos_orfaos", "eventos_vazios"])
+_umа = _j["fotografos_lista"][0]
+checa("cada conta traz os numeros que decidem credito",
+      all(k in _umа for k in ("fotos", "convidados", "contatos", "bytes", "ao_vivo", "ultima_foto")), True)
+# a lista tem que mostrar ate conta que nunca criou evento (subconsulta, nao JOIN)
+C.post("/signup", data={"email": "vazia@t.com", "senha": "senha123"})
+checa("conta sem evento nenhum aparece na lista",
+      any(f["email"] == "vazia@t.com" for f in C.get("/admin/resumo", headers=h(chefe)).json()["fotografos_lista"]), True)
+
+# contatos sao nome + telefone de convidado: SO admin
+checa("admin le os contatos", C.get("/admin/contatos", headers=h(chefe)).status_code, 200)
+checa("fotografa comum NAO le os contatos de todos", C.get("/admin/contatos", headers=h(dona)).status_code, 403)
+checa("anonimo NAO le", C.get("/admin/contatos").status_code, 403)
+# o evento que tinha contato foi apagado la em [6]; cria um agora para ter o que ler
+C.post("/event", data={"code": "CONT1", "name": "Festa com contato"}, headers=h(dona))
+C.post("/selfie", data={"event": "CONT1", "consent": "true", "nome": "Bia", "contato": "13 98888-0000"},
+       files={"file": ("s.jpg", jpeg(), "image/jpeg")})
+_cs = C.get("/admin/contatos", headers=h(chefe)).json()["contatos"]
+checa("traz o contato com o evento e o dono",
+      all(k in (_cs[0] if _cs else {}) for k in ("nome", "contato", "evento", "dono", "ts")), True)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

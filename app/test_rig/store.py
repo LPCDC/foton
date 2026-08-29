@@ -143,10 +143,52 @@ def gasta_credito(email):
 
 # ---------------- admin ----------------
 def todos_fotografos():
+    """Uma linha por conta, com o que o operador precisa para decidir credito.
+
+    Tudo por subconsulta em vez de JOIN: sao poucas contas, e assim uma conta sem
+    evento nenhum continua aparecendo na lista (com JOIN ela sumiria).
+    `bytes` e o que a conta ocupa DE VERDADE no banco — lembrando que o backup
+    guarda 7 copias completas, entao no disco isso conta 8x.
+    """
     rs = q("""SELECT p.email, p.nome, p.marca, p.credits, p.credits_total, p.criado,
-                     (SELECT COUNT(*) FROM event WHERE dono=p.email AND auto=0) eventos
+                (SELECT COUNT(*) FROM event WHERE dono=p.email AND auto=0) eventos,
+                (SELECT COUNT(*) FROM event WHERE dono=p.email AND status='live') ao_vivo,
+                (SELECT COUNT(*) FROM photo WHERE event_code IN
+                    (SELECT code FROM event WHERE dono=p.email)) fotos,
+                (SELECT COUNT(*) FROM guest WHERE event_code IN
+                    (SELECT code FROM event WHERE dono=p.email)) convidados,
+                (SELECT COUNT(*) FROM contact WHERE event_code IN
+                    (SELECT code FROM event WHERE dono=p.email)) contatos,
+                (SELECT COALESCE(SUM(LENGTH(bytes)),0) FROM photo WHERE event_code IN
+                    (SELECT code FROM event WHERE dono=p.email)) bytes,
+                (SELECT MAX(criado) FROM photo WHERE event_code IN
+                    (SELECT code FROM event WHERE dono=p.email)) ultima_foto
               FROM photographer p ORDER BY p.criado DESC""", (), "all")
     return [dict(r) for r in rs]
+
+def contatos_todos(limite=300):
+    """Todo contato que convidado deixou, em qualquer evento, com o dono do evento.
+
+    E dado pessoal (nome + telefone): esta rota e SO do admin, nunca do convidado.
+    Ordenado do mais novo para o mais velho — o que interessa e o de hoje.
+    """
+    rs = q("""SELECT c.nome, c.contato, c.ts, c.event_code, e.nome AS evento, e.dono
+              FROM contact c LEFT JOIN event e ON e.code=c.event_code
+              ORDER BY c.ts DESC LIMIT ?""", (limite,), "all")
+    return [dict(r) for r in (rs or [])]
+
+def uso_de_credito():
+    """Quanto credito ja foi gasto e em que. Um credito sai por evento criado."""
+    def n(sql):
+        r = q(sql, (), "one"); return (list(r)[0] if r else 0) or 0
+    return {
+        "creditos_dados":  n("SELECT COALESCE(SUM(credits_total),0) FROM photographer"),
+        "creditos_livres": n("SELECT COALESCE(SUM(credits),0) FROM photographer"),
+        "eventos_criados": n("SELECT COUNT(*) FROM event WHERE auto=0"),
+        "eventos_orfaos":  n("SELECT COUNT(*) FROM event WHERE auto=1 OR dono IS NULL"),
+        "eventos_vazios":  n("""SELECT COUNT(*) FROM event WHERE auto=0 AND code NOT IN
+                                (SELECT DISTINCT event_code FROM photo)"""),
+    }
 
 def da_creditos(email, n):
     q("""UPDATE photographer SET credits=credits+?, credits_total=credits_total+?

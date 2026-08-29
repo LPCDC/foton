@@ -471,7 +471,18 @@ def admin_resumo(authorization: str = Header(None)):
     du = shutil.disk_usage("/")
     return {**store.resumo_geral(),
             "disco_livre_gb": round(du.free / 1e9, 1), "disco_total_gb": round(du.total / 1e9, 1),
+            "credito": store.uso_de_credito(),
             "fotografos_lista": store.todos_fotografos()}
+
+@app.get("/admin/contatos")
+def admin_contatos(authorization: str = Header(None)):
+    """Todo contato deixado por convidado, de todos os eventos.
+
+    Dado pessoal (nome + telefone). Fica atras de _admin de proposito: o convidado
+    entregou isso para a fotografa dele, nao para o publico. Nunca chega ao app do
+    convidado, e nao entra em log (regra da secao 7 do CLAUDE.md)."""
+    _admin(authorization)
+    return {"contatos": store.contatos_todos()}
 
 @app.get("/admin/saude")
 def admin_saude(authorization: str = Header(None)):
