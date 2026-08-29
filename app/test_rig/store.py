@@ -157,6 +157,39 @@ def troca_senha(email, nova):
     q("UPDATE photographer SET senha=? WHERE email=?", (hash_senha(nova), email.strip().lower()))
     q("DELETE FROM session WHERE email=?", (email.strip().lower(),))   # derruba sessões antigas
 
+def renomeia_conta(antigo, novo):
+    """Troca o LOGIN da conta levando junto tudo que aponta para ele.
+
+    O login é PRIMARY KEY de `photographer` e é referenciado por `event.dono`,
+    `session.email` e a chave `ftp_visto:<login>` do config. Trocar só a linha do
+    fotógrafo deixaria os eventos dele órfãos — a mesma "fábrica de eventos órfãos"
+    que já custou caro aqui (a fotógrafa não via o evento, o convidado via as fotos).
+
+    A `logo` é coluna de `photographer`, então viaja sozinha com o UPDATE.
+    As sessões antigas caem de propósito: quem estava logado com o login velho
+    precisa entrar de novo.
+    """
+    antigo = (antigo or "").strip().lower()
+    novo = (novo or "").strip().lower()
+    if not antigo or not novo or antigo == novo:
+        return False
+    if not conta(antigo) or conta(novo):
+        return False
+    with _lock:
+        cx = conn()
+        try:
+            cx.execute("BEGIN IMMEDIATE")
+            cx.execute("UPDATE photographer SET email=? WHERE email=?", (novo, antigo))
+            cx.execute("UPDATE event SET dono=? WHERE dono=?", (novo, antigo))
+            cx.execute("DELETE FROM session WHERE email=?", (antigo,))
+            cx.execute("UPDATE config SET chave=? WHERE chave=?",
+                       ("ftp_visto:" + novo, "ftp_visto:" + antigo))
+            cx.commit()
+        except Exception:
+            cx.rollback()
+            raise
+    return True
+
 def resumo_geral():
     def n(sql):
         r = q(sql, (), "one"); return list(r)[0] if r else 0

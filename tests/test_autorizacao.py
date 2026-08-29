@@ -14,7 +14,7 @@ import io, os, sys, tempfile, types
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(RAIZ, "app", "test_rig"))
 os.environ["FOTON_DB"] = os.path.join(tempfile.mkdtemp(), "teste.db")
-os.environ["FOTON_ADMINS"] = "chefe@t.com"
+os.environ["FOTON_ADMINS"] = "chefe@t.com,reservado@t.com"   # o 2o NAO tem conta: testa escalada
 
 # ---- dublês: cv2 e insightface (o resto do pipeline é o real) ----
 import numpy as np
@@ -187,6 +187,51 @@ checa("abrir /compartilhar no navegador não quebra", C.get("/compartilhar").sta
 # a rota é anônima de propósito (o Android não manda token) — então ela NÃO pode publicar foto
 checa("a rota NÃO virou upload anônimo: nada entrou no evento",
       len(C.get("/photos?event=FESTA9").json()["photos"]), _antes)
+
+print("")
+print("[12] Trocar o proprio login e a propria senha - sem depender do admin")
+tk = C.post("/signup", data={"email": "muda@t.com", "senha": "senha123", "nome": "Muda"}).json()["token"]
+C.post("/event", data={"code": "MUD1", "name": "Festa da Muda"}, headers=h(tk))
+C.post("/ingest", data={"event": "MUD1"}, files={"file": ("f.jpg", jpeg(), "image/jpeg")}, headers=h(tk))
+
+checa("anonimo nao troca credencial", C.post("/conta/credenciais", data={"atual": "senha123"}).status_code, 401)
+checa("senha atual errada nao passa",
+      C.post("/conta/credenciais", data={"atual": "chutei", "nova_senha": "novasenha"}, headers=h(tk)).status_code, 403)
+checa("senha nova curta demais",
+      C.post("/conta/credenciais", data={"atual": "senha123", "nova_senha": "123"}, headers=h(tk)).status_code, 400)
+checa("login com espaco nao passa",
+      C.post("/conta/credenciais", data={"atual": "senha123", "novo_login": "no me"}, headers=h(tk)).status_code, 400)
+checa("login curto demais nao passa",
+      C.post("/conta/credenciais", data={"atual": "senha123", "novo_login": "ab"}, headers=h(tk)).status_code, 400)
+checa("login ja usado por outra conta",
+      C.post("/conta/credenciais", data={"atual": "senha123", "novo_login": "dona@t.com"}, headers=h(tk)).status_code, 409)
+checa("NAO da para virar admin renomeando a conta",
+      C.post("/conta/credenciais", data={"atual": "senha123", "novo_login": "reservado@t.com"}, headers=h(tk)).status_code, 403)
+checa("e continua sem ser admin", C.get("/admin/saude", headers=h(tk)).status_code, 403)
+
+r = C.post("/conta/credenciais", data={"atual": "senha123", "novo_login": "MudaNova", "nova_senha": "outrasenha"}, headers=h(tk))
+checa("troca login + senha de uma vez", r.status_code, 200)
+j = r.json()
+checa("login virou minusculo", j["email"], "mudanova")
+checa("avisa que a senha do FTP mudou junto", j["ftp_mudou"], True)
+checa("o login velho nao entra mais", C.post("/login", data={"email": "muda@t.com", "senha": "outrasenha"}).status_code, 401)
+checa("a senha velha nao entra mais", C.post("/login", data={"email": "mudanova", "senha": "senha123"}).status_code, 401)
+checa("o login NOVO entra", C.post("/login", data={"email": "mudanova", "senha": "outrasenha"}).status_code, 200)
+checa("a sessao antiga caiu", C.get("/me", headers=h(tk)).status_code, 401)
+novo = j["token"]
+checa("o token devolvido ja vale", C.get("/me", headers=h(novo)).status_code, 200)
+evs = C.get("/events", headers=h(novo)).json()["events"]
+checa("o evento veio junto com o login novo", [e["code"] for e in evs], ["MUD1"])
+checa("a foto continua no evento", len(C.get("/photos?event=MUD1").json()["photos"]), 1)
+checa("e ela ainda manda no evento", C.post("/event/close", data={"code": "MUD1"}, headers=h(novo)).status_code, 200)
+checa("a conta velha sumiu de vez", rig.store.conta("muda@t.com"), None)
+
+r2 = C.post("/conta/credenciais", data={"atual": "outrasenha", "nova_senha": "terceira1"}, headers=h(novo))
+checa("troca so a senha", r2.status_code, 200)
+checa("e o login fica igual", r2.json()["email"], "mudanova")
+checa("nao avisa FTP a toa", r2.json()["ftp_mudou"], False)
+checa("entra com a senha nova", C.post("/login", data={"email": "mudanova", "senha": "terceira1"}).status_code, 200)
+
 
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

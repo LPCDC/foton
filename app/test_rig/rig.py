@@ -6,7 +6,7 @@ match -> feed do convidado. Dados em SQLite (store.py), não mais em memória.
 Segurança (ADR-0005): a selfie do convidado NUNCA é armazenada — vira embedding e os
 bytes são descartados. Logs sem PII (só id de rastreio, contagem, latência).
 """
-import io, os, time, uuid, logging
+import io, os, re, time, uuid, logging
 import cv2, numpy as np, qrcode
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header, Request
@@ -557,6 +557,49 @@ def conta_excluir(senha: str = Form(...), authorization: str = Header(None)):
     store.apaga_conta(c["email"])
     log.info('{"stage":"conta","acao":"excluida_pelo_titular"}')
     return {"ok": True}
+
+_LOGIN_OK = re.compile(r"^[a-z0-9][a-z0-9._%+-]{2,59}(@[a-z0-9.-]+\.[a-z]{2,})?$")
+
+@app.post("/conta/credenciais")
+def conta_credenciais(atual: str = Form(...), novo_login: str = Form(""), nova_senha: str = Form(""),
+                      authorization: str = Header(None)):
+    """A própria fotógrafa troca o login e/ou a senha.
+
+    Existia um buraco: SÓ o admin trocava senha (`/admin/senha`). Se a senha dela
+    vazasse — e vazou: esteve em texto puro num repo público — ela dependia do dono
+    para se proteger. Agora não depende.
+
+    Pede a senha ATUAL mesmo já tendo sessão: sessão roubada não deve conseguir
+    trocar a senha e expulsar a dona da própria conta.
+    """
+    c = _dono(authorization)
+    if not c: raise HTTPException(401, "sessão expirada")
+    if not store.autentica(c["email"], atual): raise HTTPException(403, "senha atual incorreta")
+
+    login = (novo_login or c["email"]).strip().lower()
+    senha = nova_senha or atual
+    if len(senha) < 6: raise HTTPException(400, "senha muito curta (mínimo 6)")
+
+    if login != c["email"].strip().lower():
+        if not _LOGIN_OK.match(login):
+            raise HTTPException(400, "login inválido — use letras, números, ponto ou hífen (sem espaço)")
+        # renomear-se para um login de admin seria virar admin sem senha de admin
+        if login in ADMINS:
+            raise HTTPException(403, "esse login é reservado")
+        if store.conta(login):
+            raise HTTPException(409, "já existe uma conta com esse login")
+        if not store.renomeia_conta(c["email"], login):
+            raise HTTPException(400, "não consegui trocar o login")
+        log.info('{"stage":"conta","acao":"login_trocado"}')
+
+    store.troca_senha(login, senha)          # já derruba TODAS as sessões
+    log.info('{"stage":"conta","acao":"senha_trocada"}')
+    d = store.conta(login)
+    # a senha do FTP é derivada do login: trocou o login, trocou a senha da câmera
+    return {"ok": True, "email": login, "token": store.novo_token(login),
+            "nome": d["nome"], "marca": d["marca"],
+            "credits": d["credits"], "credits_total": d["credits_total"],
+            "ftp_mudou": login != c["email"].strip().lower()}
 
 @app.post("/admin/conta/excluir")
 def admin_conta_excluir(email: str = Form(...), authorization: str = Header(None)):

@@ -409,6 +409,8 @@ input{font-family:inherit}
   background:linear-gradient(transparent,rgba(6,5,8,.9) 40%)}
 .lb-bar span{font-size:14.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .lb-acts{display:flex;gap:8px}
+/* com o botao de QR sao 3 acoes: em tela estreita o contador cede o lugar */
+@media (max-width:400px){ .lb-bar span{display:none} .lb-acts{width:100%;justify-content:space-between} }
 /* ---------- QR tela cheia ---------- */
 .qrfull{position:fixed;inset:0;background:var(--ink);z-index:75;display:none;flex-direction:column;
   align-items:center;justify-content:center;gap:22px;padding:26px;animation:fade .22s}
@@ -512,9 +514,13 @@ input{font-family:inherit}
   <section class="screen" id="s-login">
     <button class="back" onclick="go('landing')">←&nbsp; voltar</button>
     <h1 class="title" id="log-title">Entrar no painel</h1>
-    <p class="subtitle" id="log-sub">Use seu e-mail e senha.</p>
+    <p class="subtitle" id="log-sub">Use seu e-mail (ou usuário) e senha.</p>
     <div class="card">
-      <div class="field"><label>E-mail</label><input id="in-email" type="email" placeholder="voce@estudio.com" autocomplete="username"></div>
+      <!-- type=text, nao email: o servidor sempre aceitou usuario simples ("patriciavargas"),
+           era o proprio input que barrava com "inclua um @". -->
+      <div class="field"><label>E-mail ou usuário</label><input id="in-email" type="text" inputmode="email"
+        autocapitalize="none" autocorrect="off" spellcheck="false"
+        placeholder="voce@estudio.com  ou  seuusuario" autocomplete="username"></div>
       <div class="field"><label>Senha</label><input id="in-pass" type="password" placeholder="mínimo 6 caracteres" autocomplete="current-password"></div>
       <div id="campos-cadastro" style="display:none">
         <div class="field"><label>Seu nome</label><input id="in-nome" placeholder="Ex.: Patrícia Vargas" autocomplete="name"></div>
@@ -558,7 +564,31 @@ input{font-family:inherit}
     <p class="note" style="margin-top:6px">
       <button class="link btn-instalar" style="display:none" onclick="instalarApp()">📲 Instalar o Fóton no celular</button>
     </p>
+    <p class="note" style="margin-top:6px"><button class="link" onclick="abrirConta()">🔑 Minha conta e senha</button></p>
     <p class="note" style="margin-top:6px"><button class="link" onclick="logout()">Sair da conta</button></p>
+  </section>
+
+  <!-- ================= MINHA CONTA ================= -->
+  <section class="screen" id="s-conta">
+    <button class="back" onclick="go('dash')">←&nbsp; painel</button>
+    <h1 class="title">Minha conta</h1>
+    <p class="subtitle">Troque seu login e sua senha quando quiser. Só você faz isso.</p>
+
+    <div class="card">
+      <div class="field"><label>Senha atual</label>
+        <input id="cc-atual" type="password" placeholder="sua senha de hoje" autocomplete="current-password"></div>
+      <div class="field"><label>Novo login (e-mail ou usuário)</label>
+        <input id="cc-login" type="text" inputmode="email" autocapitalize="none" autocorrect="off"
+               spellcheck="false" placeholder="deixe como está para não trocar" autocomplete="username"></div>
+      <div class="field"><label>Nova senha</label>
+        <input id="cc-senha" type="password" placeholder="deixe vazio para não trocar" autocomplete="new-password"></div>
+      <button class="btn primary block" id="btn-cc" onclick="salvarCredenciais()">Salvar</button>
+      <p class="note" style="margin-top:12px;text-align:left">
+        Pedimos a senha atual de propósito: se alguém pegar seu celular destravado,
+        não consegue trocar sua senha e te trancar fora da conta.</p>
+    </div>
+
+    <p class="note" style="margin-top:16px;text-align:left" id="cc-aviso-ftp"></p>
   </section>
 
   <!-- ================= ADMIN ================= -->
@@ -840,6 +870,7 @@ input{font-family:inherit}
   <div class="lb-bar">
     <span id="lb-count">1 / 1</span>
     <div class="lb-acts">
+      <button class="btn ghost sm" id="lb-qr" onclick="abrirQRFoto()" title="Mostrar QR desta foto">▣&nbsp;QR</button>
       <button class="btn ghost sm" onclick="compartilharFoto()">Compartilhar</button>
       <button class="btn primary sm" onclick="baixarFoto()">Salvar</button>
     </div>
@@ -857,6 +888,19 @@ input{font-family:inherit}
   <div class="qrfull-acts">
     <button class="btn ghost" onclick="baixarQR()">Baixar QR</button>
     <button class="btn ghost" onclick="fecharQR()">Fechar</button>
+  </div>
+</div>
+
+<!-- QR DESTA FOTO: a amiga que aparece junto escaneia e leva a foto no proprio celular -->
+<div class="qrfull" id="qrfoto" onclick="if(event.target===this)fecharQRFoto()">
+  <div class="qrfull-card">
+    <div class="qf-top">Aponte a câmera do outro celular</div>
+    <img id="qrfoto-img" alt="QR desta foto">
+    <div class="qf-sub">quem escanear abre <b>esta foto</b> e pode salvar</div>
+  </div>
+  <div class="qrfull-acts">
+    <button class="btn ghost" onclick="copiarLinkFoto()">Copiar link</button>
+    <button class="btn ghost" onclick="fecharQRFoto()">Fechar</button>
   </div>
 </div>
 
@@ -982,6 +1026,52 @@ async function autenticar(){
   }catch(e){ toast('Servidor indisponível. Tente de novo.'); }
   finally{ b.textContent=txt; b.disabled=false; }
 }
+/* ---- minha conta: a fotógrafa troca o próprio login e a própria senha ----
+   Antes disso SÓ o admin trocava senha (`/admin/senha`). Se a senha dela vazasse,
+   ela dependia do dono para se proteger. */
+function abrirConta(){
+  ['cc-atual','cc-login','cc-senha'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cc-login').value = (SESSAO&&SESSAO.email)||'';
+  document.getElementById('cc-aviso-ftp').textContent='';
+  go('conta');
+}
+async function salvarCredenciais(){
+  const atual=document.getElementById('cc-atual').value;
+  const login=document.getElementById('cc-login').value.trim().toLowerCase();
+  const senha=document.getElementById('cc-senha').value;
+  if(!atual){ toast('Digite sua senha atual.'); return; }
+  if(senha && senha.length<6){ toast('A nova senha precisa de pelo menos 6 caracteres.'); return; }
+  const mudouLogin = login && SESSAO && login!==(SESSAO.email||'').toLowerCase();
+  if(!mudouLogin && !senha){ toast('Nada para trocar.'); return; }
+  if(!LIVE){ toast('Modo demonstração'); return; }
+  const b=document.getElementById('btn-cc'); const t=b.textContent; b.textContent='Salvando…'; b.disabled=true;
+  try{
+    const fd=new FormData(); fd.append('atual',atual);
+    if(mudouLogin) fd.append('novo_login',login);
+    if(senha) fd.append('nova_senha',senha);
+    const r=await fetch(API+'/conta/credenciais',{method:'POST',headers:auth(),body:fd});
+    if(!r.ok){
+      const m={403:'Senha atual incorreta.',409:'Já existe uma conta com esse login.',
+               400:'Login inválido ou senha curta demais.',401:'Sua sessão expirou — entre de novo.'};
+      toast(m[r.status]||'Não consegui salvar. Tente de novo.');
+      if(r.status===401) sessaoFotografoExpirou();
+      return;
+    }
+    const j=await r.json();
+    salvarToken(j.token);                       // a troca derruba TODAS as sessões, inclusive esta
+    SESSAO=j;
+    toast(mudouLogin?`Pronto — entre com "${j.email}" da próxima vez`:'Senha trocada ✓');
+    // a senha do FTP é derivada do login: trocou o login, a câmera precisa ser reconfigurada
+    document.getElementById('cc-aviso-ftp').innerHTML = j.ftp_mudou
+      ? '⚠ Seu login mudou, então a <b>senha do FTP da câmera também mudou</b>. Se você usa câmera com FTP, veja os dados novos em <b>Conectar câmera</b>.'
+      : '';
+    ['cc-atual','cc-senha'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('cc-login').value=j.email;
+    if(!j.ftp_mudou) go('dash');
+  }catch(e){ toast('Servidor indisponível. Tente de novo.'); }
+  finally{ b.textContent=t; b.disabled=false; }
+}
+
 async function carregarConta(){
   if(!LIVE||!tokenSalvo())return false;
   try{
@@ -1920,15 +2010,17 @@ function abrirFoto(lista, idx){
   document.getElementById('lb-count').textContent=`${idx+1} / ${lista.length}`;
   const nav=lista.length>1?'':'none';
   document.querySelectorAll('.lb-nav').forEach(b=>b.style.display=nav);
+  atualizarBotaoQR();
   document.getElementById('lb').classList.add('show');
 }
-function fecharFoto(){ document.getElementById('lb').classList.remove('show'); }
+function fecharFoto(){ fecharQRFoto(); document.getElementById('lb').classList.remove('show'); }
 function navFoto(d){
   if(!lbLista.length)return;
   lbIdx=(lbIdx+d+lbLista.length)%lbLista.length;
   sheetTarget=lbLista[lbIdx];
   document.getElementById('lb-img').src=lbLista[lbIdx].src;
   document.getElementById('lb-count').textContent=`${lbIdx+1} / ${lbLista.length}`;
+  atualizarBotaoQR();
 }
 /* teclado + swipe */
 document.addEventListener('keydown',e=>{
@@ -1939,6 +2031,57 @@ document.addEventListener('keydown',e=>{
   lb.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;},{passive:true});
   lb.addEventListener('touchend',e=>{ if(x0===null)return;
     const dx=e.changedTouches[0].clientX-x0; if(Math.abs(dx)>50) navFoto(dx<0?1:-1); x0=null;},{passive:true});})();
+
+/* ============== QR DESTA FOTO (a amiga que aparece junto leva a foto) ==============
+   Cena real: a convidada abre uma foto e a amiga que está do lado também aparece nela.
+   Em vez de "me manda depois", a amiga aponta a câmera e abre a foto no próprio
+   celular, na hora.
+
+   O QR aponta para o APP com a foto aberta (`?ev=CODE&foto=ID`), não para o .jpg cru:
+   quem escaneia vê o Fóton, tem botão de salvar e de compartilhar — e não uma imagem
+   solta numa aba do navegador.
+
+   Privacidade: o endereço da foto (`/img/...`) já é público hoje — o QR não abre nada
+   que já não estivesse aberto, só torna prático o que a convidada quer fazer com a
+   própria foto. A retenção de 90 dias continua valendo: passou disso, o link morre e
+   quem escanear vê o aviso, não um erro. */
+function fotoAtualRef(){
+  const p=lbLista[lbIdx]; if(!p) return null;
+  const m=/\/img\/([^/]+)\/([^/]+)\.jpg/.exec(p.src||'');
+  return m ? {ev:m[1], id:m[2]} : null;           // foto de demonstração não casa: sem QR
+}
+function linkDaFoto(){
+  const r=fotoAtualRef(); if(!r) return '';
+  return `${API}/?ev=${encodeURIComponent(r.ev)}&foto=${encodeURIComponent(r.id)}`;
+}
+function atualizarBotaoQR(){
+  const b=document.getElementById('lb-qr'); if(!b)return;
+  b.style.display = fotoAtualRef() ? '' : 'none';
+}
+function abrirQRFoto(){
+  const url=linkDaFoto();
+  if(!url){ toast('Esta foto não tem link para compartilhar'); return; }
+  document.getElementById('qrfoto-img').src=`${API}/qr?data=${encodeURIComponent(url)}`;
+  document.getElementById('qrfoto').classList.add('show');
+}
+function fecharQRFoto(){ document.getElementById('qrfoto').classList.remove('show'); }
+async function copiarLinkFoto(){
+  const url=linkDaFoto(); if(!url)return;
+  try{ await navigator.clipboard.writeText(url); toast('Link da foto copiado ✓'); }
+  catch(e){ toast(url); }
+}
+/* quem escaneou o QR chega aqui: abre SÓ aquela foto */
+async function abrirFotoAvulsa(ev,pid){
+  const src=`${API}/img/${encodeURIComponent(ev)}/${encodeURIComponent(pid)}.jpg`;
+  try{
+    const r=await fetch(src,{method:'GET',cache:'no-store'});
+    if(!r.ok){                                   // 90 dias de retenção: some de propósito
+      toast('Esta foto não está mais disponível');
+      return;
+    }
+  }catch(e){ toast('Não consegui abrir a foto — verifique a internet'); return; }
+  abrirFoto([{id:pid, src, faces:0}], 0);
+}
 
 /* ===================== QR EM TELA CHEIA (mesa do evento) ===================== */
 function abrirQR(){
@@ -2219,6 +2362,8 @@ document.addEventListener('visibilitychange',()=>{
 loadEvents();
 /* deep-link ?evento=CODE abre como convidado (o que o QR faz) */
 if(_params.get('evento')) openGuest(_params.get('evento'));
+/* veio do QR de uma foto: abre so aquela foto, com Salvar e Compartilhar */
+if(_params.get('foto') && _params.get('ev')) abrirFotoAvulsa(_params.get('ev'), _params.get('foto'));
 /* voltou do menu "Compartilhar" do Android: o service worker deixou o lote no cache */
 if(_params.get('compartilhado')) receberDoCompartilhamento(_params.get('compartilhado'));
 </script>
