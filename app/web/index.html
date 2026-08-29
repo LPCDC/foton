@@ -597,6 +597,18 @@ input{font-family:inherit}
       <div class="field"><label>Sua marca nas fotos</label>
         <input id="ev-brand" placeholder="Ex.: Patrícia Vargas Fotografia" maxlength="40">
         <p class="small" style="color:var(--dim);font-size:13.5px;margin-top:7px">Aparece como marca d'água nas fotos. Em branco, usamos “FÓTON”.</p>
+        <div id="logo-box" style="margin-top:14px;display:flex;align-items:center;gap:14px">
+          <div id="logo-preview" style="width:56px;height:56px;border-radius:12px;border:1px dashed var(--line);
+            display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;background:var(--surface-2)">
+            <span style="font-size:22px">🖼️</span>
+          </div>
+          <div style="flex:1">
+            <label class="link" style="cursor:pointer" for="logo-file">Enviar logo em PNG (com fundo transparente)</label>
+            <input type="file" id="logo-file" accept="image/png" style="display:none" onchange="enviarLogo(event)">
+            <p class="small" id="logo-status" style="color:var(--dim);font-size:13px;margin-top:3px">Se enviar, a logo substitui o texto acima nas fotos.</p>
+          </div>
+          <button class="link" id="logo-remover" style="display:none;color:var(--live)" onclick="apagarLogo()">Remover</button>
+        </div>
       </div>
       <div class="field"><label style="display:flex;align-items:center;gap:9px;text-transform:none;letter-spacing:0;font-size:15.5px;color:var(--muted);cursor:pointer">
         <input type="checkbox" id="ev-leads" style="width:18px;height:18px;accent-color:var(--accent)">
@@ -1046,7 +1058,41 @@ function fmtDate(s){if(!s)return'';const[y,m,d]=s.split('-');return `${d}/${m}/$
 function abrirCriarEvento(){
   const b=document.getElementById('ev-brand');
   if(b&&!b.value&&SESSAO&&SESSAO.marca) b.value=SESSAO.marca;   // marca da conta ja preenchida
+  atualizarLogoPreview();
   go('create');
+}
+function atualizarLogoPreview(){
+  const box=document.getElementById('logo-preview'), rm=document.getElementById('logo-remover'),
+        st=document.getElementById('logo-status');
+  if(!box)return;
+  if(SESSAO&&SESSAO.tem_logo){
+    box.innerHTML=`<img src="${API}/conta/logo?_=${Date.now()}" alt="Sua logo" style="width:100%;height:100%;object-fit:contain;background:repeating-conic-gradient(#2a2530 0 90deg,#1f1b26 0 180deg) 0 0/12px 12px">`;
+    if(rm)rm.style.display='';
+    if(st)st.textContent='Logo cadastrada — está sendo usada nas fotos no lugar do texto.';
+  }else{
+    box.innerHTML='<span style="font-size:22px">🖼️</span>';
+    if(rm)rm.style.display='none';
+    if(st)st.textContent="Se enviar, a logo substitui o texto acima nas fotos.";
+  }
+}
+async function enviarLogo(e){
+  const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f)return;
+  if(f.type!=='image/png'){toast('Envie um arquivo PNG.');return;}
+  if(f.size>3*1024*1024){toast('Arquivo muito grande (máx. 3 MB).');return;}
+  const st=document.getElementById('logo-status'); if(st)st.textContent='Enviando…';
+  try{
+    const fd=new FormData(); fd.append('file',f);
+    const r=await fetch(API+'/conta/logo',{method:'POST',headers:auth(),body:fd});
+    if(!r.ok){toast('Não consegui salvar a logo.');atualizarLogoPreview();return;}
+    if(SESSAO)SESSAO.tem_logo=true;
+    atualizarLogoPreview(); toast('Logo salva ✓');
+  }catch(err){toast('Erro de conexão.');atualizarLogoPreview();}
+}
+async function apagarLogo(){
+  if(!confirm('Remover a logo? As próximas fotos voltam a usar o texto.'))return;
+  try{ await fetch(API+'/conta/logo/apagar',{method:'POST',headers:auth()}); }catch(e){}
+  if(SESSAO)SESSAO.tem_logo=false;
+  atualizarLogoPreview(); toast('Logo removida');
 }
 function criarEvento(){
   const name=document.getElementById('ev-name').value.trim()||'Evento sem nome';

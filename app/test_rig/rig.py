@@ -46,7 +46,37 @@ def _font(sz):
         except Exception: pass
     return ImageFont.load_default()
 
-def process_image(raw: bytes, marca: str = "FÓTON"):
+LOGO_MAX = 900          # lado maior guardado no banco — watermark nao precisa de mais que isso
+LOGO_LIMITE_BYTES = 3 * 1024 * 1024
+
+def _prepara_logo(raw: bytes) -> bytes:
+    """Valida e reduz o PNG antes de guardar — nunca guarda o arquivo do jeito que veio."""
+    im = Image.open(io.BytesIO(raw))
+    if im.format != "PNG":
+        raise HTTPException(400, "envie um PNG (com transparência, se quiser fundo vazado)")
+    im = im.convert("RGBA")
+    w, h = im.size
+    s = LOGO_MAX / max(w, h)
+    if s < 1:
+        im = im.resize((round(w * s), round(h * s)), Image.LANCZOS)
+    out = io.BytesIO(); im.save(out, "PNG", optimize=True)
+    return out.getvalue()
+
+def _aplica_logo(img: Image.Image, logo_bytes: bytes, fw: int, fh: int):
+    """Cola o logo (com o próprio alfa) no canto — substitui o texto quando existe."""
+    try:
+        lg = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
+    except Exception:
+        return False                      # logo corrompido: a foto segue sem marca, nunca quebra
+    alvo_w = max(64, round(fw * 0.20))
+    s = alvo_w / lg.width
+    lg = lg.resize((alvo_w, max(1, round(lg.height * s))), Image.LANCZOS)
+    m = round(fw * 0.02)
+    x, y = fw - lg.width - m, fh - lg.height - m
+    img.paste(lg, (x, y), lg)
+    return True
+
+def process_image(raw: bytes, marca: str = "FÓTON", logo: bytes = None):
     t0 = time.perf_counter()
     img = Image.open(io.BytesIO(raw))
     # draft: manda o decodificador de JPEG ja entregar a imagem reduzida (usa a escala
@@ -65,13 +95,15 @@ def process_image(raw: bytes, marca: str = "FÓTON"):
     if s < 1:
         img = img.resize((round(w * s), round(h * s)), Image.LANCZOS)
     fw, fh = img.size
-    d = ImageDraw.Draw(img, "RGBA")
-    font = _font(max(18, fw // 28))
-    txt = (marca or "FÓTON").strip()[:40]
-    bb = d.textbbox((0, 0), txt, font=font); tw, th = bb[2] - bb[0], bb[3] - bb[1]
-    m = int(fw * 0.02); x, y = fw - tw - m, fh - th - m * 2
-    d.text((x + 2, y + 2), txt, font=font, fill=(0, 0, 0, 120))
-    d.text((x, y), txt, font=font, fill=(255, 255, 255, 190))
+    # logo em PNG substitui o texto quando a fotografa subiu um; senao, marca por texto (como sempre)
+    if not (logo and _aplica_logo(img, logo, fw, fh)):
+        d = ImageDraw.Draw(img, "RGBA")
+        font = _font(max(18, fw // 28))
+        txt = (marca or "FÓTON").strip()[:40]
+        bb = d.textbbox((0, 0), txt, font=font); tw, th = bb[2] - bb[0], bb[3] - bb[1]
+        m = int(fw * 0.02); x, y = fw - tw - m, fh - th - m * 2
+        d.text((x + 2, y + 2), txt, font=font, fill=(0, 0, 0, 120))
+        d.text((x, y), txt, font=font, fill=(255, 255, 255, 190))
     out = io.BytesIO(); img.save(out, "JPEG", quality=JPEG_Q, optimize=True, progressive=True)
     return out.getvalue(), (fw, fh), (time.perf_counter() - t0) * 1000
 
@@ -201,6 +233,34 @@ def login(request: Request, email: str = Form(...), senha: str = Form(...)):
     return {"token": store.novo_token(c["email"]), "nome": c["nome"], "marca": c["marca"],
             "credits": c["credits"], "credits_total": c["credits_total"], "email": c["email"]}
 
+@app.post("/conta/logo")
+async def conta_logo(file: UploadFile = File(...), authorization: str = Header(None)):
+    """Marca d'água em imagem (PNG com transparência) — substitui o texto nas fotos dela."""
+    c = _dono(authorization)
+    if not c: raise HTTPException(401, "sessão expirada")
+    raw = await file.read()
+    if len(raw) > LOGO_LIMITE_BYTES:
+        raise HTTPException(400, "arquivo muito grande (máximo 3 MB)")
+    png = _prepara_logo(raw)
+    store.salva_logo(c["email"], png)
+    log.info('{"stage":"conta","acao":"logo_salvo"}')
+    return {"ok": True}
+
+@app.get("/conta/logo")
+def conta_logo_ver(authorization: str = Header(None)):
+    c = _dono(authorization)
+    if not c: raise HTTPException(401, "sessão expirada")
+    png = store.pega_logo(c["email"])
+    if not png: raise HTTPException(404, "sem logo cadastrado")
+    return Response(png, media_type="image/png", headers={"Cache-Control": "private, max-age=60"})
+
+@app.post("/conta/logo/apagar")
+def conta_logo_apagar(authorization: str = Header(None)):
+    c = _dono(authorization)
+    if not c: raise HTTPException(401, "sessão expirada")
+    store.apaga_logo(c["email"])
+    return {"ok": True}
+
 @app.get("/me")
 def me(authorization: str = Header(None)):
     c = _dono(authorization)
@@ -209,7 +269,8 @@ def me(authorization: str = Header(None)):
     return {"nome": c["nome"], "marca": c["marca"], "email": c["email"],
             "credits": c["credits"], "credits_total": c["credits_total"],
             "total_fotos": sum(e["fotos"] for e in evs),
-            "total_convidados": sum(e["convidados"] for e in evs)}
+            "total_convidados": sum(e["convidados"] for e in evs),
+            "tem_logo": bool(c.get("logo"))}
 
 # ============================ EVENTOS ============================
 @app.post("/event")
@@ -308,7 +369,8 @@ def ingerir_bytes(event: str, raw: bytes):
     """Coração do pipeline — usado pelo upload do app E pelo FTP da câmera."""
     e = _ev(event, create=True)
     pid = uuid.uuid4().hex[:12]
-    treated, dims, pms = process_image(raw, e.get("marca") or "FÓTON")
+    logo = store.pega_logo(e["dono"]) if e.get("dono") else None
+    treated, dims, pms = process_image(raw, e.get("marca") or "FÓTON", logo)
     faces = detect_embed(treated)
     store.salva_foto(pid, event, treated, faces)
     for gid, gemb in store.convidados_de(event):
@@ -329,7 +391,8 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...),
     raw = await file.read()
     pid = uuid.uuid4().hex[:12]
     t0 = time.time()
-    treated, dims, pms = process_image(raw, e.get("marca") or "FÓTON")
+    logo = store.pega_logo(e["dono"]) if e.get("dono") else None
+    treated, dims, pms = process_image(raw, e.get("marca") or "FÓTON", logo)
     faces = detect_embed(treated)
     store.salva_foto(pid, event, treated, faces)
     matched = []

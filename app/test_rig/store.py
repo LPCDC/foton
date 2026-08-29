@@ -47,6 +47,8 @@ def conn():
         _conn.row_factory = sqlite3.Row
         _conn.execute("PRAGMA journal_mode=WAL")
         _conn.executescript(SCHEMA)
+        try: _conn.execute("ALTER TABLE photographer ADD COLUMN logo BLOB")
+        except sqlite3.OperationalError: pass   # coluna ja existe (banco de producao antigo)
         _conn.commit()
     return _conn
 
@@ -111,6 +113,16 @@ def segredo(chave):
     v = secrets.token_urlsafe(24)
     q("INSERT OR REPLACE INTO config(chave,valor) VALUES(?,?)", (chave, v))
     return v
+
+def salva_logo(email, png_bytes):
+    q("UPDATE photographer SET logo=? WHERE email=?", (png_bytes, email))
+
+def apaga_logo(email):
+    q("UPDATE photographer SET logo=NULL WHERE email=?", (email,))
+
+def pega_logo(email):
+    r = q("SELECT logo FROM photographer WHERE email=?", (email,), "one")
+    return r["logo"] if r and r["logo"] else None
 
 def marca_ftp_visto(email):
     """Registra que a câmera CONSEGUIU logar no FTP, agora — sem precisar de foto.
