@@ -200,3 +200,42 @@ Preço final (aguarda EXP-10, custo por evento real) · gateway de pagamento (p�
   `--expand`); o painel mostra `FOTON_HOST` correto para a configuração de FTP da câmera;
   o duckdns **não é desligado** — QR já impresso, PWA instalado e o monitor externo não
   podem quebrar na troca.
+
+## ADR-0018 — Web Share Target: o menu "Compartilhar" do Android vira entrada de fotos
+- **Status:** ACCEPTED — em produção
+- **Data:** 2026-08-29
+- **Decisão:** o PWA declara `share_target` no manifest e o **service worker** atende o
+  `POST /compartilhar` que o Android faz. As fotos são guardadas num cache próprio
+  (`foton-compartilhado`), a página reabre em `/?compartilhado=<id>`, lê o lote, escolhe
+  o evento e envia pelo caminho de sempre (`reduzir → /ingest → reconhecimento`).
+- **Contexto:** a promessa feita à cliente é "clicar e a foto já ir pro Fóton". A Canon R8
+  já resolve metade: `Funções de comunicação → Enviar para smartphone após o disparo →
+  Envio automático` deposita cada foto no celular sozinha. Faltava o elo celular → Fóton.
+  **Nem a R8 nem a T6s têm FTP** (verificado no menu das duas, presencialmente), então o
+  servidor FTP do Fóton — que funciona — não serve para esta cliente.
+- **Alternativas:**
+  - **Só o seletor de arquivos** (o que existia): obriga abrir o app, achar o evento e
+    navegar na pasta antes de selecionar. É o caminho longo.
+  - **App Android nativo** vigiando a pasta: chega a zero gesto por foto, mas é outro
+    artefato para construir, assinar e manter, e ela precisa instalar fora da loja.
+  - **EOS Utility num notebook** + pasta vigiada: zero gesto e funciona nas **duas**
+    câmeras, mas põe notebook e cabo no evento.
+  - **Web Share Target:** nada para instalar além do próprio PWA, roda no que já existe.
+- **Justificativa:** é o maior ganho por unidade de risco. Não toca no pipeline, não
+  adiciona dependência, não cria rota nova de servidor que aceite foto — reaproveita o
+  `/ingest` autenticado. **Não chega a zero gesto**: a seleção das fotos na galeria
+  continua sendo humana (ver `docs/BENCHMARKS.md`). As duas alternativas de zero gesto
+  ficam registradas acima para decisão do dono.
+- **Consequências:**
+  - O `activate` do service worker **não pode** apagar `foton-compartilhado` — apagaria um
+    lote em trânsito. Está no filtro e tem teste (`tests/test_autorizacao.py`, seção 11).
+  - O lote fica no cache só até a página consumi-lo; sobra de mais de 1h é descartada.
+    Foto de evento é dado de terceiro, não pode virar entulho no celular.
+  - `POST /compartilhar` existe também no servidor, **só para degradar**: devolve página
+    explicando, em vez de 405. Ela **não ingere foto** — o POST do Android não carrega o
+    token da conta, e aceitar arquivo sem dono abriria upload anônimo (a armadilha das
+    "rotas destrutivas sem dono", já paga).
+  - Só existe com o app **instalado** como PWA, e só no Android/Chrome. Sem instalar, o
+    menu não aparece e o botão "Enviar foto da câmera" continua sendo o caminho.
+  - PWA **já instalado** pode precisar ser reinstalado para o Chrome reler o manifest e
+    registrar o alvo de compartilhamento.

@@ -649,6 +649,42 @@ def admin_expirar(authorization: str = Header(None)):
     r = store.expirar(RET_BIO, RET_FOTO)
     return {"ok": True, **r, "politica": {"biometria_dias": RET_BIO, "fotos_dias": RET_FOTO}}
 
+# ==================== COMPARTILHAR (Web Share Target) ====================
+# Com o app instalado, o Fóton aparece no menu "Compartilhar" do Android e o
+# sistema faz POST /compartilhar com as fotos. Esse POST é atendido pelo SERVICE
+# WORKER (app/web/sw.js) e normalmente não chega aqui.
+#
+# Chega aqui quando o service worker não está no ar (foi desregistrado, dados do
+# site limpos, primeira abertura ainda sem controlar a página). Sem esta rota o
+# servidor devolvia 405 e a fotógrafa via uma tela de erro crua — as fotos se
+# perdiam sem explicação. Aqui não dá para ingerir: o POST do Android não carrega
+# o token da conta (ele mora no localStorage do navegador) e aceitar arquivo sem
+# dono abriria uma rota de upload anônima. Então a resposta honesta é: explicar,
+# reinstalar o service worker e mandar para o caminho que funciona.
+_PAGINA_COMPARTILHAR = """<!doctype html><html lang="pt-BR"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fóton — compartilhar</title>
+<style>body{margin:0;background:#0b0a0d;color:#f4f2f7;font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.c{max-width:420px}h1{font-size:22px;margin:0 0 12px}p{color:#b9b4c4;margin:0 0 14px}
+a{display:block;text-align:center;background:#7c5cff;color:#fff;text-decoration:none;
+padding:14px;border-radius:12px;font-weight:600;margin-top:20px}</style>
+<div class="c"><h1>Não consegui receber as fotos por aqui</h1>
+<p>O Fóton precisa estar aberto pelo menos uma vez neste celular para receber fotos
+pelo menu <b>Compartilhar</b>. Acabei de reativar isso — da próxima vez funciona.</p>
+<p>Agora, para não perder essas fotos: abra o evento e toque em
+<b>Enviar foto da câmera</b>.</p>
+<a href="/">Abrir o Fóton</a></div>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(function(){});</script>
+"""
+
+@app.get("/compartilhar")
+@app.post("/compartilhar")
+def compartilhar_sem_sw():
+    # sem parâmetro de corpo declarado: o multipart é ignorado, não carregamos as fotos na RAM
+    return Response(_PAGINA_COMPARTILHAR, media_type="text/html; charset=utf-8",
+                    headers={"Cache-Control": "no-store"})
+
 @app.get("/qr")
 def qr(data: str):
     img = qrcode.make(data)

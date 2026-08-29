@@ -6,7 +6,14 @@
    depois de trocar de login. Agora a lógica é invertida: só entra no cache o
    que está numa lista curta e explícita de arquivos estáticos. Qualquer coisa
    fora dessa lista vai sempre para a rede. */
-const CACHE = 'foton-v3';
+const CACHE = 'foton-v4';
+
+/* Cache SEPARADO, só para as fotos que o Android entrega pelo menu "Compartilhar".
+   Separado de propósito: o activate limpa versões velhas do cache da casca e não
+   pode levar junto um lote de fotos que a fotógrafa acabou de mandar. */
+const CACHE_SHARE = 'foton-compartilhado';
+const PREFIXO_SHARE = '/__compartilhado/';
+const VALIDADE_SHARE_MS = 60 * 60 * 1000;   // lote esquecido > 1h é lixo, some
 
 // única coisa que pode ser cacheada — a "casca" do app
 const CASCA = ['/', '/index.html', '/manifest.webmanifest',
@@ -21,14 +28,73 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
-    .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    .then(ks => Promise.all(ks
+      .filter(k => k !== CACHE && k !== CACHE_SHARE)     // nunca apagar o lote compartilhado
+      .map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
+/* ===================== Web Share Target =====================
+   Com o app instalado, o Fóton aparece no menu "Compartilhar" do Android. Ao
+   escolher o Fóton, o sistema faz um POST multipart para /compartilhar com as
+   fotos no campo "fotos" (declarado no manifest). Esse POST NUNCA chega ao
+   servidor: é atendido aqui, as fotos ficam no CacheStorage e a página é aberta
+   em /?compartilhado=<id> para enviá-las com a sessão da fotógrafa.
+
+   Por que passar pelo cache e não mandar direto daqui: o upload precisa do token
+   da conta, que mora no localStorage — o service worker não enxerga localStorage. */
+async function limparShareVelho(c) {
+  const agora = Date.now();
+  for (const req of await c.keys()) {
+    const id = new URL(req.url).pathname.slice(PREFIXO_SHARE.length).split('/')[0];
+    const t = parseInt(id.slice(1), 36);
+    if (!t || agora - t > VALIDADE_SHARE_MS) await c.delete(req);
+  }
+}
+
+async function receberCompartilhadas(req) {
+  const base = self.registration.scope;
+  let destino = new URL('./', base).href;
+  try {
+    const fd = await req.formData();
+    const fotos = fd.getAll('fotos').filter(f => f && typeof f === 'object' && f.size > 0);
+    if (fotos.length) {
+      const id = 'c' + Date.now().toString(36);
+      const c = await caches.open(CACHE_SHARE);
+      await limparShareVelho(c);
+      const nomes = [], tipos = [];
+      for (let i = 0; i < fotos.length; i++) {
+        nomes.push(fotos[i].name || ('foto-' + (i + 1) + '.jpg'));
+        tipos.push(fotos[i].type || 'image/jpeg');
+        await c.put(PREFIXO_SHARE + id + '/' + i,
+                    new Response(fotos[i], { headers: { 'Content-Type': tipos[i] } }));
+      }
+      await c.put(PREFIXO_SHARE + id + '/lote',
+                  new Response(JSON.stringify({ n: fotos.length, nomes, tipos }),
+                               { headers: { 'Content-Type': 'application/json' } }));
+      destino = new URL('./?compartilhado=' + id, base).href;
+    } else {
+      destino = new URL('./?compartilhado=vazio', base).href;
+    }
+  } catch (err) {
+    destino = new URL('./?compartilhado=erro', base).href;
+  }
+  // 303: o navegador troca o POST por um GET na página do app
+  return Response.redirect(destino, 303);
+}
+
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET') return;                        // POST sempre na rede
   const url = new URL(req.url);
+
+  // o alvo de compartilhamento vem antes de tudo — é o único POST que atendemos
+  if (req.method === 'POST' && url.origin === self.location.origin &&
+      url.pathname.replace(/\/+$/, '').endsWith('/compartilhar')) {
+    e.respondWith(receberCompartilhadas(req));
+    return;
+  }
+
+  if (req.method !== 'GET') return;                        // POST sempre na rede
   if (url.origin !== self.location.origin) return;         // externo passa direto
   if (req.headers.has('Authorization')) return;            // qualquer coisa com sessão: rede
 

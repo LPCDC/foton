@@ -153,5 +153,40 @@ checa("a sessão morreu junto", C.get("/me", headers=h(alvo)).status_code, 401)
 checa("admin não apaga a si mesmo",
       C.post("/admin/conta/excluir", data={"email": "chefe@t.com"}, headers=h(chefe)).status_code, 400)
 
+print("\n[11] Compartilhar (Web Share Target) — o caminho da foto pelo menu do Android")
+import json as _json
+_WEB = os.path.join(RAIZ, "app", "web")
+_mani = _json.load(open(os.path.join(_WEB, "manifest.webmanifest"), encoding="utf-8"))
+_st = _mani.get("share_target", {})
+checa("o manifest declara share_target", bool(_st), True)
+checa("o Android manda por POST", _st.get("method"), "POST")
+checa("multipart (é o único enctype que carrega arquivo)", _st.get("enctype"), "multipart/form-data")
+_arq = (_st.get("params") or {}).get("files") or [{}]
+checa("o campo dos arquivos se chama 'fotos' (o sw.js lê esse nome)", _arq[0].get("name"), "fotos")
+checa("aceita imagem", "image/*" in (_arq[0].get("accept") or []), True)
+# a action tem que cair dentro do scope, senão o Chrome ignora o share_target inteiro
+_acao = _st.get("action", "")
+checa("a action fica dentro do scope", _acao.lstrip("./").startswith("compartilhar"), True)
+
+_sw = open(os.path.join(_WEB, "sw.js"), encoding="utf-8").read()
+checa("o service worker atende o POST do compartilhamento", "'POST'" in _sw and "compartilhar" in _sw, True)
+checa("responde com 303 (POST vira GET na página)", "303" in _sw, True)
+checa("o cache do lote NÃO é apagado no activate", "k !== CACHE_SHARE" in _sw, True)
+_idx = open(os.path.join(_WEB, "index.html"), encoding="utf-8").read()
+checa("a página lê o lote e o consome", "receberDoCompartilhamento" in _idx, True)
+checa("o caminho antigo continua existindo", "onchange=\"uploadPhoto(event)\"" in _idx, True)
+
+# degrade sem service worker: o POST cai no servidor e não pode virar 405 na cara dela
+_antes = len(C.get("/photos?event=FESTA9").json()["photos"])
+r = C.post("/compartilhar", files={"fotos": ("f.jpg", jpeg(), "image/jpeg")}, data={"event": "FESTA9"})
+checa("sem service worker, o POST responde página (não 405)", r.status_code, 200)
+checa("é HTML legível", r.headers["content-type"].startswith("text/html"), True)
+checa("explica o que fazer", "Enviar foto da câmera" in r.text, True)
+checa("reinstala o service worker", "serviceWorker" in r.text, True)
+checa("abrir /compartilhar no navegador não quebra", C.get("/compartilhar").status_code, 200)
+# a rota é anônima de propósito (o Android não manda token) — então ela NÃO pode publicar foto
+checa("a rota NÃO virou upload anônimo: nada entrou no evento",
+      len(C.get("/photos?event=FESTA9").json()["photos"]), _antes)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

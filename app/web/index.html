@@ -977,6 +977,8 @@ async function autenticar(){
     const j=await r.json(); salvarToken(j.token); SESSAO=j;
     state.events=[]; await carregarConta();     // pega os totais reais (fotos/convidados)
     go('dash');
+    // compartilhou com o app deslogado: entra e o lote segue sozinho
+    if(_compartilhadas.length) setTimeout(entregarCompartilhadas,0);
   }catch(e){ toast('Servidor indisponível. Tente de novo.'); }
   finally{ b.textContent=txt; b.disabled=false; }
 }
@@ -996,7 +998,7 @@ function sessaoFotografoExpirou(){
   if(modoCadastro) alternarCadastro();
   go('login');
 }
-function logout(){ stopEvent(); salvarToken(null); SESSAO=null; state.events=[]; saveEvents(); go('landing'); }
+function logout(){ stopEvent(); lembrarEvento(''); salvarToken(null); SESSAO=null; state.events=[]; saveEvents(); go('landing'); }
 async function entrarComoFotografo(){
   if(LIVE && await carregarConta()){ go('dash'); return; }   // ja logado -> direto pro painel
   if(modoCadastro) alternarCadastro();                       // sempre abre no modo ENTRAR
@@ -1041,6 +1043,7 @@ async function deletarEvento(ev){
   if(!confirm(`Apagar "${ev.name}"?\n\nAs fotos e os convidados deste evento serão removidos. Não dá para desfazer.`))return;
   state.events=state.events.filter(x=>x.code!==ev.code);
   if(state.live&&state.live.code===ev.code) state.live=null;
+  if(ultimoEvento()===ev.code) lembrarEvento('');   // apagado: nao pode continuar sendo o destino
   saveEvents(); renderDash(); toast('Evento apagado');
   if(LIVE){ try{ const fd=new FormData(); fd.append('code',ev.code); await fetch(API+'/event/delete',{method:'POST',headers:auth(),body:fd}); }catch(e){} }
 }
@@ -1211,6 +1214,77 @@ async function reenviarFalhas(){
   const lote=filaFalhas.slice(); filaFalhas=[]; renderFalhas();
   await enviarLote(lote);
 }
+
+/* ============ COMPARTILHAR: o Android entrega as fotos aqui ============
+   Com o app instalado, o Fóton aparece no menu "Compartilhar" do celular. A
+   fotógrafa seleciona as fotos na galeria (onde a R8 as deposita sozinha depois
+   de cada disparo), toca em Compartilhar -> Fóton, e acabou: o service worker
+   guarda o lote no cache e reabre o app em /?compartilhado=<id>; daqui a frente
+   é o mesmo caminho de sempre (reduzir -> /ingest -> reconhecer).
+   Se o app NÃO estiver instalado, nada disto existe e o botão "Enviar foto da
+   câmera" continua sendo o caminho — por isso nada aqui substitui aquele fluxo. */
+let _compartilhadas=[];                       // lote recebido, ainda sem evento de destino
+/* qual evento ela estava usando — o share reabre o app do zero e perde state.live */
+function ultimoEvento(){ try{ return localStorage.getItem('foton_ultimo_ev')||''; }catch(e){ return ''; } }
+function lembrarEvento(code){ try{ code?localStorage.setItem('foton_ultimo_ev',code):localStorage.removeItem('foton_ultimo_ev'); }catch(e){} }
+
+async function lerCompartilhadas(id){
+  if(!('caches' in window)) return [];
+  try{
+    const c=await caches.open('foton-compartilhado');
+    const base='/__compartilhado/'+id+'/';
+    const meta=await c.match(base+'lote'); if(!meta) return [];
+    const {n,nomes,tipos}=await meta.json();
+    const files=[];
+    for(let i=0;i<n;i++){
+      const r=await c.match(base+i); if(!r) continue;
+      const b=await r.blob();
+      files.push(new File([b], (nomes&&nomes[i])||('foto-'+(i+1)+'.jpg'),
+                          {type:(tipos&&tipos[i])||b.type||'image/jpeg'}));
+    }
+    for(let i=0;i<n;i++) await c.delete(base+i);   // fotos grandes: não deixar lixo no disco
+    await c.delete(base+'lote');
+    return files;
+  }catch(e){ return []; }
+}
+
+async function receberDoCompartilhamento(id){
+  try{ history.replaceState({},'',location.pathname); }catch(e){}   // some com ?compartilhado= da URL
+  if(id==='vazio'||id==='erro'){ toast('Não recebi as fotos — use "Enviar foto da câmera"'); return; }
+  const files=await lerCompartilhadas(id);
+  if(!files.length){ toast('Não recebi as fotos — use "Enviar foto da câmera"'); return; }
+  _compartilhadas=files;
+  await entregarCompartilhadas();
+}
+
+/* Manda o lote para o evento certo com o MENOR número de toques possível:
+   evento já aberto -> zero toque; um único evento ao vivo -> zero toque;
+   vários ao vivo -> um toque (não adivinhar: foto no evento errado vai para o
+   convidado errado, que é a pior falha do piloto). */
+async function entregarCompartilhadas(){
+  const files=_compartilhadas; if(!files.length) return;
+  if(!LIVE){ toast('Modo demonstração — as fotos não são enviadas'); _compartilhadas=[]; return; }
+  if(!tokenSalvo()||!(await carregarConta())){
+    toast(`${files.length} foto(s) esperando — entre na sua conta`); go('login'); return;
+  }
+  if(!state.live){
+    await sincronizarEventos();
+    const vivos=(state.events||[]).filter(e=>e.status==='live');
+    // O share reabre o app do zero, então state.live sempre nasce vazio. Sem o evento
+    // lembrado, a fotógrafa levaria um toque a cada lote — e ela tem vários eventos
+    // marcados "ao vivo" (eventos antigos nunca foram encerrados). O evento que ela
+    // abriu por último É a intenção dela; qualquer outro palpite (o mais recente, o
+    // primeiro da lista) seria adivinhação, e foto no evento errado vai para o
+    // convidado errado — a pior falha do piloto.
+    const alvo = vivos.find(e=>e.code===ultimoEvento()) || (vivos.length===1?vivos[0]:null);
+    if(alvo){ openEvent(alvo); return; }                        // openEvent chama de volta
+    go('dash');
+    toast(`${files.length} foto(s) esperando — toque no evento que vai recebê-las`);
+    return;
+  }
+  _compartilhadas=[];                                          // limpa ANTES: nada de reenvio em loop
+  await enviarLote(files);
+}
 /* acoes do evento */
 function guestURL(){ return state.live?`${API}/?evento=${state.live.code}`:''; }
 function compartilharConvite(){
@@ -1246,6 +1320,7 @@ async function encerrarEvento(){
   }catch(e){}
   comRosto=(ev._photos||[]).filter(p=>p.faces>0).length;
   ev.status='done'; ev.resumo={fotos:ev.photos||0, comRosto, convidados, contatos};
+  if(ultimoEvento()===ev.code) lembrarEvento('');   // encerrado: o proximo share pergunta
   if(LIVE){ try{ const fd=new FormData(); fd.append('code',ev.code); await fetch(API+'/event/close',{method:'POST',headers:auth(),body:fd}); }catch(e){} }
   saveEvents(); stopEvent(); go('dash');
   mostrarResumo(ev);
@@ -1354,6 +1429,7 @@ async function syncEventPhotos(ev){
 function openEvent(ev,opts){
   const novo=!!(opts&&opts.novo);
   state.live=ev;ev.status='live';ev._photos=ev._photos||[];
+  lembrarEvento(ev.code);                    // é para cá que vai o próximo "Compartilhar"
   document.getElementById('ev-title').textContent=ev.name;
   document.getElementById('ev-date-lbl').textContent=fmtDate(ev.date);
   document.getElementById('ev-code').textContent=(ev.code||'DEMO').split('').join(' ');
@@ -1376,6 +1452,8 @@ function openEvent(ev,opts){
   clearInterval(state.liveTimer);
   if(LIVE){ atualizarStats(); state.liveTimer=setInterval(atualizarStats,4000); }   // convidados reais
   else state.liveTimer=setInterval(()=>{if(Math.random()<.5){ev.guests++;document.getElementById('ev-nguests').textContent=ev.guests;}},2600);
+  // lote que chegou pelo menu "Compartilhar" e estava esperando um evento
+  if(_compartilhadas.length) setTimeout(entregarCompartilhadas,0);
 }
 function renderEventGrid(){
   const g=document.getElementById('ev-grid'),ev=state.live;
@@ -2141,6 +2219,8 @@ document.addEventListener('visibilitychange',()=>{
 loadEvents();
 /* deep-link ?evento=CODE abre como convidado (o que o QR faz) */
 if(_params.get('evento')) openGuest(_params.get('evento'));
+/* voltou do menu "Compartilhar" do Android: o service worker deixou o lote no cache */
+if(_params.get('compartilhado')) receberDoCompartilhamento(_params.get('compartilhado'));
 </script>
 </body>
 </html>
