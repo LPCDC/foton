@@ -241,6 +241,17 @@ checa("e o login fica igual", r2.json()["email"], "mudanova")
 checa("nao avisa FTP a toa", r2.json()["ftp_mudou"], False)
 checa("entra com a senha nova", C.post("/login", data={"email": "mudanova", "senha": "terceira1"}).status_code, 200)
 
+print("")
+print("[13] Instalar o app: e o que destrava o menu Compartilhar - nao pode ficar atras do login")
+_idx2 = open(os.path.join(RAIZ, "app", "web", "index.html"), encoding="utf-8").read()
+checa("tem tela propria de instalar", _idx2.count('id="s-instalar"'), 1)
+checa("o link aparece NA TELA DE LOGIN", "abrirInstalar('login')" in _idx2, True)
+checa("e continua no painel", "abrirInstalar('dash')" in _idx2, True)
+checa("explica que e isso que liga o Compartilhar", 'aparece no menu' in _idx2, True)
+checa("ensina o caminho manual quando o navegador nao oferece", "Adicionar a Tela de Inicio" in _idx2 or "Adicionar à Tela de Início" in _idx2, True)
+# regressao de CSS: `.tips b` pegava tambem o <b> aninhado e jogava frase inteira em caixa alta
+checa("o titulo de .tips so pega o filho direto", ".tips > b{" in _idx2, True)
+checa("e a versao que quebrava o texto sumiu", (chr(10) + ".tips b{") in _idx2, False)
 
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

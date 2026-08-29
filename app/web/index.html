@@ -275,7 +275,11 @@ input{font-family:inherit}
 .prog .bar{height:6px;background:var(--ink-2);border-radius:999px;overflow:hidden}
 .prog .bar i{display:block;height:100%;width:0;background:var(--grad);border-radius:999px;transition:width .3s}
 .tips{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:13px 15px;margin-top:12px}
-.tips b{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);display:block;margin-bottom:7px}
+/* o <b> FILHO DIRETO de .tips e o titulo do bloco (caixa alta, em bloco).
+   Era so `.tips b` e pegava tambem o <b> aninhado, que e enfase no meio da frase:
+   "O Wi-Fi da camera NAO TEM INTERNET" saia em caixa alta e quebrado em duas linhas,
+   no guia da camera e nas dicas de rosto. `>` limita ao titulo. */
+.tips > b{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);display:block;margin-bottom:7px}
 .tips ul{margin:0;padding-left:16px;color:var(--muted);font-size:14.5px;line-height:1.7}
 
 /* ---------- event live ---------- */
@@ -532,6 +536,9 @@ input{font-family:inherit}
       <span id="txt-alterna">Ainda não tem conta?</span>
       <button class="link" id="btn-alterna" onclick="alternarCadastro()">Criar conta</button>
     </p>
+    <p class="note" style="margin-top:10px">
+      <button class="link" onclick="abrirInstalar('login')">📲 Instalar o Fóton no celular</button>
+    </p>
   </section>
 
   <!-- ================= DASHBOARD ================= -->
@@ -562,10 +569,40 @@ input{font-family:inherit}
       <button class="link" onclick="go('guia')">📷 Conectar câmera</button>
     </p>
     <p class="note" style="margin-top:6px">
-      <button class="link btn-instalar" style="display:none" onclick="instalarApp()">📲 Instalar o Fóton no celular</button>
+      <button class="link" onclick="abrirInstalar('dash')">📲 Instalar o Fóton no celular</button>
     </p>
     <p class="note" style="margin-top:6px"><button class="link" onclick="abrirConta()">🔑 Minha conta e senha</button></p>
     <p class="note" style="margin-top:6px"><button class="link" onclick="logout()">Sair da conta</button></p>
+  </section>
+
+  <!-- ================= INSTALAR O APP ================= -->
+  <section class="screen" id="s-instalar">
+    <button class="back" id="inst-back" onclick="go('dash')">←&nbsp; voltar</button>
+    <h1 class="title">Instalar o Fóton</h1>
+    <p class="subtitle">É o que faz suas fotos entrarem em <b>um gesto</b> durante a festa.</p>
+
+    <div class="card">
+      <div id="inst-estado" class="note" style="text-align:left;margin:0 0 14px"></div>
+      <button class="btn primary block" id="inst-btn" onclick="instalarApp()">Instalar agora</button>
+      <div id="inst-manual" style="display:none">
+        <div class="passo"><span class="n">1</span><span class="t" id="inst-p1"></span></div>
+        <div class="passo"><span class="n">2</span><span class="t" id="inst-p2"></span></div>
+      </div>
+    </div>
+
+    <div class="eyebrow-sm">O que muda depois de instalar</div>
+    <div class="card" style="padding:6px 18px;margin-top:12px">
+      <div class="passo"><span class="n">★</span><span class="t"><b>O Fóton aparece no menu "Compartilhar"</b> do celular. Você seleciona as fotos na galeria — onde a sua câmera as deixa sozinha — e manda tudo num toque, sem abrir o app.</span></div>
+      <div class="passo"><span class="n">2</span><span class="t">Abre em <b>tela cheia</b>, sem a barra do navegador. Mais espaço para o QR e para a galeria.</span></div>
+      <div class="passo"><span class="n">3</span><span class="t">Fica com <b>ícone na tela inicial</b>: um toque, sem digitar endereço no meio do evento.</span></div>
+    </div>
+
+    <div class="tips" style="margin-top:14px">
+      <b>Já instalei, mas o Fóton não aparece no "Compartilhar"</b>
+      <p class="muted" style="font-size:15px;margin-top:8px">Acontece quando o app foi instalado antes desta função existir: o navegador ainda não releu a configuração. <b>Desinstale e instale de novo</b> — leva 20 segundos e resolve.</p>
+    </div>
+
+    
   </section>
 
   <!-- ================= MINHA CONTA ================= -->
@@ -2336,16 +2373,68 @@ if('serviceWorker' in navigator && location.protocol!=='file:'){
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault(); _instalar=e;
   document.querySelectorAll('.btn-instalar').forEach(b=>b.style.display='');
+  if(document.getElementById('s-instalar').classList.contains('active')) pintarInstalar();
 });
+/* ---- tela de instalar: o botão saiu de trás do login ----
+   Instalar não é enfeite: é o que faz o Fóton aparecer no menu "Compartilhar" do
+   Android, que é o caminho de um gesto para as fotos da câmera entrarem. Deixar
+   isso escondido no painel, atrás do login, era esconder justamente a peça que
+   destrava o fluxo do dia do evento. */
+function ehIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+  (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); }
+function jaInstalado(){
+  try{ return matchMedia('(display-mode: standalone)').matches ||
+              matchMedia('(display-mode: minimal-ui)').matches ||
+              navigator.standalone===true; }catch(e){ return false; }
+}
+let _voltarDeInstalar='dash';
+function abrirInstalar(origem){
+  _voltarDeInstalar=origem||'dash';
+  document.getElementById('inst-back').onclick=()=>go(_voltarDeInstalar);
+  pintarInstalar();
+  go('instalar');
+}
+function pintarInstalar(){
+  const est=document.getElementById('inst-estado');
+  const btn=document.getElementById('inst-btn');
+  const man=document.getElementById('inst-manual');
+  const p1=document.getElementById('inst-p1'), p2=document.getElementById('inst-p2');
+  const ios=ehIOS();
+  if(jaInstalado()){
+    // só dá para afirmar isto quando o app está RODANDO instalado
+    est.innerHTML='<b style="color:var(--ok)">✓ Você já está no app instalado.</b> O Fóton deve aparecer no menu "Compartilhar" do seu celular.';
+    btn.style.display='none'; man.style.display='none'; return;
+  }
+  if(_instalar){                                   // o navegador ofereceu instalar
+    est.innerHTML='Um toque e pronto. Não ocupa espaço: não é um app da loja, é o próprio site guardado no seu celular.';
+    btn.style.display=''; btn.textContent='Instalar agora'; man.style.display='none'; return;
+  }
+  // sem prompt do navegador: ensina o caminho manual, em vez de esconder o botão
+  btn.style.display='none'; man.style.display='';
+  if(ios){
+    est.innerHTML='No iPhone a instalação é manual — e aviso honesto: <b>o menu "Compartilhar → Fóton" não existe no iPhone</b>, é coisa do Android. No iPhone continue usando o botão <b>"Enviar foto da câmera"</b>.';
+    p1.innerHTML='Toque no botão <b>Compartilhar</b> do Safari (o quadradinho com a seta para cima).';
+    p2.innerHTML='Escolha <b>"Adicionar à Tela de Início"</b>.';
+  }else{
+    est.innerHTML='Seu navegador não ofereceu o atalho agora — dá para instalar pelo menu dele.';
+    p1.innerHTML='Abra o menu do navegador (os <b>três pontinhos</b>, no canto).';
+    p2.innerHTML='Toque em <b>"Instalar app"</b> ou <b>"Adicionar à tela inicial"</b>.';
+  }
+}
 async function instalarApp(){
   if(_instalar){ _instalar.prompt(); const r=await _instalar.userChoice;
     if(r.outcome==='accepted'){ toast('Fóton instalado ✓'); document.querySelectorAll('.btn-instalar').forEach(b=>b.style.display='none'); }
-    _instalar=null; return; }
-  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  toast(ios ? 'No Safari: toque em Compartilhar → "Adicionar à Tela de Início"'
-            : 'No menu do navegador: "Instalar app" ou "Adicionar à tela inicial"');
+    _instalar=null; pintarInstalar(); return;
+  }
+  pintarInstalar();
+  toast(ehIOS() ? 'No Safari: Compartilhar → "Adicionar à Tela de Início"'
+                : 'No menu do navegador: "Instalar app"');
 }
-window.addEventListener('appinstalled',()=>document.querySelectorAll('.btn-instalar').forEach(b=>b.style.display='none'));
+window.addEventListener('appinstalled',()=>{
+  document.querySelectorAll('.btn-instalar').forEach(b=>b.style.display='none');
+  _instalar=null;
+  if(document.getElementById('s-instalar').classList.contains('active')) pintarInstalar();
+});
 
 /* volta do bloqueio de tela / troca de app: retoma o feed na hora */
 document.addEventListener('visibilitychange',()=>{
