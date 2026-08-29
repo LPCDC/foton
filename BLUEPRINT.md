@@ -148,9 +148,10 @@ retenção automática (biometria 7d, fotos 90d) · direito de exclusão funcion
 
 **Infra:** HTTPS (Let's Encrypt, renovação automática) · backup diário ·
 auto-update · reinício automático · proteção contra recuperação por ociosidade ·
-monitor externo (GitHub Actions) — verde, vigiando os dois domínios, mas a
-**cadência real medida é de ~5 HORAS**, não os 5 min do cron: **não serve como monitor**.
-Ver `docs/PILOTO-1.md` B5 — precisa de monitor externo de verdade.
+**monitor externo real (UptimeRobot, desde 2026-08-29)** — 3 monitores, 5 min
+de verdade, alerta por e-mail. Dois são **keyword** em `/health` exigindo `"ok":true`,
+o que pega servidor de pé com pipeline morto. O GitHub Actions (cadência real medida:
+~5 h) fica como rede de segurança. Ver `docs/PILOTO-1.md` B5.
 
 ## 9. O que vem (priorizado)
 
