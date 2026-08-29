@@ -73,6 +73,10 @@ perderam, o que a fotógrafa precisou digitar.
 | Upload em lote / retry | contrato | ❌ falta | rede cai no meio: nenhuma foto perdida |
 | LGPD (exclusão, expiração automática) | contrato | ⚠️ parcial | exclusão manual coberta; expiração por tempo (`store.expirar`) sem teste |
 | Disco / rajada | carga | ✅ medido em produção | ver BENCHMARKS.md 2026-08-28: 1 foto e rajada de 4, com e sem redução no celular |
+| Zerar dados sem levar as contas | contrato | ✅ seção [18] | senha, créditos, marca d'água e retenção sobrevivem |
+| Leitura nao cria evento | contrato | ✅ seção [19] | inclui a cadeia /feed → órfão → adoção |
+| Cadastro nao vira admin | contrato | ✅ seção [16] | inclui admin que ainda não tem conta |
+| Retenção de biometria por conta | contrato | ✅ seção [17] | isenta sobrevive, normal expira |
 | Compartilhar (Web Share Target) | contrato + navegador | ✅ 17 checagens + ponta a ponta em produção | ver `docs/BENCHMARKS.md` 2026-08-29 |
 | Trocar login/senha (autosserviço) | contrato | ✅ 28 checagens | inclui escalada de privilégio e eventos seguindo o dono |
 | QR por foto (convidado) | navegador | ✅ testado local e em produção | link, foto expirada, foto de demo, navegação |
