@@ -71,10 +71,10 @@ input{font-family:inherit}
 .word small{display:block;font-family:var(--sans);font-weight:600;font-size:9.5px;color:var(--dim);
   letter-spacing:.16em;text-transform:uppercase;margin-top:4px}
 .grow{flex:1}
-.tag-btn{font-family:var(--sans);font-size:12.5px;color:var(--muted);font-weight:600;padding:8px 13px;
+.tag-btn{font-family:var(--sans);font-size:14.5px;color:var(--muted);font-weight:600;padding:8px 13px;
   border:1px solid var(--line);border-radius:999px;transition:.16s}
 .tag-btn:active{transform:scale(.96)}
-.pill{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--muted);
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--muted);
   border:1px solid var(--line);border-radius:999px;padding:6px 12px 6px 11px;background:var(--surface)}
 .livepill{color:var(--text);border-color:rgba(255,85,96,.35);background:rgba(255,85,96,.08)}
 
@@ -92,7 +92,7 @@ input{font-family:inherit}
   padding:16px 18px;border-radius:16px;background:var(--grad);color:#1a1608;border:1px solid transparent;
   box-shadow:0 14px 34px -14px rgba(203,181,131,.55);transition:transform .14s,filter .2s}
 .entry-card .ec-t{grid-column:1;font-family:var(--serif);font-weight:600;font-size:17px;letter-spacing:-.01em}
-.entry-card .ec-s{grid-column:1;font-size:12.5px;opacity:.72;font-weight:500}
+.entry-card .ec-s{grid-column:1;font-size:14.5px;opacity:.72;font-weight:500}
 .entry-card .ec-go{grid-column:2;grid-row:1/3;font-size:20px;opacity:.6}
 .entry-card:active{transform:scale(.985)}
 .entry-card:hover{filter:brightness(1.04)}
@@ -113,7 +113,7 @@ input{font-family:inherit}
 .collage .c3{width:96px;height:120px;left:44%;top:118px;transform:rotate(-3deg);animation-delay:-6s;opacity:.8}
 @keyframes float{0%,100%{translate:0 0}50%{translate:0 -10px}}
 .hero-body{position:relative;margin-top:auto}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;letter-spacing:.14em;
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;letter-spacing:.14em;
   text-transform:uppercase;color:var(--accent-2);margin-bottom:20px}
 .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
 .display{font-family:var(--serif);font-weight:500;font-size:42px;line-height:1.02;letter-spacing:-.025em;
@@ -124,7 +124,7 @@ input{font-family:inherit}
 .actions{display:flex;flex-direction:column;gap:11px;margin-top:30px}
 
 /* ---------- buttons ---------- */
-.btn{display:flex;align-items:center;justify-content:center;gap:9px;font-weight:600;font-size:15px;
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;font-weight:600;font-size:16.5px;
   padding:16px 18px;border-radius:15px;transition:transform .14s,filter .2s,background .2s,border-color .2s;
   letter-spacing:-.01em}
 .btn:active{transform:scale(.985)}
@@ -133,11 +133,11 @@ input{font-family:inherit}
 .btn.ghost{background:var(--surface);border:1px solid var(--line);color:var(--text)}
 .btn.ghost:hover{border-color:var(--dim)}
 .btn.block{width:100%}
-.btn.sm{padding:12px 16px;font-size:13.5px;border-radius:11px;min-height:44px}
+.btn.sm{padding:12px 16px;font-size:15.5px;border-radius:11px;min-height:44px}
 /* a fotógrafa usa isto de pé, no escuro, com a câmera na mão: alvos maiores */
-.btn{min-height:52px}
+.btn{min-height:58px}
 .btn.sm{min-height:44px}
-.actions-row .btn{min-height:48px}
+.actions-row .btn{min-height:52px}
 .evt{min-height:70px}
 .evt-del{min-width:52px}
 /* faixa fixa com o código do evento — é o que ela mais mostra/dita */
@@ -145,34 +145,37 @@ input{font-family:inherit}
   gap:10px;background:rgba(11,10,13,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
   margin:-26px -22px 16px;padding:12px 22px}
 .faixa-ev .cod{font-family:var(--mono);font-weight:600;font-size:19px;letter-spacing:.22em;color:var(--accent);padding-left:.22em}
-.faixa-ev .lb{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:2px}
-.faixa-ev .ok{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--ok)}
+.faixa-ev .lb{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:2px}
+.faixa-ev .ok{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--ok)}
 .faixa-ev .ok i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:block;
   box-shadow:0 0 0 3px rgba(90,209,155,.18)}
 .faixa-ev .ok.off{color:var(--live)} .faixa-ev .ok.off i{background:var(--live);box-shadow:0 0 0 3px rgba(255,85,96,.18)}
 .btn .k{font-size:17px}
 .btn svg{width:19px;height:19px;flex-shrink:0}
-.note{margin-top:22px;text-align:center;color:var(--dim);font-size:12px;line-height:1.7}
+.note{margin-top:22px;text-align:center;color:var(--muted);font-size:14.5px;line-height:1.7}
 .note b{color:var(--muted);font-weight:600}
 
 /* ---------- back / titles ---------- */
-.back{align-self:flex-start;color:var(--muted);font-size:13.5px;font-weight:600;display:flex;align-items:center;
+.back{align-self:flex-start;color:var(--muted);font-size:15.5px;font-weight:600;display:flex;align-items:center;
   gap:7px;margin-bottom:22px;padding:6px 2px}
 .back:hover{color:var(--text)}
 .title{font-family:var(--serif);font-weight:500;font-size:29px;letter-spacing:-.02em;line-height:1.06;text-wrap:balance}
-.subtitle{color:var(--muted);font-size:14px;line-height:1.5;margin-top:9px;margin-bottom:24px}
+.subtitle{color:var(--muted);font-size:16px;line-height:1.55;margin-top:10px;margin-bottom:24px}
 
 /* ---------- cards / forms ---------- */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;box-shadow:var(--shadow-sm)}
 .field{margin-bottom:15px}
-.field label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+.field label{display:block;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
   color:var(--dim);margin-bottom:9px}
 .field input{width:100%;background:var(--ink-2);border:1px solid var(--line);color:var(--text);
   padding:14px 15px;border-radius:12px;font-size:15.5px;outline:none;transition:.18s}
 .field input::placeholder{color:var(--dim)}
 .field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.hint{color:var(--dim);font-size:12px;text-align:center;margin-top:15px;line-height:1.5}
-.link{color:var(--accent-2);font-weight:600;cursor:pointer;text-decoration:none}
+.hint{color:var(--dim);font-size:14px;text-align:center;margin-top:15px;line-height:1.5}
+.link{color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;
+  text-underline-offset:3px;text-decoration-color:rgba(232,217,176,.45);font-size:15.5px;
+  padding:6px 2px;display:inline-block;min-height:32px}
+.link:hover{text-decoration-color:var(--accent)}
 .link:hover{text-decoration:underline}
 
 /* ---------- dashboard ---------- */
@@ -181,20 +184,20 @@ input{font-family:inherit}
     var(--surface);
   border:1px solid var(--line);border-radius:var(--r);padding:20px 21px}
 .credit .row{display:flex;justify-content:space-between;align-items:baseline}
-.credit .lbl{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.credit .mode{font-size:11px;color:var(--dim);font-weight:600}
+.credit .lbl{font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.credit .mode{font-size:13px;color:var(--dim);font-weight:600}
 .credit .big{display:flex;align-items:baseline;gap:9px;margin-top:10px}
 .credit .num{font-family:var(--serif);font-weight:500;font-size:44px;line-height:.9;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.credit .of{color:var(--muted);font-size:14px}
+.credit .of{color:var(--muted);font-size:15.5px}
 .bar{height:6px;background:var(--ink-2);border-radius:999px;overflow:hidden;margin-top:16px}
 .bar i{display:block;height:100%;background:var(--grad);border-radius:999px;transition:width .6s cubic-bezier(.2,.7,.2,1)}
 
 .stats{display:flex;gap:11px;margin-top:14px}
 .stat{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:15px 16px}
 .stat .n{font-family:var(--serif);font-weight:500;font-size:27px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.stat .l{color:var(--muted);font-size:11.5px;font-weight:500;margin-top:6px}
+.stat .l{color:var(--muted);font-size:13.5px;font-weight:500;margin-top:6px}
 
-.eyebrow-sm{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+.eyebrow-sm{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
   margin:26px 2px 13px;display:flex;align-items:center;gap:10px}
 .eyebrow-sm::after{content:"";flex:1;height:1px;background:var(--line-soft)}
 
@@ -208,7 +211,7 @@ input{font-family:inherit}
 .evt .thumb .dotlive{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,85,96,.14);font-size:18px}
 .evt .meta{flex:1;min-width:0}
 .evt .meta b{display:block;font-weight:600;font-size:15px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.evt .meta span{color:var(--muted);font-size:12.5px;display:flex;align-items:center;gap:6px;margin-top:3px}
+.evt .meta span{color:var(--muted);font-size:14.5px;display:flex;align-items:center;gap:6px;margin-top:3px}
 .evt .chev{color:var(--dim);font-size:20px;flex-shrink:0}
 .livedot{width:7px;height:7px;border-radius:50%;background:var(--live);box-shadow:0 0 0 0 rgba(255,85,96,.5);animation:beat 1.8s infinite}
 @keyframes beat{0%{box-shadow:0 0 0 0 rgba(255,85,96,.45)}70%{box-shadow:0 0 0 7px rgba(255,85,96,0)}100%{box-shadow:0 0 0 0 rgba(255,85,96,0)}}
@@ -224,56 +227,56 @@ input{font-family:inherit}
 .evt-del:hover{color:var(--live);border-color:rgba(255,85,96,.4);background:rgba(255,85,96,.07)}
 .evt-del:active{transform:scale(.94)}
 .actions-row{display:flex;gap:8px;margin-top:12px}
-.actions-row .btn{flex:1;padding:12px 10px;font-size:13px;border-radius:12px}
-.srv{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--dim);
+.actions-row .btn{flex:1;padding:14px 10px;font-size:15px;border-radius:12px}
+.srv{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--dim);
   border:1px solid var(--line);border-radius:999px;padding:5px 11px;background:var(--surface)}
 .srv i{width:7px;height:7px;border-radius:50%;background:var(--dim);display:block}
 .srv.on i{background:var(--ok);box-shadow:0 0 0 3px rgba(90,209,155,.18)}
 .srv.off i{background:var(--live)}
 .ph .del{position:absolute;right:5px;top:5px;z-index:3;width:24px;height:24px;border-radius:50%;
-  background:rgba(10,8,12,.68);backdrop-filter:blur(6px);color:#fff;font-size:14px;line-height:1;
+  background:rgba(10,8,12,.68);backdrop-filter:blur(6px);color:#fff;font-size:15.5px;line-height:1;
   display:grid;place-items:center;opacity:0;transition:.18s;border:1px solid rgba(255,255,255,.14)}
 .ph:hover .del,.ph:focus-within .del{opacity:1}
 @media (hover:none){.ph .del{opacity:1}}
 .ph .noface{position:absolute;left:6px;top:6px;z-index:2;background:rgba(255,207,122,.92);color:#2a1f05;
   font-size:8.5px;font-weight:700;padding:3px 7px;border-radius:999px}
 .tabs{display:flex;gap:6px;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:4px}
-.tab{flex:1;padding:10px 8px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--muted);transition:.16s}
+.tab{flex:1;padding:10px 8px;border-radius:9px;font-size:15.5px;font-weight:600;color:var(--muted);transition:.16s}
 .tab.on{background:var(--surface-2);color:var(--text);box-shadow:0 2px 8px -2px rgba(0,0,0,.5)}
 .tab:active{transform:scale(.98)}
 .guia-tabs{display:flex;gap:6px;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px}
 .passo{display:flex;gap:13px;padding:13px 0;border-bottom:1px solid var(--line-soft)}
 .passo:last-child{border-bottom:none}
 .passo .n{width:26px;height:26px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);
-  display:grid;place-items:center;font-size:12.5px;font-weight:700;color:var(--accent);flex-shrink:0}
-.passo .t{font-size:14px;line-height:1.55;color:var(--muted)}
+  display:grid;place-items:center;font-size:14.5px;font-weight:700;color:var(--accent);flex-shrink:0}
+.passo .t{font-size:15.5px;line-height:1.55;color:var(--muted)}
 .passo .t b{color:var(--text);font-weight:600}
 .guia-app{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);
   border-radius:var(--r-sm);padding:13px 15px;margin-bottom:14px}
-.guia-app .ap{font-size:13.5px;font-weight:600}
-.guia-app .mod{font-size:12px;color:var(--dim);margin-top:2px}
+.guia-app .ap{font-size:15.5px;font-weight:600}
+.guia-app .mod{font-size:14px;color:var(--dim);margin-top:2px}
 .lead-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 15px;margin-top:12px}
-.lead-box .lb-t{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px}
+.lead-box .lb-t{font-size:14px;font-weight:600;color:var(--muted);margin-bottom:10px}
 .lead-box input{width:100%;background:var(--ink-2);border:1px solid var(--line);color:var(--text);
   padding:11px 13px;border-radius:10px;font-size:14.5px;outline:none;margin-bottom:8px}
 .lead-box input:focus{border-color:var(--accent)}
 .contatos{margin-top:10px}
-.contatos .c-row{display:flex;justify-content:space-between;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line-soft);font-size:13.5px}
+.contatos .c-row{display:flex;justify-content:space-between;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line-soft);font-size:15.5px}
 .contatos .c-row:last-child{border-bottom:none}
-.contatos .c-row span{color:var(--muted);font-size:12.5px}
+.contatos .c-row span{color:var(--muted);font-size:14.5px}
 /* barra de progresso do envio */
 .prog{position:fixed;left:0;right:0;bottom:0;z-index:65;background:var(--surface);
   border-top:1px solid var(--line);padding:13px 20px calc(14px + env(safe-area-inset-bottom));
   transform:translateY(110%);transition:transform .3s cubic-bezier(.2,.8,.2,1);box-shadow:0 -8px 30px rgba(0,0,0,.5)}
 .prog.show{transform:none}
 .prog .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
-.prog .t{font-size:13.5px;font-weight:600}
-.prog .c{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.prog .t{font-size:15.5px;font-weight:600}
+.prog .c{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
 .prog .bar{height:6px;background:var(--ink-2);border-radius:999px;overflow:hidden}
 .prog .bar i{display:block;height:100%;width:0;background:var(--grad);border-radius:999px;transition:width .3s}
 .tips{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:13px 15px;margin-top:12px}
-.tips b{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);display:block;margin-bottom:7px}
-.tips ul{margin:0;padding-left:16px;color:var(--muted);font-size:12.5px;line-height:1.7}
+.tips b{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);display:block;margin-bottom:7px}
+.tips ul{margin:0;padding-left:16px;color:var(--muted);font-size:14.5px;line-height:1.7}
 
 /* ---------- event live ---------- */
 .ticket{position:relative;background:#faf7f2;border-radius:var(--r);padding:22px 20px 18px;
@@ -281,16 +284,16 @@ input{font-family:inherit}
 .ticket::before,.ticket::after{content:"";position:absolute;width:26px;height:26px;border-radius:50%;
   background:var(--ink);top:50%;transform:translateY(-50%)}
 .ticket::before{left:-13px}.ticket::after{right:-13px}
-.ticket .klbl{font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5f574c}
+.ticket .klbl{font-size:12.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5f574c}
 .ticket canvas{border-radius:10px;image-rendering:pixelated}
 .ticket .code{font-family:var(--mono);font-weight:600;font-size:24px;letter-spacing:.32em;color:#141018;padding-left:.32em}
 .code-btn{border:none;background:none;cursor:pointer;transition:.15s;border-radius:8px;padding:2px 6px 2px calc(.32em + 6px)}
 .code-btn:hover{background:rgba(20,16,24,.07)}
 .code-btn:active{transform:scale(.96)}
-.ticket .codelbl{font-size:10px;color:#5f574c;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-top:-6px}
+.ticket .codelbl{font-size:12px;color:#5f574c;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-top:-6px}
 
 .live-head{display:flex;align-items:center;justify-content:space-between;margin:24px 2px 14px}
-.live-head .l{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.live-head .l{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .ph{position:relative;aspect-ratio:1;border-radius:13px;overflow:hidden;background:var(--surface-2);
@@ -308,12 +311,12 @@ input{font-family:inherit}
 .ph.sel{outline:3px solid var(--accent);outline-offset:-3px}
 .ph .marca-sel{position:absolute;right:6px;top:6px;z-index:4;width:22px;height:22px;border-radius:50%;
   border:2px solid rgba(255,255,255,.85);background:rgba(10,8,12,.45);display:flex;align-items:center;
-  justify-content:center;font-size:12px;color:#fff;font-weight:700}
+  justify-content:center;font-size:14px;color:#fff;font-weight:700}
 .ph.sel .marca-sel{background:var(--accent);border-color:var(--accent);color:#1a1206}
 .barra-sel{position:fixed;left:12px;right:12px;bottom:14px;z-index:60;display:flex;gap:8px;align-items:center;
   background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:10px 12px;
   box-shadow:0 14px 34px -12px rgba(0,0,0,.6)}
-.barra-sel .q{font-size:13px;font-weight:600;color:var(--text);flex:1}
+.barra-sel .q{font-size:15px;font-weight:600;color:var(--text);flex:1}
 .ph.nova::before{content:"";position:absolute;inset:0;z-index:3;border-radius:13px;
   box-shadow:0 0 0 2px var(--accent), 0 0 28px 4px rgba(232,217,176,.55);
   animation:brilho 1.6s ease-out forwards;pointer-events:none}
@@ -326,7 +329,7 @@ input{font-family:inherit}
   padding:12px 22px;border-radius:999px;box-shadow:0 14px 40px -10px rgba(203,181,131,.7);
   opacity:0;pointer-events:none;transition:.4s cubic-bezier(.2,.9,.2,1.3)}
 .chegou.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-.empty{grid-column:1/-1;text-align:center;color:var(--dim);padding:36px 16px;font-size:13.5px;line-height:1.65;
+.empty{grid-column:1/-1;text-align:center;color:var(--dim);padding:36px 16px;font-size:15.5px;line-height:1.65;
   border:1px dashed var(--line);border-radius:var(--r-sm)}
 .empty b{color:var(--muted);font-weight:600}
 
@@ -334,7 +337,7 @@ input{font-family:inherit}
 .consent{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);
   border-radius:var(--r-sm);padding:15px 16px;margin:18px 0}
 .consent input{margin-top:2px;width:19px;height:19px;accent-color:var(--accent);flex-shrink:0;cursor:pointer}
-.consent label{font-size:12.5px;color:var(--muted);line-height:1.55;cursor:pointer}
+.consent label{font-size:14.5px;color:var(--muted);line-height:1.55;cursor:pointer}
 .consent b{color:var(--text);font-weight:600}
 .cam-compact{aspect-ratio:1/1;max-height:42vh}
 .cam{aspect-ratio:3/4;border-radius:var(--r);overflow:hidden;background:#000;position:relative;
@@ -346,13 +349,13 @@ input{font-family:inherit}
    que sai do canvas continua na orientação real, igual às fotos do evento. */
 .cam video{transform:scaleX(-1)}
 .cam .frame{position:absolute;inset:30px;border:2px dashed rgba(255,255,255,.3);border-radius:110px 110px 90px 90px;pointer-events:none}
-.cam .ph-txt{color:var(--dim);font-size:13px;text-align:center;padding:22px;line-height:1.7}
+.cam .ph-txt{color:var(--dim);font-size:15px;text-align:center;padding:22px;line-height:1.7}
 .cam .ph-txt .k{font-size:30px;display:block;margin-bottom:10px}
 .cam-row{display:flex;gap:10px}
 .selfie-chip{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:6px 16px 6px 6px;width:max-content;margin:0 auto 20px}
 .selfie-chip img{width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--line)}
-.selfie-chip span{font-size:12.5px;color:var(--muted);font-weight:600}
+.selfie-chip span{font-size:14.5px;color:var(--muted);font-weight:600}
 .selfie-chip .ok{color:var(--ok)}
 .searching{text-align:center;padding:22px 10px 26px}
 .spin{width:44px;height:44px;margin:0 auto 18px;border-radius:50%;
@@ -360,11 +363,11 @@ input{font-family:inherit}
   mask:radial-gradient(circle 15px at center,transparent 98%,#000);animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .searching .t{font-family:var(--serif);font-weight:500;font-size:20px;letter-spacing:-.01em}
-.searching .s{color:var(--muted);font-size:13px;margin-top:7px;line-height:1.5}
+.searching .s{color:var(--muted);font-size:15px;margin-top:7px;line-height:1.5}
 
 /* ---------- toast / sheet ---------- */
 .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--surface-2);
-  border:1px solid var(--line);color:var(--text);padding:13px 19px;border-radius:13px;font-size:13.5px;
+  border:1px solid var(--line);color:var(--text);padding:13px 19px;border-radius:13px;font-size:15.5px;
   font-weight:600;box-shadow:var(--shadow);opacity:0;transition:.32s cubic-bezier(.2,.8,.2,1);z-index:60;
   max-width:90%;text-align:center;pointer-events:none}
 .toast.show{opacity:1;transform:translate(-50%,0)}
@@ -378,13 +381,13 @@ input{font-family:inherit}
 @keyframes up{from{transform:translateY(100%)}to{transform:none}}
 .sheet .grab{width:38px;height:4px;border-radius:999px;background:var(--line);margin:0 auto 16px}
 .sheet h3{font-family:var(--serif);font-weight:500;font-size:19px;letter-spacing:-.01em}
-.sheet .ss{color:var(--muted);font-size:12.5px;margin-top:3px}
+.sheet .ss{color:var(--muted);font-size:14.5px;margin-top:3px}
 .share-list{display:flex;flex-direction:column;margin:16px 0 4px}
 .share-list button,.share-list .soon{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
   padding:15px 4px;border-bottom:1px solid var(--line-soft);font-size:15.5px;font-weight:600;color:var(--text);
   text-align:left;width:100%;letter-spacing:-.01em}
 .share-list .soon{color:var(--dim);font-weight:500}
-.share-list .sub{color:var(--muted);font-size:12.5px;font-weight:500;white-space:nowrap}
+.share-list .sub{color:var(--muted);font-size:14.5px;font-weight:500;white-space:nowrap}
 .share-list .soon .sub{color:var(--dim)}
 .share-list button:active{opacity:.55}
 
@@ -404,7 +407,7 @@ input{font-family:inherit}
 .lb-bar{position:absolute;left:0;right:0;bottom:0;padding:14px 18px calc(18px + env(safe-area-inset-bottom));
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   background:linear-gradient(transparent,rgba(6,5,8,.9) 40%)}
-.lb-bar span{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.lb-bar span{font-size:14.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .lb-acts{display:flex;gap:8px}
 /* ---------- QR tela cheia ---------- */
 .qrfull{position:fixed;inset:0;background:var(--ink);z-index:75;display:none;flex-direction:column;
@@ -413,9 +416,9 @@ input{font-family:inherit}
 .qrfull-card{background:#faf7f2;border-radius:24px;padding:28px 26px 22px;display:flex;flex-direction:column;
   align-items:center;gap:14px;box-shadow:0 30px 80px -24px rgba(0,0,0,.8);max-width:min(88vw,420px)}
 .qrfull-card img{width:min(62vw,300px);height:auto;border-radius:12px;image-rendering:pixelated}
-.qf-top{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f574c;text-align:center}
+.qf-top{font-size:14px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f574c;text-align:center}
 .qf-code{font-family:var(--mono);font-weight:600;font-size:34px;letter-spacing:.3em;color:#141018;padding-left:.3em}
-.qf-sub{font-size:12.5px;color:#5f574c;text-align:center;margin-top:-4px}
+.qf-sub{font-size:14.5px;color:#5f574c;text-align:center;margin-top:-4px}
 .qrfull-acts{display:flex;gap:10px}
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
@@ -568,7 +571,7 @@ input{font-family:inherit}
 
     <div class="eyebrow-sm">Testar câmera do fotógrafo</div>
     <div class="tips">
-      <p class="muted" style="font-size:13px;margin-bottom:10px">Envie uma foto tirada pela câmera dele e veja na hora se o rosto seria reconhecido.</p>
+      <p class="muted" style="font-size:15px;margin-bottom:10px">Envie uma foto tirada pela câmera dele e veja na hora se o rosto seria reconhecido.</p>
       <input type="file" id="adm-foto" accept="image/*" style="display:none" onchange="admTestarFoto(event)">
       <button class="btn ghost sm block" onclick="document.getElementById('adm-foto').click()">Escolher foto e testar</button>
       <div id="adm-resultado" style="margin-top:12px"></div>
@@ -593,9 +596,9 @@ input{font-family:inherit}
       <div class="field"><label>Data</label><input id="ev-date" type="date"></div>
       <div class="field"><label>Sua marca nas fotos</label>
         <input id="ev-brand" placeholder="Ex.: Patrícia Vargas Fotografia" maxlength="40">
-        <p class="small" style="color:var(--dim);font-size:11.5px;margin-top:7px">Aparece como marca d'água nas fotos. Em branco, usamos “FÓTON”.</p>
+        <p class="small" style="color:var(--dim);font-size:13.5px;margin-top:7px">Aparece como marca d'água nas fotos. Em branco, usamos “FÓTON”.</p>
       </div>
-      <div class="field"><label style="display:flex;align-items:center;gap:9px;text-transform:none;letter-spacing:0;font-size:13.5px;color:var(--muted);cursor:pointer">
+      <div class="field"><label style="display:flex;align-items:center;gap:9px;text-transform:none;letter-spacing:0;font-size:15.5px;color:var(--muted);cursor:pointer">
         <input type="checkbox" id="ev-leads" style="width:18px;height:18px;accent-color:var(--accent)">
         Pedir nome e WhatsApp do convidado (opcional para ele)</label></div>
       <button class="btn primary block" onclick="criarEvento()">Criar e abrir o QR</button>
@@ -620,7 +623,7 @@ input{font-family:inherit}
       <button class="code code-btn" id="ev-code" onclick="copiarCodigo()" title="Tocar para copiar">— — — —</button>
       <span class="codelbl">toque no código para copiar</span>
     </div>
-    <a id="ev-guestlink" class="link" target="_blank" rel="noopener" style="display:none;text-align:center;font-size:11px;margin-top:8px;word-break:break-all"></a>
+    <a id="ev-guestlink" class="link" target="_blank" rel="noopener" style="display:none;text-align:center;font-size:13px;margin-top:8px;word-break:break-all"></a>
     <input type="file" id="live-upload" accept="image/*" multiple style="display:none" onchange="uploadPhoto(event)">
     <div class="actions-row" id="ev-actions">
       <button class="btn primary" onclick="abrirQR()">Mostrar QR grande</button>
@@ -639,14 +642,16 @@ input{font-family:inherit}
 
     <div class="live-head">
       <span class="l">Feed ao vivo</span>
-      <button class="btn ghost sm" id="ev-shoot" onclick="shootPhoto()">Simular disparo</button>
     </div>
+    <!-- Enviar foto e a acao MAIS importante do evento inteiro. Estava como
+         botao fantasma pequeno no canto; agora e o botao primario, largo. -->
+    <button class="btn primary block" id="ev-shoot" style="margin-bottom:14px" onclick="shootPhoto()">Simular disparo</button>
     <div class="grid" id="ev-grid">
       <div class="empty" id="ev-empty">Nenhuma foto ainda.</div>
     </div>
     <div class="tips" id="box-falhas" style="display:none;border-color:rgba(255,207,122,.4)">
       <b style="color:var(--warn)">Envio incompleto</b>
-      <p class="muted" id="falhas-txt" style="font-size:12.5px;margin-bottom:10px"></p>
+      <p class="muted" id="falhas-txt" style="font-size:14.5px;margin-bottom:10px"></p>
       <button class="btn ghost sm block" onclick="reenviarFalhas()">Reenviar agora</button>
     </div>
     <div class="tips" id="box-contatos" style="display:none">
@@ -1716,8 +1721,8 @@ async function abrirAdmin(){
     carregarSaude();
     document.getElementById('adm-lista').innerHTML=(j.fotografos_lista||[]).map(f=>`
       <div class="tips" style="margin-bottom:8px">
-        <b style="color:var(--text);text-transform:none;letter-spacing:0;font-size:14px">${(f.nome||f.email).replace(/[<>]/g,'')}</b>
-        <p class="muted" style="font-size:12px;margin:2px 0 10px">${f.email} · ${f.eventos} evento(s) · ${f.credits}/${f.credits_total} créditos</p>
+        <b style="color:var(--text);text-transform:none;letter-spacing:0;font-size:15.5px">${(f.nome||f.email).replace(/[<>]/g,'')}</b>
+        <p class="muted" style="font-size:14px;margin:2px 0 10px">${f.email} · ${f.eventos} evento(s) · ${f.credits}/${f.credits_total} créditos</p>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn ghost sm" onclick="admCreditos('${f.email}',10)">+10 créditos</button>
           <button class="btn ghost sm" onclick="admSenha('${f.email}')">Trocar senha</button>
@@ -1739,7 +1744,7 @@ async function carregarSaude(){
     box.innerHTML=
       (s.alertas&&s.alertas.length
         ? `<div class="tips" style="border-color:var(--live);margin-bottom:10px"><b style="color:var(--live)">Atenção</b>
-           <p style="margin:4px 0 0;font-size:13px">${s.alertas.join(' · ')}</p></div>` : '')
+           <p style="margin:4px 0 0;font-size:15px">${s.alertas.join(' · ')}</p></div>` : '')
       + linha('Disco', `${n(d.livre_gb)} GB livres de ${n(d.total_gb)} GB (${n(d.uso_pct,'%')} em uso)`, d.uso_pct>80)
       + linha('Banco de fotos', `${n(d.banco_mb,' MB')} · backups ocupam ${n(d.backups_ocupam_mb,' MB')}`)
       + linha('Último backup', b? `há ${b.horas_atras} h · ${b.copias} cópia(s)` : 'nunca', !b||(b&&b.horas_atras>48))
@@ -1769,18 +1774,18 @@ async function admSenha(email){
 async function admTestarFoto(e){
   const f=e.target.files[0]; if(!f)return; e.target.value='';
   const box=document.getElementById('adm-resultado');
-  box.innerHTML='<p class="muted" style="font-size:13px">Analisando…</p>';
+  box.innerHTML='<p class="muted" style="font-size:15px">Analisando…</p>';
   try{
     const fd=new FormData(); fd.append('file',f);
     const r=await fetch(API+'/admin/testar-foto',{method:'POST',body:fd,headers:auth()});
-    if(!r.ok){ box.innerHTML='<p class="muted" style="font-size:13px">Falhou ('+r.status+')</p>'; return; }
+    if(!r.ok){ box.innerHTML='<p class="muted" style="font-size:15px">Falhou ('+r.status+')</p>'; return; }
     const j=await r.json();
     const cor=j.n_faces?'var(--ok)':'var(--warn)';
     box.innerHTML=`<div style="border-left:3px solid ${cor};padding-left:12px">
-      <b style="color:${cor};font-size:14px">${j.n_faces} rosto(s) reconhecido(s)</b>
-      <p class="muted" style="font-size:12.5px;margin-top:4px">${j.dica}</p>
-      <p class="muted" style="font-size:11.5px;margin-top:4px;color:var(--dim)">${j.dims[0]}×${j.dims[1]} · ${j.total_ms}ms</p></div>`;
-  }catch(err){ box.innerHTML='<p class="muted" style="font-size:13px">Erro de conexão.</p>'; }
+      <b style="color:${cor};font-size:15.5px">${j.n_faces} rosto(s) reconhecido(s)</b>
+      <p class="muted" style="font-size:14.5px;margin-top:4px">${j.dica}</p>
+      <p class="muted" style="font-size:13.5px;margin-top:4px;color:var(--dim)">${j.dims[0]}×${j.dims[1]} · ${j.total_ms}ms</p></div>`;
+  }catch(err){ box.innerHTML='<p class="muted" style="font-size:15px">Erro de conexão.</p>'; }
 }
 
 /* ===================== VISUALIZADOR DE FOTO (lightbox) ===================== */
@@ -1995,7 +2000,7 @@ function guiaMarca(m,btn){
        ${g.passos.map((p,i)=>`<div class="passo"><span class="n">${i+1}</span><span class="t">${p}</span></div>`).join('')}
      </div>
      <p class="note" style="margin-top:12px;text-align:left"><b style="color:var(--accent-2)">Dica:</b> ${g.dica}</p>
-     <p class="note" style="margin-top:8px;text-align:left;color:var(--dim);font-size:11.5px">Compatível: ${g.modelos}</p>`;
+     <p class="note" style="margin-top:8px;text-align:left;color:var(--dim);font-size:13.5px">Compatível: ${g.modelos}</p>`;
 }
 guiaMarca('canon');
 
@@ -2008,7 +2013,7 @@ async function guiaDireto(btn){
   if(_pollCam){clearInterval(_pollCam);_pollCam=null;}
   const box=document.getElementById('guia-conteudo');
   if(!SESSAO){ box.innerHTML='<div class="empty">Entre como fotógrafo para ver os dados da sua câmera.</div>'; return; }
-  box.innerHTML='<p class="muted" style="font-size:13px">Carregando seus dados…</p>';
+  box.innerHTML='<p class="muted" style="font-size:15px">Carregando seus dados…</p>';
   await _renderGuiaDireto(box);
   if(box.dataset.ok==='1') _pollCam=setInterval(()=>_renderGuiaDireto(box,true), 4000);
 }
@@ -2025,9 +2030,9 @@ async function _renderGuiaDireto(box, silencioso){
     // o servidor sabe no instante em que a camera consegue logar.
     const status=(s!==null&&s!==undefined&&s<600)
       ? `<div class="tips" style="border-color:var(--ok);margin-bottom:12px"><b style="color:var(--ok)">✓ Câmera conectada</b>
-         <p style="margin:4px 0 0;font-size:13px">O servidor recebeu o login ${s<15?'agora mesmo':'há '+(s<90?Math.round(s)+'s':Math.round(s/60)+' min')} — os dados abaixo estão certos.</p></div>`
+         <p style="margin:4px 0 0;font-size:15px">O servidor recebeu o login ${s<15?'agora mesmo':'há '+(s<90?Math.round(s)+'s':Math.round(s/60)+' min')} — os dados abaixo estão certos.</p></div>`
       : `<div class="tips" style="margin-bottom:12px"><b>Aguardando a câmera conectar…</b>
-         <p style="margin:4px 0 0;font-size:13px">Depois de preencher os dados abaixo na câmera, esta tela avisa sozinha — não precisa tirar foto para testar.</p></div>`;
+         <p style="margin:4px 0 0;font-size:15px">Depois de preencher os dados abaixo na câmera, esta tela avisa sozinha — não precisa tirar foto para testar.</p></div>`;
     box.innerHTML=status+`
       <p class="subtitle" style="margin:0 0 12px">Sua câmera envia cada foto <b>direto para o servidor do Fóton</b> — a foto <b>não passa pelo seu celular</b>. Configure uma vez.</p>
       <div class="tips"><b>Dados para a câmera (FTP)</b>
@@ -2046,7 +2051,7 @@ async function _renderGuiaDireto(box, silencioso){
       </div>
       ${c.aviso?`<p class="note" style="margin-top:12px;text-align:left;color:var(--warn)">⚠ ${c.aviso}</p>`
                :`<p class="note" style="margin-top:12px;text-align:left;color:var(--ok)">✓ Evento <b>${c.evento_ao_vivo}</b> ao vivo — as fotos vão para ele.</p>`}
-      <p class="note" style="margin-top:8px;text-align:left;font-size:11.5px;color:var(--dim)">Só funciona em câmera que tenha <b>"Transferência FTP" no próprio menu</b> — corpos profissionais (Canon R5/R3/R6 II, Nikon Z série pro, Sony com FTP). <b>A Canon R8 e a T6s NÃO têm FTP</b> — verificado na prática. Para elas o caminho é o celular (abas Canon/Nikon/Sony acima), com <b>envio automático</b> ligado na R8.</p>`;
+      <p class="note" style="margin-top:8px;text-align:left;font-size:13.5px;color:var(--dim)">Só funciona em câmera que tenha <b>"Transferência FTP" no próprio menu</b> — corpos profissionais (Canon R5/R3/R6 II, Nikon Z série pro, Sony com FTP). <b>A Canon R8 e a T6s NÃO têm FTP</b> — verificado na prática. Para elas o caminho é o celular (abas Canon/Nikon/Sony acima), com <b>envio automático</b> ligado na R8.</p>`;
   }catch(e){ if(!silencioso) box.innerHTML='<div class="empty">Erro de conexão.</div>'; }
 }
 function sairGuia(){ if(_pollCam){clearInterval(_pollCam);_pollCam=null;} home(); }

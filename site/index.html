@@ -27,7 +27,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--champagne);outline-
 
 /* type */
 h1,h2,h3{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;margin:0;text-wrap:balance}
-.eyebrow{font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--champagne-2)}
+.eyebrow{font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:.17em;text-transform:uppercase;color:var(--champagne-2)}
 .lede{font-size:clamp(17px,1.6vw,20px);color:var(--smoke);max-width:640px;line-height:1.65}
 .script{font-family:var(--script);font-weight:400}
 
@@ -40,14 +40,26 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;padding:20px 0;
 nav .row{display:flex;align-items:center;justify-content:space-between;gap:20px}
 .brand{display:flex;align-items:baseline;gap:9px;text-decoration:none}
 .brand .n{font-family:var(--script);font-size:26px;color:var(--paper)}
-.brand .t{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.brand .t{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:600}
 .navlinks{display:flex;gap:30px;align-items:center}
-.navlinks a{font-size:13.5px;color:var(--smoke);text-decoration:none;font-weight:500;transition:color .2s}
-.navlinks a:hover{color:var(--paper)}
-.navcta{font-size:13px;font-weight:600;color:var(--ink);background:var(--champagne);
-  padding:10px 18px;border-radius:100px;text-decoration:none;white-space:nowrap;transition:transform .15s,background .2s}
-.navcta:hover{background:var(--paper);transform:translateY(-1px)}
-@media (max-width:760px){.navlinks a:not(.navcta){display:none}}
+/* :not(.navcta) — sem isto o seletor de tipo (0,1,1) vencia .navcta (0,1,0)
+   e pintava o texto do botão de cinza sobre o champagne. Contraste horrível. */
+.navlinks a:not(.navcta){font-size:14.5px;color:var(--smoke);text-decoration:none;font-weight:500;transition:color .2s}
+.navlinks a:not(.navcta):hover{color:var(--paper)}
+.navcta{font-size:14px;font-weight:700;color:#100e13;background:var(--champagne);
+  padding:12px 22px;border-radius:100px;text-decoration:none;white-space:nowrap;
+  transition:transform .15s,background .2s,box-shadow .2s;box-shadow:0 4px 18px -6px rgba(232,217,176,.5)}
+.navcta:hover{background:var(--paper);transform:translateY(-1px);box-shadow:0 8px 26px -8px rgba(232,217,176,.7)}
+.navsec{font-size:14px;font-weight:600;color:var(--champagne)!important;border:1px solid rgba(232,217,176,.35);
+  padding:11px 18px;border-radius:100px;text-decoration:none;white-space:nowrap;transition:background .2s,border-color .2s}
+.navsec:hover{background:rgba(232,217,176,.1);border-color:var(--champagne)}
+@media (max-width:860px){.navlinks a:not(.navcta):not(.navsec){display:none}}
+@media (max-width:520px){.navsec{display:none}}
+
+/* pular para o conteúdo — primeiro item do teclado */
+.skip{position:absolute;left:-9999px;top:12px;z-index:100;background:var(--champagne);color:#100e13;
+  padding:12px 20px;border-radius:100px;font-weight:700;font-size:14px;text-decoration:none}
+.skip:focus{left:28px}
 
 /* ============ HERO ============ */
 .hero{position:relative;z-index:2;min-height:100svh;display:flex;flex-direction:column;
@@ -58,16 +70,18 @@ nav .row{display:flex;align-items:center;justify-content:space-between;gap:20px}
 .hero h1 em{font-style:normal;color:var(--champagne)}
 .hero .lede{margin-top:26px}
 .hero .actions{display:flex;gap:14px;margin-top:38px;flex-wrap:wrap;align-items:center}
-.btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--sans);font-size:14.5px;font-weight:600;
-  padding:15px 26px;border-radius:100px;text-decoration:none;border:1px solid transparent;transition:transform .18s,background .2s,border-color .2s}
-.btn-primary{background:var(--champagne);color:var(--ink)}
-.btn-primary:hover{background:var(--paper);transform:translateY(-2px)}
+.btn{display:inline-flex;align-items:center;gap:10px;font-family:var(--sans);font-size:16px;font-weight:600;
+  padding:17px 30px;border-radius:100px;text-decoration:none;border:1px solid transparent;
+  transition:transform .18s,background .2s,border-color .2s,box-shadow .2s;will-change:transform}
+.btn-primary{background:var(--champagne);color:#100e13;box-shadow:0 6px 24px -8px rgba(232,217,176,.45)}
+.btn-primary:hover{background:var(--paper);transform:translateY(-2px);box-shadow:0 12px 34px -10px rgba(232,217,176,.65)}
 .btn-ghost{border-color:var(--line);color:var(--paper)}
-.btn-ghost:hover{border-color:var(--champagne-2);color:var(--champagne)}
-.hero-meta{margin-top:70px;display:flex;gap:40px;flex-wrap:wrap}
-.hero-meta .m{display:flex;flex-direction:column;gap:3px}
-.hero-meta .v{font-family:var(--mono);font-size:22px;color:var(--champagne);font-variant-numeric:tabular-nums}
-.hero-meta .l{font-size:11.5px;color:var(--dim);letter-spacing:.05em;max-width:16ch}
+.btn-ghost:hover{border-color:var(--champagne-2);color:var(--champagne);background:rgba(232,217,176,.05)}
+.btn-lg{font-size:18px;padding:21px 38px}
+.hero-meta{margin-top:70px;display:flex;gap:44px;flex-wrap:wrap}
+.hero-meta .m{display:flex;flex-direction:column;gap:5px}
+.hero-meta .v{font-family:var(--mono);font-size:26px;color:var(--champagne);font-variant-numeric:tabular-nums}
+.hero-meta .l{font-size:13.5px;color:var(--smoke);letter-spacing:.01em;max-width:19ch;line-height:1.45}
 .scrolldown{position:absolute;bottom:34px;left:28px;display:flex;align-items:center;gap:10px;
   font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 .scrolldown i{width:1px;height:34px;background:linear-gradient(var(--champagne-2),transparent);display:block;position:relative;overflow:hidden}
@@ -88,11 +102,11 @@ section{position:relative;z-index:2}
 @media (max-width:760px){.compare{grid-template-columns:1fr}}
 .compare .col{background:var(--ink-2);padding:38px 34px}
 .compare .col.on{background:linear-gradient(165deg,rgba(232,217,176,.09),rgba(232,217,176,.02))}
-.compare .k{font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:18px;display:block}
+.compare .k{font-size:12.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:18px;display:block}
 .compare .col:not(.on) .k{color:var(--dim)}
 .compare .col.on .k{color:var(--champagne)}
 .compare ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:16px}
-.compare li{display:flex;gap:12px;font-size:15px;color:var(--smoke);line-height:1.5}
+.compare li{display:flex;gap:12px;font-size:16.5px;color:var(--smoke);line-height:1.55}
 .compare .col.on li{color:var(--paper)}
 .compare li b{font-weight:600}
 .compare .ico{flex:none;width:20px;height:20px;margin-top:1px}
@@ -101,11 +115,11 @@ section{position:relative;z-index:2}
 .steps{display:flex;flex-direction:column;gap:0;margin-top:10px}
 .step{display:grid;grid-template-columns:64px 1fr;gap:26px;padding:38px 0;border-top:1px solid var(--line-soft)}
 .step:last-child{border-bottom:1px solid var(--line-soft)}
-.step .idx{font-family:var(--mono);font-size:14px;color:var(--champagne-2);padding-top:4px}
+.step .idx{font-family:var(--mono);font-size:15px;color:var(--champagne-2);padding-top:5px}
 .step h3{font-size:clamp(19px,2.3vw,25px);font-weight:600}
-.step p{color:var(--smoke);margin:10px 0 0;max-width:56ch;font-size:15.5px}
-.step .fact{display:inline-flex;align-items:center;gap:8px;margin-top:14px;font-family:var(--mono);
-  font-size:12.5px;color:var(--champagne);background:rgba(232,217,176,.08);border:1px solid rgba(232,217,176,.18);
+.step p{color:var(--smoke);margin:12px 0 0;max-width:56ch;font-size:16.5px}
+.step .fact{display:inline-flex;align-items:center;gap:8px;margin-top:16px;font-family:var(--mono);
+  font-size:13.5px;color:var(--champagne);background:rgba(232,217,176,.08);border:1px solid rgba(232,217,176,.18);
   padding:6px 12px;border-radius:100px}
 @media (max-width:600px){.step{grid-template-columns:1fr;gap:8px}}
 
@@ -113,30 +127,30 @@ section{position:relative;z-index:2}
 .audience{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:10px}
 @media (max-width:760px){.audience{grid-template-columns:1fr}}
 .aud{padding:36px 32px;border:1px solid var(--line);border-radius:20px;background:var(--ink-2);position:relative}
-.aud .tag{position:absolute;top:26px;right:28px;font-size:10.5px;font-weight:700;letter-spacing:.08em;
+.aud .tag{position:absolute;top:26px;right:28px;font-size:12px;font-weight:700;letter-spacing:.07em;
   text-transform:uppercase;padding:5px 11px;border-radius:100px}
 .aud.live .tag{background:rgba(90,209,155,.15);color:#7fe0b3;border:1px solid rgba(90,209,155,.3)}
 .aud.soon .tag{background:rgba(232,217,176,.1);color:var(--champagne-2);border:1px solid rgba(232,217,176,.25)}
 .aud h3{font-size:23px;max-width:12ch}
-.aud p{color:var(--smoke);font-size:15px;margin-top:14px;max-width:38ch}
+.aud p{color:var(--smoke);font-size:16.5px;margin-top:14px;max-width:38ch;line-height:1.55}
 
 /* ============ PROVA ============ */
 .proof{display:flex;align-items:center;gap:28px;padding:40px 0;flex-wrap:wrap}
 .proof .avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(150deg,var(--champagne),var(--champagne-2));
   display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:600;font-size:20px;color:var(--ink);flex:none}
 .proof .who b{font-size:16px;font-weight:600;display:block}
-.proof .who span{font-size:13.5px;color:var(--dim)}
+.proof .who span{font-size:15px;color:var(--smoke)}
 
 /* ============ MODELO ============ */
 .pricecard{border:1px solid var(--line);border-radius:22px;padding:44px;background:
   radial-gradient(120% 140% at 0% 0%,rgba(232,217,176,.08),transparent 60%),var(--ink-2)}
 .pricecard .row{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
 .pricecard h3{font-size:26px}
-.pricecard .badge{font-family:var(--mono);font-size:12px;color:var(--champagne);border:1px solid rgba(232,217,176,.3);
+.pricecard .badge{font-family:var(--mono);font-size:13.5px;color:var(--champagne);border:1px solid rgba(232,217,176,.35);
   padding:6px 13px;border-radius:100px}
 .plist{list-style:none;margin:28px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:14px 30px}
 @media (max-width:600px){.plist{grid-template-columns:1fr}}
-.plist li{display:flex;gap:10px;font-size:14.5px;color:var(--smoke)}
+.plist li{display:flex;gap:11px;font-size:16px;color:var(--paper)}
 .plist svg{flex:none;color:var(--champagne)}
 
 /* ============ CTA final ============ */
@@ -145,22 +159,43 @@ section{position:relative;z-index:2}
 .final .lede{margin-top:18px}
 .final .actions{margin-top:36px}
 
+/* ============ PORTAL PARA O APP ============
+   Quem achou o Fóton no Google e JÁ é cliente precisa de uma porta óbvia,
+   não de um link miúdo no rodapé. */
+.portal{border:1px solid rgba(232,217,176,.28);border-radius:26px;padding:56px 48px;
+  background:radial-gradient(130% 160% at 100% 0%,rgba(232,217,176,.13),transparent 62%),var(--ink-2);
+  display:flex;align-items:center;justify-content:space-between;gap:36px;flex-wrap:wrap;position:relative;overflow:hidden}
+.portal h3{font-size:clamp(25px,3.4vw,38px);max-width:15ch;line-height:1.1}
+.portal p{color:var(--smoke);margin:14px 0 0;font-size:16px;max-width:44ch}
+.portal .go{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.portal .url{font-family:var(--mono);font-size:13.5px;color:var(--champagne-2)}
+@media (max-width:720px){.portal{padding:40px 28px}}
+
+/* véu de transição ao sair para o app — a opacidade é animada pelo GSAP
+   (mais previsível que transição CSS disparada por troca de classe) */
+#veil{position:fixed;inset:0;z-index:200;background:var(--ink);opacity:0;pointer-events:none;
+  display:flex;align-items:center;justify-content:center}
+#veil.on{pointer-events:auto}
+#veil .mark{font-family:var(--script);font-size:44px;color:var(--champagne)}
+
 /* ============ FOOTER ============ */
-footer{border-top:1px solid var(--line-soft);padding:46px 0 60px}
+footer{border-top:1px solid var(--line-soft);padding:46px 0 60px;margin-top:110px}
 footer .row{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
-footer .fine{font-size:12.5px;color:var(--dim)}
-footer .flinks{display:flex;gap:22px}
-footer .flinks a{font-size:13px;color:var(--smoke);text-decoration:none}
-footer .flinks a:hover{color:var(--champagne)}
+footer .fine{font-size:14px;color:var(--smoke)}
+footer .flinks{display:flex;gap:26px}
+footer .flinks a{font-size:14.5px;color:var(--paper);text-decoration:none;border-bottom:1px solid transparent;transition:border-color .2s,color .2s}
+footer .flinks a:hover{color:var(--champagne);border-bottom-color:var(--champagne-2)}
 
 /* reveal targets (JS adds .in) */
 .reveal{opacity:0;transform:translateY(26px)}
 .reduced .reveal,.reduced .word span{opacity:1!important;transform:none!important}
 </style>
 
+<a class="skip" href="#top">Pular para o conteúdo</a>
 <canvas id="field" aria-hidden="true"></canvas>
+<div id="veil" aria-hidden="true"><span class="mark">Fóton</span></div>
 
-<nav>
+<nav aria-label="Navegação principal">
   <div class="container row">
     <a class="brand" href="#top">
       <span class="n">Fóton</span><span class="t">fotos na hora</span>
@@ -169,6 +204,7 @@ footer .flinks a:hover{color:var(--champagne)}
       <a href="#mecanismo">Como funciona</a>
       <a href="#quem">Para quem</a>
       <a href="#modelo">Modelo</a>
+      <a class="navsec app-link" href="https://app.foton.app.br">Entrar no app</a>
       <a class="navcta" href="mailto:luizoak@gmail.com?subject=Quero%20conhecer%20o%20F%C3%B3ton">Marcar conversa</a>
     </div>
   </div>
@@ -325,6 +361,23 @@ footer .flinks a:hover{color:var(--champagne)}
     </div>
   </section>
 
+  <section class="band" id="entrar">
+    <div class="container">
+      <div class="portal reveal">
+        <div>
+          <span class="eyebrow">Já é cliente</span>
+          <h3 style="margin-top:14px">Seu painel está aqui.</h3>
+          <p>Criar evento, mostrar o QR, acompanhar as fotos chegando ao vivo.
+            Funciona no celular, sem instalar nada.</p>
+        </div>
+        <div class="go">
+          <a class="btn btn-primary btn-lg app-link" href="https://app.foton.app.br">Abrir o app&nbsp; →</a>
+          <span class="url">app.foton.app.br</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="final container">
     <div class="reveal">
       <span class="eyebrow">Comece</span>
@@ -332,7 +385,7 @@ footer .flinks a:hover{color:var(--champagne)}
       <p class="lede">Ainda estamos no início — validando com cuidado, um evento real de cada vez.
         Escreva e a gente conversa sobre o seu próximo evento.</p>
       <div class="actions">
-        <a class="btn btn-primary" href="mailto:luizoak@gmail.com?subject=Quero%20conhecer%20o%20F%C3%B3ton">luizoak@gmail.com</a>
+        <a class="btn btn-primary btn-lg" href="mailto:luizoak@gmail.com?subject=Quero%20conhecer%20o%20F%C3%B3ton">luizoak@gmail.com</a>
       </div>
     </div>
   </section>
@@ -342,6 +395,7 @@ footer .flinks a:hover{color:var(--champagne)}
   <div class="container row">
     <span class="fine">© 2026 Fóton — fotos na hora. Feito em São Paulo.</span>
     <div class="flinks">
+      <a class="app-link" href="https://app.foton.app.br">Entrar no app</a>
       <a href="mailto:luizoak@gmail.com">Contato</a>
       <a href="#top">Voltar ao topo</a>
     </div>
@@ -501,6 +555,57 @@ if (!reduced && window.gsap && window.ScrollTrigger){
   });
 
   window.addEventListener("load", function(){ ScrollTrigger.refresh(); });
+
+  /* parallax leve no campo de luz: o fundo anda mais devagar que o conteúdo.
+     Só translateY do canvas — barato, sem repintar as partículas. */
+  gsap.to("#field", {
+    yPercent: 12, ease: "none",
+    scrollTrigger: { trigger: document.body, start: "top top", end: "bottom bottom", scrub: 0.6 }
+  });
+
+  /* botões magnéticos: o cursor "puxa" levemente o botão.
+     Só em ponteiro fino (mouse) — em toque não existe hover e o efeito atrapalha. */
+  if (window.matchMedia("(pointer: fine)").matches){
+    document.querySelectorAll(".btn, .navcta, .navsec").forEach(function(b){
+      var qx = gsap.quickTo(b, "x", { duration: 0.4, ease: "power3.out" });
+      var qy = gsap.quickTo(b, "y", { duration: 0.4, ease: "power3.out" });
+      b.addEventListener("pointermove", function(e){
+        var r = b.getBoundingClientRect();
+        qx((e.clientX - (r.left + r.width / 2)) * 0.22);
+        qy((e.clientY - (r.top + r.height / 2)) * 0.32);
+      });
+      b.addEventListener("pointerleave", function(){ qx(0); qy(0); });
+      b.addEventListener("blur", function(){ qx(0); qy(0); });
+    });
+  }
 }
+
+/* ---------------------------------------------------------------------
+   Saída para o app: um véu curto antes de navegar, para o corte não ser
+   seco. Se algo falhar, o link continua sendo um link normal — nunca
+   prendemos o usuário aqui.
+--------------------------------------------------------------------- */
+(function(){
+  var veil = document.getElementById("veil");
+  document.querySelectorAll("a.app-link").forEach(function(a){
+    a.addEventListener("click", function(e){
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;  // abrir em nova aba: deixa passar
+      if (reduced || !veil) return;                                        // sem motion: navega direto
+      if (!window.gsap) return;                                            // sem GSAP: link normal
+      e.preventDefault();
+      var destino = a.href, foi = false;
+      var vai = function(){ if (!foi){ foi = true; window.location.href = destino; } };
+      veil.classList.add("on");
+      gsap.to(veil, { opacity: 1, duration: 0.38, ease: "power2.out", onComplete: vai });
+      setTimeout(vai, 1200);            // rede de segurança: nunca ficar preso no véu
+    });
+  });
+  /* voltando pelo histórico (bfcache), o véu não pode continuar por cima */
+  window.addEventListener("pageshow", function(){
+    if (!veil) return;
+    veil.classList.remove("on");
+    if (window.gsap) gsap.set(veil, { opacity: 0 }); else veil.style.opacity = 0;
+  });
+})();
 })();
 </script>
