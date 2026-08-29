@@ -208,7 +208,11 @@ input{font-family:inherit}
 .evt .thumb{width:46px;height:46px;border-radius:12px;flex-shrink:0;overflow:hidden;position:relative;
   background:var(--surface-2);display:grid;place-items:center}
 .evt .thumb img{width:100%;height:100%;object-fit:cover}
-.evt .thumb .dotlive{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,85,96,.14);font-size:20px}
+/* era o emoji do circulo vermelho dentro da miniatura; virou forma desenhada, que
+   herda a cor do tema e fica igual em todo aparelho */
+.evt .thumb .dotlive{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,85,96,.14)}
+.evt .thumb .dotlive::after{content:"";width:15px;height:15px;border-radius:50%;background:var(--live);
+  box-shadow:0 0 0 5px rgba(255,85,96,.22)}
 .evt .meta{flex:1;min-width:0}
 .evt .meta b{display:block;font-weight:600;font-size:17px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .evt .meta span{color:var(--muted);font-size:16px;display:flex;align-items:center;gap:6px;margin-top:3px}
@@ -262,6 +266,12 @@ input{font-family:inherit}
 .lead-box input:focus{border-color:var(--accent)}
 /* .c-row e par rotulo/valor. A regra so existia dentro de .contatos, entao fora dali
    rotulo e valor colavam ('Eventos0', 'Ultima fotonunca'). Vira regra base. */
+/* Icones: geometria simples, traco unico, herdando a cor do texto. Emoji nao serve —
+   cada sistema desenha o seu, muda de tamanho, de cor e de peso, e nada casa. */
+.ico{width:1.15em;height:1.15em;flex-shrink:0;vertical-align:-.18em;display:inline-block}
+.ico path,.ico circle,.ico rect,.ico line,.ico polyline{fill:none;stroke:currentColor;
+  stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.ico .cheio{fill:currentColor;stroke:none}
 .c-row{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;
   border-bottom:1px solid var(--line-soft);font-size:17px}
 .c-row:last-child{border-bottom:none}
@@ -470,7 +480,7 @@ input{font-family:inherit}
           </button>
         </div>
         <p class="note" style="margin-top:18px">
-          <button class="link" onclick="go('guia')">📷 Como conectar minha câmera ao Fóton</button>
+          <button class="link" onclick="go('guia')"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v10.5H3z"/><circle cx="12" cy="13.2" r="3.6"/></svg> Como conectar minha câmera ao Fóton</button>
         </p>
         <p class="note" style="margin-top:8px">
           <button class="link" style="color:var(--dim);font-weight:500" onclick="abrirPrivacidade()">Privacidade e seus dados</button>
@@ -512,7 +522,7 @@ input{font-family:inherit}
       <button class="tab on" onclick="guiaMarca('canon',this)">Canon</button>
       <button class="tab" onclick="guiaMarca('nikon',this)">Nikon</button>
       <button class="tab" onclick="guiaMarca('sony',this)">Sony</button>
-      <button class="tab" onclick="guiaDireto(this)">⚡ Direto</button>
+      <button class="tab" onclick="guiaDireto(this)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2.8L5 13.8h5.6L10 21.2l8.6-11.2H13z"/></svg> Direto</button>
     </div>
     <div id="guia-conteudo"></div>
 
@@ -550,7 +560,7 @@ input{font-family:inherit}
       <button class="link" id="btn-alterna" onclick="alternarCadastro()">Criar conta</button>
     </p>
     <p class="note" style="margin-top:10px">
-      <button class="link" onclick="abrirInstalar('login')">📲 Instalar o Fóton no celular</button>
+      <button class="link" onclick="abrirInstalar('login')"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.8" width="11" height="18.4" rx="2"/><path d="M12 7.5v6.4m0 0l-2.4-2.4M12 13.9l2.4-2.4"/></svg> Instalar o Fóton no celular</button>
     </p>
   </section>
 
@@ -577,14 +587,14 @@ input{font-family:inherit}
 
     <div class="eyebrow-sm">Seus eventos</div>
     <div id="evt-list"></div>
-    <div class="sticky"><button class="btn primary block" onclick="abrirCriarEvento()">＋&nbsp; Criar evento</button></div>
+    <div class="sticky"><button class="btn primary block" onclick="abrirCriarEvento()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>&nbsp; Criar evento</button></div>
     <p class="note" style="margin-top:14px">
-      <button class="link" onclick="go('guia')">📷 Conectar câmera</button>
+      <button class="link" onclick="go('guia')"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v10.5H3z"/><circle cx="12" cy="13.2" r="3.6"/></svg> Conectar câmera</button>
     </p>
     <p class="note" style="margin-top:6px">
-      <button class="link" onclick="abrirInstalar('dash')">📲 Instalar o Fóton no celular</button>
+      <button class="link" onclick="abrirInstalar('dash')"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.8" width="11" height="18.4" rx="2"/><path d="M12 7.5v6.4m0 0l-2.4-2.4M12 13.9l2.4-2.4"/></svg> Instalar o Fóton no celular</button>
     </p>
-    <p class="note" style="margin-top:6px"><button class="link" onclick="abrirConta()">🔑 Minha conta e senha</button></p>
+    <p class="note" style="margin-top:6px"><button class="link" onclick="abrirConta()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="12" r="4"/><path d="M12 12h9m-2.6 0v3.1m-2.6-3.1v2.2"/></svg> Minha conta e senha</button></p>
     <p class="note" style="margin-top:6px"><button class="link" onclick="logout()">Sair da conta</button></p>
   </section>
 
@@ -742,7 +752,7 @@ input{font-family:inherit}
     <input type="file" id="live-camera" accept="image/*" capture="environment" style="display:none" onchange="uploadPhoto(event)">
     <div class="actions-row" id="ev-envio" style="margin-bottom:12px">
       <button class="btn primary" id="ev-shoot" onclick="tirarFotoAgora()">Simular disparo</button>
-      <button class="btn ghost" id="ev-galeria" style="display:none" onclick="document.getElementById('live-upload').click()">🖼&nbsp; Da galeria</button>
+      <button class="btn ghost" id="ev-galeria" style="display:none" onclick="document.getElementById('live-upload').click()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><circle cx="8.4" cy="10" r="1.7"/><path d="M3.6 17.5l4.9-4.6 3.5 3.2 3.2-3 5.2 4.8"/></svg>&nbsp; Da galeria</button>
     </div>
     <p class="note" id="ev-semtoque" style="display:none;text-align:left;margin:-4px 0 14px">
       <b>Sem abrir o app:</b> na galeria do celular, selecione as fotos e toque em
@@ -809,7 +819,7 @@ input{font-family:inherit}
     <p class="subtitle" id="g-code-sub">Escaneie o QR do fotógrafo — ou digite o código que aparece na tela dele.</p>
     <div class="card">
       <!-- A tela mandava "escaneie o QR" e nao dava como escanear. Agora da. -->
-      <button class="btn primary block" id="btn-scan" style="display:none" onclick="abrirScanner()">⧉&nbsp; Escanear o QR</button>
+      <button class="btn primary block" id="btn-scan" style="display:none" onclick="abrirScanner()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5"/><rect x="14" y="3.5" width="6.5" height="6.5"/><rect x="3.5" y="14" width="6.5" height="6.5"/><path d="M14 14h3v3h-3zM20.5 14v3M14 20.5h6.5"/></svg>&nbsp; Escanear o QR</button>
       <div class="ou" id="scan-ou" style="display:none">ou digite o código</div>
       <div class="field"><label>Código do evento</label>
         <input id="g-code-input" placeholder="ABCD" maxlength="4" autocapitalize="characters" autocomplete="off"
@@ -926,7 +936,7 @@ input{font-family:inherit}
       <button class="btn ghost block" id="g-escolher" style="margin-top:8px" onclick="ligarSelecao()">Escolher algumas</button>
     </div>
     <p class="note" style="margin-top:12px">
-      <button class="link btn-instalar" style="display:none" onclick="instalarApp()">📲 Guardar na tela inicial</button>
+      <button class="link btn-instalar" style="display:none" onclick="instalarApp()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.8" width="11" height="18.4" rx="2"/><path d="M12 7.5v6.4m0 0l-2.4-2.4M12 13.9l2.4-2.4"/></svg> Guardar na tela inicial</button>
     </p>
     <p class="note" style="margin-top:6px"><button class="link" onclick="refazerSelfie()">Não sou eu — tirar outra selfie</button></p>
   </section>
@@ -961,7 +971,7 @@ input{font-family:inherit}
   <div class="lb-bar">
     <span id="lb-count">1 / 1</span>
     <div class="lb-acts">
-      <button class="btn ghost sm" id="lb-qr" onclick="abrirQRFoto()" title="Mostrar QR desta foto">▣&nbsp;QR</button>
+      <button class="btn ghost sm" id="lb-qr" onclick="abrirQRFoto()" title="Mostrar QR desta foto"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5"/><rect x="14" y="3.5" width="6.5" height="6.5"/><rect x="3.5" y="14" width="6.5" height="6.5"/><path d="M14 14h3v3h-3zM20.5 14v3M14 20.5h6.5"/></svg>&nbsp;QR</button>
       <button class="btn ghost sm" onclick="compartilharFoto()">Compartilhar</button>
       <button class="btn primary sm" onclick="baixarFoto()">Salvar</button>
     </div>
@@ -1082,6 +1092,22 @@ function go(id){
   window.scrollTo(0,0);
   if(id==='dash'){renderDash();checarServidor();sincronizarEventos();}
 }
+/* Um desenho por funcao, todos na mesma grade de 24. */
+const ICONES={
+  camera:'<path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v10.5H3z"/><circle cx="12" cy="13.2" r="3.6"/>',
+  galeria:'<rect x="3" y="5" width="18" height="14" rx="1.5"/><circle cx="8.4" cy="10" r="1.7"/><path d="M3.6 17.5l4.9-4.6 3.5 3.2 3.2-3 5.2 4.8"/>',
+  instalar:'<rect x="6.5" y="2.8" width="11" height="18.4" rx="2"/><path d="M12 7.5v6.4m0 0l-2.4-2.4M12 13.9l2.4-2.4"/>',
+  chave:'<circle cx="8" cy="12" r="4"/><path d="M12 12h9m-2.6 0v3.1m-2.6-3.1v2.2"/>',
+  lixo:'<path d="M4.5 6.5h15M9.5 6.5V4.2h5v2.3M6.5 6.5l1 13.3h9l1-13.3M10.3 10v6.2M13.7 10v6.2"/>',
+  qr:'<rect x="3.5" y="3.5" width="6.5" height="6.5"/><rect x="14" y="3.5" width="6.5" height="6.5"/><rect x="3.5" y="14" width="6.5" height="6.5"/><path d="M14 14h3v3h-3zM20.5 14v3M14 20.5h6.5"/>',
+  link:'<path d="M10.2 13.8a4.2 4.2 0 006 0l2.6-2.6a4.2 4.2 0 00-6-6l-1.3 1.3"/><path d="M13.8 10.2a4.2 4.2 0 00-6 0l-2.6 2.6a4.2 4.2 0 006 6l1.3-1.3"/>',
+  mais:'<path d="M12 5v14M5 12h14"/>',
+  raio:'<path d="M13.5 2.8L5 13.8h5.6L10 21.2l8.6-11.2H13z"/>'
+};
+function ico(nome){
+  const d=ICONES[nome]; if(!d) return '';
+  return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>';
+}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 
 /* =============== BOTAO VOLTAR DO CELULAR ===============
@@ -1132,6 +1158,25 @@ function fecharSobreposicao(){
   }
   return false;
 }
+/* ENTER ENVIA. O app nao tem <form> em lugar nenhum — as telas sao <div> com <input>
+   e um <button>. Sem form, o navegador nao tem o que submeter e o Enter nao faz nada:
+   no computador a pessoa digita a senha, aperta Enter e nao acontece NADA.
+   Em vez de embrulhar 6 telas em form (e arriscar recarregar a pagina), o Enter em
+   qualquer campo aciona o botao principal DAQUELA tela. */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter' || e.isComposing) return;
+  const alvo=e.target;
+  if(!alvo || alvo.tagName!=='INPUT') return;
+  if(['checkbox','radio','file','range'].includes(alvo.type)) return;
+  const tela=alvo.closest('.screen'); if(!tela) return;
+  // o botao principal e o primeiro .btn.primary visivel da tela
+  const botao=[...tela.querySelectorAll('button.btn.primary')].find(b=>b.offsetParent!==null && !b.disabled);
+  if(!botao) return;
+  e.preventDefault();
+  alvo.blur();                 // fecha o teclado do celular antes de agir
+  botao.click();
+});
+
 window.addEventListener('popstate',()=>{
   // 1o: se tem algo aberto por cima, o Voltar so fecha aquilo
   if(fecharSobreposicao()){ armarVoltar(); return; }
@@ -1256,7 +1301,19 @@ function logout(){ stopEvent(); lembrarEvento(''); salvarToken(null); SESSAO=nul
    (_exige_elevacao); aqui e so a tela contando a verdade. */
 async function entrarComoEmpresa(){
   MODO_EMPRESA_PEDIDO=true;
-  if(LIVE && await carregarConta()){ go('dash'); return; }
+  // Antes isto era `if(await carregarConta()) go('dash')`: com a sessao da Carol
+  // aberta, clicar em "Sou empresa" reentrava NA CONTA DA CAROL. A porta da empresa
+  // so pode levar a uma conta de empresa.
+  if(LIVE && await carregarConta()){
+    if(ehEmpresa()){ go('dash'); return; }                 // ja e a conta certa
+    const quem=(SESSAO&&SESSAO.email)||'outra conta';
+    if(!confirm(`Voce esta na conta "${quem}", que nao e de empresa.
+
+Sair dela e entrar com o login da empresa?`)){
+      go('dash'); return;
+    }
+    salvarToken(null); SESSAO=null; state.events=[]; saveEvents(); lembrarEvento('');
+  }
   if(modoCadastro) alternarCadastro();
   document.getElementById('in-pass').value='';
   const t=document.getElementById('log-title'), sb=document.getElementById('log-sub');
@@ -1300,13 +1357,13 @@ function renderDash(){
     const live=ev.status==='live';
     const row=document.createElement('div');row.className='evt-row';
     const b=document.createElement('button');b.className='evt';b.onclick=()=>openEvent(ev);
-    const thumb=live?`<div class="dotlive">🔴</div>`:`<img src="${pick(i+4)}" alt="" loading="lazy">`;
+    const thumb=live?`<div class="dotlive"></div>`:`<img src="${pick(i+4)}" alt="" loading="lazy">`;
     b.innerHTML=`<div class="thumb">${thumb}</div>
       <div class="meta"><b>${ev.name}</b>
       <span>${live?'<span class="livedot"></span><span class="live-txt">ao vivo</span> · '+(ev.photos||0)+' fotos'
                  :fmtDate(ev.date)+' · '+(ev.photos||0)+' fotos'}</span></div>
       <div class="chev">›</div>`;
-    const del=document.createElement('button');del.className='evt-del';del.innerHTML='🗑';
+    const del=document.createElement('button');del.className='evt-del';del.innerHTML=ico('lixo');
     del.setAttribute('aria-label','Apagar evento '+ev.name);
     del.onclick=(e)=>{e.stopPropagation();deletarEvento(ev);};
     row.appendChild(b);row.appendChild(del);box.appendChild(row);
@@ -1740,7 +1797,7 @@ function openEvent(ev,opts){
   // resolucao cheia) ou escolher da galeria. Antes era um botao so, e nao ficava claro
   // que dava para fotografar na hora pelo proprio app.
   const sb=document.getElementById('ev-shoot');
-  if(sb) sb.textContent = LIVE ? '📷  Tirar foto agora' : 'Simular disparo';
+  if(sb) sb.textContent = LIVE ? ico('camera')+'  Tirar foto agora' : 'Simular disparo';
   ['ev-galeria','ev-semtoque'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=LIVE?'':'none'; });
   const bp=document.getElementById('btn-preview'); if(bp) bp.style.display=LIVE?'none':'';
   const ac=document.getElementById('ev-actions'); if(ac) ac.style.display=LIVE?'flex':'none';
@@ -1750,7 +1807,7 @@ function openEvent(ev,opts){
     qi.onload=()=>{document.getElementById('qr').style.display='none';};
     qi.onerror=()=>{qi.style.display='none';document.getElementById('qr').style.display='none';};
     qi.style.display='block'; qi.src=`${API}/qr?data=${encodeURIComponent(gurl)}`;
-    const gl=document.getElementById('ev-guestlink'); gl.textContent='🔗 '+gurl; gl.href=gurl; gl.style.display='block';
+    const gl=document.getElementById('ev-guestlink'); gl.innerHTML=ico('link')+' '+gurl.replace(/[<>]/g,''); gl.href=gurl; gl.style.display='block';
     if(!novo) syncEventPhotos(ev);   // reabrir evento: recarrega as fotos já enviadas
   }
   clearInterval(state.liveTimer);

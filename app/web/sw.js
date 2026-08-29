@@ -6,7 +6,7 @@
    depois de trocar de login. Agora a lógica é invertida: só entra no cache o
    que está numa lista curta e explícita de arquivos estáticos. Qualquer coisa
    fora dessa lista vai sempre para a rede. */
-const CACHE = 'foton-v4';
+const CACHE = 'foton-v5';   // sobe a versao para o celular buscar a casca nova
 
 /* Cache SEPARADO, só para as fotos que o Android entrega pelo menu "Compartilhar".
    Separado de propósito: o activate limpa versões velhas do cache da casca e não
