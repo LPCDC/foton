@@ -442,7 +442,12 @@ async def selfie(event: str = Form(...), consent: bool = Form(...), file: Upload
 
 @app.get("/feed")
 def feed(event: str, guest_id: str):
-    _ev(event, create=True)
+    # Leitura nao cria (como /stats e /photos). Esta era a ultima da cadeia: o celular
+    # de um convidado com a galeria aberta continuava pedindo /feed de um evento ja
+    # apagado, o servidor RECRIAVA o evento como orfao, e o app da fotografa (ainda
+    # aberto) adotava o orfao de volta para a conta dela. Resultado: evento apagado
+    # reaparecia no painel, vazio e com nome generico. Foi visto acontecer.
+    _ev(event, create=False)
     return {"guest_id": guest_id, "known": store.convidado_existe(event, guest_id),
             "photos": store.matches_de(guest_id)}
 

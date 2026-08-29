@@ -364,6 +364,7 @@ print("[19] Leitura NAO cria evento (fabrica de orfaos fechada)")
 _orf_antes = len(C.get("/admin/orfaos", headers=h(chefe)).json()["orfaos"])
 checa("/stats com codigo inexistente -> 404", C.get("/stats?event=NAOEXISTE").status_code, 404)
 checa("/photos com codigo inexistente -> 404", C.get("/photos?event=NAOEXISTE").status_code, 404)
+checa("/feed com codigo inexistente -> 404", C.get("/feed?event=NAOEXISTE&guest_id=x").status_code, 404)
 checa("e NAO nasceu evento nenhum", rig.store.evento("NAOEXISTE"), None)
 checa("nenhum orfao novo", len(C.get("/admin/orfaos", headers=h(chefe)).json()["orfaos"]), _orf_antes)
 # o caminho de verdade continua inteiro
@@ -374,6 +375,14 @@ C.post("/ingest", data={"event": "LEIT1"}, files={"file": ("f.jpg", jpeg(), "ima
 _s = C.post("/selfie", data={"event": "LEIT1", "consent": "true"}, files={"file": ("s.jpg", jpeg(), "image/jpeg")})
 checa("convidado ainda se registra", _s.status_code, 200)
 checa("e recebe a foto dele", len(_s.json()["matches"]), 1)
+# a cadeia real que ressuscitou um evento apagado em producao:
+# celular antigo pede /feed -> servidor recria como orfao -> app da fotografa adota de volta
+_gid = _s.json()["guest_id"]
+C.post("/event/delete", data={"code": "LEIT1"}, headers=h(dona))
+checa("celular antigo pedindo /feed nao ressuscita o evento", C.get("/feed?event=LEIT1&guest_id=" + _gid).status_code, 404)
+checa("e o evento continua apagado", rig.store.evento("LEIT1"), None)
+C.post("/event/adotar", data={"codes": "LEIT1"}, headers=h(dona))
+checa("adotar tambem nao faz nascer evento", rig.store.evento("LEIT1"), None)
 
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)
