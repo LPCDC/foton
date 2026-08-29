@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '*/5 * * * *'      # a cada 5 minutos
   workflow_dispatch:            # permite rodar na mão pelo site do GitHub
+    inputs:
+      testar_alerta:
+        description: 'Forçar o alerta para PROVAR que o WhatsApp chega (não é queda de verdade)'
+        type: boolean
+        default: false
 
 jobs:
   checar:
@@ -12,29 +17,49 @@ jobs:
       - name: Checar se o Fóton responde
         id: check
         run: |
-          echo "verificando https://getfoton.duckdns.org/health"
-          OK=0
-          for i in 1 2 3; do   # 3 tentativas antes de gritar (evita alarme falso)
-            if curl -sf -m 25 https://getfoton.duckdns.org/health | grep -q '"ok":true'; then
-              OK=1; break
-            fi
-            sleep 20
+          # Vigia os DOIS endereços. O convidado usa o domínio próprio desde 2026-08-29;
+          # vigiar só o duckdns deixava o monitor VERDE com o app.foton.app.br fora do ar.
+          FORA=""
+          for HOST in app.foton.app.br getfoton.duckdns.org; do
+            OK=0
+            for i in 1 2 3; do   # 3 tentativas antes de gritar (evita alarme falso)
+              if curl -sf -m 25 "https://$HOST/health" | grep -q '"ok":true'; then OK=1; break; fi
+              sleep 20
+            done
+            if [ "$OK" = "1" ]; then echo "  $HOST no ar"; else echo "  $HOST FORA DO AR"; FORA="$FORA $HOST"; fi
           done
-          echo "ok=$OK" >> $GITHUB_OUTPUT
-          [ "$OK" = "1" ] && echo "Fóton no ar" || echo "Fóton FORA DO AR"
+          if [ -n "${{ inputs.testar_alerta }}" ] && [ "${{ inputs.testar_alerta }}" = "true" ]; then
+            FORA="(TESTE — ninguém caiu)"
+          fi
+          echo "fora=$FORA" >> $GITHUB_OUTPUT
+          [ -z "$FORA" ] && echo "tudo no ar" || echo "PROBLEMA em:$FORA"
 
-      - name: Avisar no WhatsApp se caiu
-        if: steps.check.outputs.ok != '1' && env.WA_PHONE != ''
+      # Sem guarda de env no `if`: o passo SEMPRE roda quando há problema, e o
+      # aviso de segredo faltando aparece no log. A versão anterior tinha
+      # `if: ... && env.WA_PHONE != ''` — se isso não resolvesse na avaliação do
+      # `if`, o alerta era pulado em SILÊNCIO e o monitor ficava mudo.
+      - name: Avisar no WhatsApp
+        if: steps.check.outputs.fora != ''
         env:
           WA_PHONE: ${{ secrets.WA_PHONE }}
           WA_KEY: ${{ secrets.WA_APIKEY }}
         run: |
-          MSG="🔴 FOTON FORA DO AR — https://getfoton.duckdns.org nao respondeu em 3 tentativas ($(date -u '+%d/%m %H:%M UTC'))"
-          curl -s -G "https://api.callmebot.com/whatsapp.php" \
+          if [ -z "$WA_PHONE" ] || [ -z "$WA_KEY" ]; then
+            echo "::error::MONITOR MUDO — falta o secret WA_PHONE e/ou WA_APIKEY. Ninguém vai ser avisado."
+            exit 1
+          fi
+          MSG="🔴 FOTON:${{ steps.check.outputs.fora }} nao respondeu em 3 tentativas ($(date -u '+%d/%m %H:%M UTC'))"
+          COD=$(curl -s -o /tmp/wa.txt -w '%{http_code}' -G "https://api.callmebot.com/whatsapp.php" \
             --data-urlencode "phone=$WA_PHONE" \
             --data-urlencode "text=$MSG" \
-            --data-urlencode "apikey=$WA_KEY" || true
+            --data-urlencode "apikey=$WA_KEY")
+          echo "CallMeBot respondeu HTTP $COD"
+          head -c 400 /tmp/wa.txt
+          # HTTP 200 do CallMeBot NÃO garante entrega — a chave pode ter expirado.
+          # Por isso existe o botão "testar_alerta": só a mensagem chegando no
+          # celular prova que o monitor avisa. `UNKNOWN` até alguém apertar.
+          if [ "$COD" != "200" ]; then echo "::error::CallMeBot devolveu $COD"; exit 1; fi
 
       - name: Falhar o job (fica vermelho no GitHub)
-        if: steps.check.outputs.ok != '1'
+        if: steps.check.outputs.fora != '' && inputs.testar_alerta != true
         run: exit 1

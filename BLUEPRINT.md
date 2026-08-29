@@ -148,7 +148,8 @@ retenção automática (biometria 7d, fotos 90d) · direito de exclusão funcion
 
 **Infra:** HTTPS (Let's Encrypt, renovação automática) · backup diário ·
 auto-update · reinício automático · proteção contra recuperação por ociosidade ·
-monitor externo (GitHub Actions) — **falta só a chave do WhatsApp**.
+monitor externo (GitHub Actions) — **rodando a cada 5 min, verde**, vigiando os dois
+domínios. **Falta provar que o alerta chega**: Actions → Run workflow → `testar_alerta`.
 
 ## 9. O que vem (priorizado)
 
