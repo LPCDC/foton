@@ -31,11 +31,14 @@ aparece caem na galeria dele ao vivo.
 | Repo local | `C:\Users\Pichau\Menir ClickPal` |
 | Netlify | `getfoton.netlify.app` — só demo antiga; **virará o site de marca** |
 
-**Contas de teste**
+**Contas**
 ```
-Fotógrafa: patricia@vargas.com / minhasenha123
-Admin:     admin@foton.com / (senha trocada — ver com o dono)
+Fotógrafa (cliente real): patricia@vargas.com / (senha com o dono — NÃO escrever aqui)
+Admin:                    admin@foton.com     / (senha com o dono — NÃO escrever aqui)
 ```
+> ⚠️ **Este repo é público.** Nenhuma senha entra neste arquivo. A senha da Patrícia
+> esteve aqui em texto puro até 2026-08-29 e **continua no histórico do git** — só uma
+> troca de senha resolve de verdade. Ver §"Pendências abertas".
 
 ## 3. Como funciona (pipeline)
 
@@ -164,9 +167,21 @@ fila de pendentes do FTP · login de FTP conferido na hora · espelho da selfie.
 envio, foto entrando sozinha no evento em ~7 s) — mas **com cliente FTP de script,
 ainda não com a Canon**.
 
-**Pendências abertas:** semente do FTP (`FOTON_FTP_SEED`) não definida em produção →
-a senha do FTP é derivável do repo público · sem rate limit no `/login` · fotos são
-BLOB no SQLite × 7 backups (disco).
+**Pendências abertas:**
+- 🔴 **A senha da conta da Patrícia esteve em texto puro neste arquivo, num repo público**
+  (a senha em si não se repete aqui). Removida do arquivo em 2026-08-29, mas **está
+  no histórico do git e não sai de lá** sem reescrever a história. Com ela, qualquer um
+  entra na conta da cliente e vê eventos, convidados e a senha de FTP dela.
+  **Correção real = trocar a senha dela.** É conta de cliente e ela usa em piloto —
+  decisão do dono, não do agente. Enquanto não trocar, isto vale mais que qualquer outro
+  item desta lista.
+- Fotos são BLOB no SQLite × 7 backups completos (disco) — medido, com folga hoje.
+
+**Já corrigido (não é mais pendência):** ~~semente do FTP derivável do repo público~~ — a
+semente é gerada com `secrets.token_urlsafe(24)` na primeira execução e guardada no banco
+(`store.segredo`), não no código; `/camera/config` exige sessão (401 para anônimo e para
+token inválido) e devolve **só a senha da própria conta**. ~~Sem rate limit no `/login`~~ —
+10 falhas/10 min por IP → 429.
 
 **a) ENCONTRO PRESENCIAL FEITO (2026-08-28) — resultado real**
 
