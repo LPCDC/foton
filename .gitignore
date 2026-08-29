@@ -85,3 +85,7 @@ app/test_rig/foton.db-wal
 # --- cache do Python ---
 __pycache__/
 *.pyc
+
+# --- fotos reais para ensaio: NUNCA no repo (ele e publico) ---
+fotos-teste/
+!fotos-teste/LEIA-ME.md

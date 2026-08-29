@@ -46,6 +46,26 @@ python tests/test_autorizacao.py
 python tests/test_ftp_camera.py
 ```
 
+### 1b. Trava do front — `tests/test_front.py` ✅ 13 checagens
+Os testes de contrato provam que o **servidor** está certo. Nenhum deles vê o app
+morto: o servidor responde 200 com a tela em branco. Este olha o `index.html` como
+texto e recusa o que não pode subir — string JavaScript cortada no meio, `onclick`
+apontando para função que não existe, função definida duas vezes, `getElementById`
+de id inexistente, arquivo que encolheu, `share_target` quebrado, senha escrita no repo.
+
+Nasceu de erros reais numa única sessão: um `
+` que virou quebra de linha e apagou o
+app; uma edição que comeu o meio de uma função; uma escrita que zerou um documento;
+`ehIOS` definida duas vezes. **Rodar sempre antes do `git push`.**
+
+### 1c. Ensaio com fotos reais — `tests/ensaio.py`
+O único teste que responde "vou passar vergonha?". Fotos em `fotos-teste/` (pasta
+**ignorada pelo git** — o repo é público). Cria evento de teste em produção, manda as
+fotos, registra as selfies como convidados, mede P50/P95, perdas, rostos lidos e
+quantos convidados receberam foto — e apaga o evento no fim.
+⚠ Ele **não** prova que a foto foi para a pessoa certa. Isso só o seu olho prova; o
+script imprime os links para você conferir.
+
 ### 2. Fumaça em produção — a fazer (`tests/fumaca.sh`)
 Depois de cada `git push`, contra `getfoton.duckdns.org`: cria evento de teste, sobe
 foto, faz selfie, confere match, confere que anônimo leva 401, apaga o evento.

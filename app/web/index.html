@@ -2721,8 +2721,6 @@ window.addEventListener('beforeinstallprompt',e=>{
    Android, que é o caminho de um gesto para as fotos da câmera entrarem. Deixar
    isso escondido no painel, atrás do login, era esconder justamente a peça que
    destrava o fluxo do dia do evento. */
-function ehIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-  (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); }
 function jaInstalado(){
   try{ return matchMedia('(display-mode: standalone)').matches ||
               matchMedia('(display-mode: minimal-ui)').matches ||
