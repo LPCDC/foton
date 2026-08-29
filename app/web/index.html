@@ -1722,11 +1722,21 @@ function loadGuestSession(code){ try{ const s=localStorage.getItem('foton_guest_
   return j; }catch(e){ return null; } }
 function clearGuestSession(code){ try{ localStorage.removeItem('foton_guest_'+code); }catch(e){} }
 
-function openGuest(code){
+async function openGuest(code){
   guestState.event=code; guestState.photos=[]; guestState.id=null; guestState.active=false;
   const nm=(state.live&&state.live.code===code)?state.live.name:(LIVE?('Evento '+code):'Casamento Ana & Léo');
   ['g-evtname','g-evtname2','g-evtname3'].forEach(id=>{const el=document.getElementById(id); if(el) el.textContent=nm;});
   if(!LIVE){ document.getElementById('g-consent').checked=false; go('g-consent'); return; }
+  // O codigo existe mesmo? Antes o app aceitava qualquer coisa: o servidor criava um
+  // evento fantasma e a pessoa ficava olhando uma galeria vazia sem entender. Agora
+  // pergunta primeiro e diz a verdade.
+  try{
+    const r=await fetch(`${API}/stats?event=${encodeURIComponent(code)}`,{cache:'no-store'});
+    if(r.status===404){
+      toast(`O código ${code} não existe. Confira com quem está fotografando.`);
+      go('g-code'); return;
+    }
+  }catch(e){ /* sem rede: segue e tenta — melhor que travar a convidada na porta */ }
   const sess=loadGuestSession(code);
   if(sess){                                   // JA REGISTRADO: volta direto pra galeria
     guestState.id=sess.id; guestState.active=true;
@@ -2158,9 +2168,7 @@ async function admCompactar(){
   }catch(e){ box.textContent='Erro de conexão.'; }
 }
 async function admZerar(){
-  if(!confirm('APAGAR TODAS as fotos, convidados, contatos e eventos de TODAS as contas?
-
-Os logins e senhas ficam. Não dá para desfazer pelo app.')) return;
+  if(!confirm(`APAGAR TODAS as fotos, convidados, contatos e eventos de TODAS as contas? Os logins e senhas ficam. Não dá para desfazer pelo app.`)) return;
   const t=prompt('Para confirmar, digite ZERAR:');
   if(!t || t.trim().toUpperCase()!=='ZERAR'){ toast('Cancelado.'); return; }
   try{

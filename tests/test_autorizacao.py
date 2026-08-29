@@ -102,7 +102,8 @@ checa("evento novo tem dono", rig.store.evento("NOVO9")["dono"], "dona@t.com")
 print("\n[6] Dona encerra e apaga o próprio evento")
 checa("dona encerra", C.post("/event/close",  data={"code": "FESTA1"}, headers=h(dona)).status_code, 200)
 checa("dona apaga",   C.post("/event/delete", data={"code": "FESTA1"}, headers=h(dona)).status_code, 200)
-checa("sumiu mesmo",  C.get("/photos?event=FESTA1").json()["photos"], [])
+# apagado e apagado: antes o /photos RECRIAVA o evento e devolvia lista vazia
+checa("sumiu mesmo",  C.get("/photos?event=FESTA1").status_code, 404)
 
 print("\n[7] Freio do login (força bruta) — sem travar quem erra a senha de vez em quando")
 for i in range(9):
@@ -150,7 +151,7 @@ checa("fotógrafa comum não usa a rota de admin",
       C.post("/admin/conta/excluir", data={"email": "sai@t.com"}, headers=h(dona)).status_code, 403)
 checa("o titular encerra", C.post("/conta/excluir", data={"senha": "senha123"}, headers=h(alvo)).status_code, 200)
 checa("a conta sumiu", rig.store.conta("sai@t.com"), None)
-checa("as fotos dela sumiram", C.get("/photos?event=DELE1").json()["photos"], [])
+checa("as fotos dela sumiram", C.get("/photos?event=DELE1").status_code, 404)
 checa("a sessão morreu junto", C.get("/me", headers=h(alvo)).status_code, 401)
 checa("admin não apaga a si mesmo",
       C.post("/admin/conta/excluir", data={"email": "chefe@t.com"}, headers=h(chefe)).status_code, 400)
@@ -356,6 +357,23 @@ _n = C.post("/ingest", data={"event": "DEPOIS1"}, files={"file": ("f.jpg", jpeg(
 checa("da para usar normalmente depois de zerar", _n.status_code, 200)
 checa("compactar e so do admin", C.post("/admin/compactar", headers=h(dona)).status_code, 403)
 checa("admin compacta", C.post("/admin/compactar", headers=h(chefe)).status_code, 200)
+
+
+print("")
+print("[19] Leitura NAO cria evento (fabrica de orfaos fechada)")
+_orf_antes = len(C.get("/admin/orfaos", headers=h(chefe)).json()["orfaos"])
+checa("/stats com codigo inexistente -> 404", C.get("/stats?event=NAOEXISTE").status_code, 404)
+checa("/photos com codigo inexistente -> 404", C.get("/photos?event=NAOEXISTE").status_code, 404)
+checa("e NAO nasceu evento nenhum", rig.store.evento("NAOEXISTE"), None)
+checa("nenhum orfao novo", len(C.get("/admin/orfaos", headers=h(chefe)).json()["orfaos"]), _orf_antes)
+# o caminho de verdade continua inteiro
+C.post("/event", data={"code": "LEIT1"}, headers=h(dona))
+checa("/stats de evento que existe", C.get("/stats?event=LEIT1").status_code, 200)
+checa("/photos de evento que existe", C.get("/photos?event=LEIT1").status_code, 200)
+C.post("/ingest", data={"event": "LEIT1"}, files={"file": ("f.jpg", jpeg(), "image/jpeg")}, headers=h(dona))
+_s = C.post("/selfie", data={"event": "LEIT1", "consent": "true"}, files={"file": ("s.jpg", jpeg(), "image/jpeg")})
+checa("convidado ainda se registra", _s.status_code, 200)
+checa("e recebe a foto dele", len(_s.json()["matches"]), 1)
 
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

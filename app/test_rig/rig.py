@@ -351,7 +351,11 @@ def stats(event: str, authorization: str = Header(None)):
     fotógrafa faz no meio da festa: "está chegando?". Sem isso ela só vê um ponto
     verde que não prova nada.
     """
-    e = _ev(event, create=True)
+    # LEITURA NAO CRIA. Antes era create=True: quem digitasse um codigo errado fazia
+    # nascer um evento fantasma sem dono, e via uma galeria vazia para sempre em vez de
+    # "esse codigo nao existe". Foi assim que apareceu 1 orfao 3 minutos depois de zerar
+    # o banco. Fabrica de orfaos fechada aqui e no /photos.
+    e = _ev(event, create=False)
     ult = store.ultima_foto(event)
     out = {"event": event, "photos": len(store.fotos_de(event)),
            "guests": store.conta_convidados(event),
@@ -368,7 +372,7 @@ def stats(event: str, authorization: str = Header(None)):
 
 @app.get("/photos")
 def photos(event: str):
-    _ev(event, create=True)
+    _ev(event, create=False)          # leitura nao cria (ver /stats)
     return {"event": event, "photos": [{"id": p["id"], "n_faces": p["n_faces"]} for p in store.fotos_de(event)]}
 
 # ============================ PIPELINE ============================
