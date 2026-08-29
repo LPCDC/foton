@@ -476,8 +476,7 @@ def photo_delete(event: str = Form(...), photo_id: str = Form(...), authorizatio
 # dono nao ficar trancado fora do proprio painel. Nao ha segredo aqui — o login e
 # publico, a senha nao. E o /signup agora recusa qualquer login desta lista, entao
 # ninguem reivindica um admin que ainda nao tenha conta.
-ADMINS = {e.strip().lower() for e in
-          os.environ.get("FOTON_ADMINS", "admin@foton.com,glamoncoolabs").split(",")}
+ADMINS = {e.strip().lower() for e in os.environ.get("FOTON_ADMINS", "admin").split(",")}
 
 def _admin(authorization):
     c = _dono(authorization)
