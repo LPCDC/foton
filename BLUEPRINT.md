@@ -148,8 +148,9 @@ retenção automática (biometria 7d, fotos 90d) · direito de exclusão funcion
 
 **Infra:** HTTPS (Let's Encrypt, renovação automática) · backup diário ·
 auto-update · reinício automático · proteção contra recuperação por ociosidade ·
-monitor externo (GitHub Actions) — **rodando a cada 5 min, verde**, vigiando os dois
-domínios. **Falta provar que o alerta chega**: Actions → Run workflow → `testar_alerta`.
+monitor externo (GitHub Actions) — verde, vigiando os dois domínios, mas a
+**cadência real medida é de ~5 HORAS**, não os 5 min do cron: **não serve como monitor**.
+Ver `docs/PILOTO-1.md` B5 — precisa de monitor externo de verdade.
 
 ## 9. O que vem (priorizado)
 
