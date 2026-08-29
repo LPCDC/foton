@@ -266,6 +266,8 @@ input{font-family:inherit}
   border-bottom:1px solid var(--line-soft);font-size:15.5px}
 .c-row:last-child{border-bottom:none}
 .c-row span{color:var(--muted);font-size:14.5px;text-align:right}
+.ou{display:flex;align-items:center;gap:10px;margin:14px 0 4px;font-size:13px;color:var(--dim)}
+.ou::before,.ou::after{content:"";flex:1;height:1px;background:var(--line)}
 .contatos{margin-top:10px}
 .contatos .c-row{display:flex;justify-content:space-between;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line-soft);font-size:15.5px}
 .contatos .c-row:last-child{border-bottom:none}
@@ -729,7 +731,19 @@ input{font-family:inherit}
          no comeco. Estava abaixo da dobra, depois do QR + 5 botoes + 2 numeros:
          num celular so aparecia rolando. Subiu para o topo, o QR segue logo abaixo. -->
     <input type="file" id="live-upload" accept="image/*" multiple style="display:none" onchange="uploadPhoto(event)">
-    <button class="btn primary block" id="ev-shoot" style="margin-bottom:16px" onclick="shootPhoto()">Simular disparo</button>
+    <!-- capture="environment" abre a CAMERA NATIVA do celular, com HDR e a resolucao
+         cheia do aparelho. Um visor dentro do app (getUserMedia) daria so o fluxo de
+         video, bem pior com pouca luz — que e a luz de festa. -->
+    <input type="file" id="live-camera" accept="image/*" capture="environment" style="display:none" onchange="uploadPhoto(event)">
+    <div class="actions-row" id="ev-envio" style="margin-bottom:12px">
+      <button class="btn primary" id="ev-shoot" onclick="shootPhoto()">Simular disparo</button>
+      <button class="btn ghost" id="ev-galeria" style="display:none" onclick="document.getElementById('live-upload').click()">🖼&nbsp; Da galeria</button>
+    </div>
+    <p class="note" id="ev-semtoque" style="display:none;text-align:left;margin:-4px 0 14px">
+      <b>Sem abrir o app:</b> na galeria do celular, selecione as fotos e toque em
+      <b>Compartilhar → Fóton</b>. <button class="link" onclick="abrirInstalar('event')">precisa instalar o app</button> ·
+      <button class="link" onclick="go('guia')">câmera por Wi-Fi/FTP</button>
+    </p>
 
     <div class="ticket">
       <span class="klbl">Convidado · aponte a câmera</span>
@@ -787,12 +801,15 @@ input{font-family:inherit}
       <div class="word">Convidado<small>entrar no evento</small></div>
     </div>
     <h1 class="title">Entrar no evento</h1>
-    <p class="subtitle">Escaneie o QR do fotógrafo — ou digite o código que aparece na tela dele.</p>
+    <p class="subtitle" id="g-code-sub">Escaneie o QR do fotógrafo — ou digite o código que aparece na tela dele.</p>
     <div class="card">
+      <!-- A tela mandava "escaneie o QR" e nao dava como escanear. Agora da. -->
+      <button class="btn primary block" id="btn-scan" style="display:none" onclick="abrirScanner()">⧉&nbsp; Escanear o QR</button>
+      <div class="ou" id="scan-ou" style="display:none">ou digite o código</div>
       <div class="field"><label>Código do evento</label>
         <input id="g-code-input" placeholder="ABCD" maxlength="4" autocapitalize="characters" autocomplete="off"
           style="text-transform:uppercase;letter-spacing:.35em;font-family:var(--mono);text-align:center;font-size:22px"></div>
-      <button class="btn primary block" onclick="entrarNoEvento()">Entrar no evento</button>
+      <button class="btn ghost block" id="btn-entrar-cod" onclick="entrarNoEvento()">Entrar com o código</button>
     </div>
     <p class="note" style="margin-top:20px">Sem instalar app. Sem cadastro. Só a sua selfie.</p>
   </section>
@@ -946,6 +963,15 @@ input{font-family:inherit}
   </div>
 </div>
 
+<!-- LEITOR DE QR do convidado -->
+<div class="qrfull" id="scanner" onclick="if(event.target===this)fecharScanner()">
+  <div class="qrfull-card" style="padding:14px;background:#000">
+    <video id="scan-video" playsinline muted style="width:min(78vw,320px);height:min(78vw,320px);object-fit:cover;border-radius:14px;background:#111"></video>
+  </div>
+  <div class="qf-top" style="color:var(--muted)">Aponte para o QR do fotógrafo</div>
+  <div class="qrfull-acts"><button class="btn ghost" onclick="fecharScanner()">Fechar</button></div>
+</div>
+
 <!-- QR em TELA CHEIA (para a mesa do evento) -->
 <div class="qrfull" id="qrfull" onclick="if(event.target===this)fecharQR()">
   <div class="qrfull-card">
@@ -1088,7 +1114,22 @@ function telaAtiva(){
 }
 function armarVoltar(){ try{ history.pushState({foton:1},''); }catch(e){} }
 let _pedidoDeSaida=0;
+/* Sobreposicoes tem que CONSUMIR o Voltar. Sem isto, com uma foto aberta o Voltar
+   avisava "toque de novo para sair" — e o segundo toque fechava o APP com a foto
+   ainda aberta. Era o "sai sem querer" relatado. Da camada mais externa para a mais
+   interna: o QR da foto fica por cima do visualizador, que fica por cima da tela. */
+function fecharSobreposicao(){
+  const camadas=[['qrfoto',fecharQRFoto],['qrfull',fecharQR],['scanner',fecharScanner],
+                 ['sheet',closeSheet],['lb',fecharFoto]];
+  for(const [id,fechar] of camadas){
+    const el=document.getElementById(id);
+    if(el && el.classList.contains('show')){ fechar(); return true; }
+  }
+  return false;
+}
 window.addEventListener('popstate',()=>{
+  // 1o: se tem algo aberto por cima, o Voltar so fecha aquilo
+  if(fecharSobreposicao()){ armarVoltar(); return; }
   const t=telaAtiva(), f=VOLTAR_PARA[t];
   if(f){ armarVoltar(); f(); return; }                 // volta uma tela e recoloca a sentinela
   if(Date.now()-_pedidoDeSaida < 3000){ history.back(); return; }   // 2o toque em 3s: sai mesmo
@@ -1642,8 +1683,15 @@ function openEvent(ev,opts){
   document.getElementById('ev-nphotos').textContent=ev.photos;
   document.getElementById('ev-nguests').textContent=ev.guests;
   drawQR(ev.code||'DEMO');renderEventGrid();go('event');
-  // "da camera" excluia quem fotografa com o proprio celular — que o app ja aceita
-  const sb=document.getElementById('ev-shoot'); if(sb) sb.textContent=LIVE?'📷  Enviar fotos':'Simular disparo';
+  // Duas acoes SEPARADAS e visiveis: tirar agora (camera nativa do celular, com HDR e
+  // resolucao cheia) ou escolher da galeria. Antes era um botao so, e nao ficava claro
+  // que dava para fotografar na hora pelo proprio app.
+  const sb=document.getElementById('ev-shoot');
+  if(sb){
+    sb.textContent = LIVE ? '📷  Tirar foto agora' : 'Simular disparo';
+    sb.onclick = LIVE ? ()=>document.getElementById('live-camera').click() : shootPhoto;
+  }
+  ['ev-galeria','ev-semtoque'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=LIVE?'':'none'; });
   const bp=document.getElementById('btn-preview'); if(bp) bp.style.display=LIVE?'none':'';
   const ac=document.getElementById('ev-actions'); if(ac) ac.style.display=LIVE?'flex':'none';
   if(LIVE){
@@ -1706,7 +1754,24 @@ function entrarConvidado(){
   const code=_params.get('evento');
   if(code) return openGuest(code);
   const inp=document.getElementById('g-code-input'); if(inp) inp.value='';
+  mostrarBotaoScan();
   go('g-code');
+}
+/* O botao de escanear so aparece se o navegador souber ler QR E der camera.
+   No iPhone nao existe BarcodeDetector: la o campo de codigo vira o botao principal,
+   em vez de mostrar um botao que nao funciona. */
+function mostrarBotaoScan(){
+  const tem = temLeitorDeQR() && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  const b=document.getElementById('btn-scan'), ou=document.getElementById('scan-ou');
+  if(b) b.style.display = tem ? '' : 'none';
+  if(ou) ou.style.display = tem ? '' : 'none';
+  const be=document.getElementById('btn-entrar-cod');
+  if(be) be.className = tem ? 'btn ghost block' : 'btn primary block';
+  // o texto nao pode prometer um botao que nao existe naquele aparelho
+  const sub=document.getElementById('g-code-sub');
+  if(sub) sub.innerHTML = tem
+    ? 'Escaneie o QR do fotógrafo — ou digite o código que aparece na tela dele.'
+    : 'Digite o código que aparece na tela do fotógrafo. Se preferir, aponte a <b>câmera do seu celular</b> para o QR: ela abre o Fóton sozinha.';
 }
 function entrarNoEvento(){
   const code=(document.getElementById('g-code-input').value||'').trim().toUpperCase();
@@ -2297,6 +2362,45 @@ async function abrirFotoAvulsa(ev,pid){
     }
   }catch(e){ toast('Não consegui abrir a foto — verifique a internet'); return; }
   abrirFoto([{id:pid, src, faces:0}], 0);
+}
+
+/* ===================== LEITOR DE QR (convidado) =====================
+   A tela mandava "escaneie o QR" e nao dava botao nenhum. Muita gente escaneia pela
+   camera nativa (que abre o link direto), mas quem ja esta dentro do app ficava sem
+   saida a nao ser digitar.
+
+   Usa o BarcodeDetector do proprio navegador — sem biblioteca nova (regra do CLAUDE.md
+   sobre dependencia). Nao existe no Safari/iPhone: la o botao nem aparece. */
+function temLeitorDeQR(){ return typeof window.BarcodeDetector === 'function'; }
+let _scanStream=null, _scanTimer=null;
+function codigoDoQR(txt){
+  if(!txt) return '';
+  try{ const u=new URL(txt); const e=u.searchParams.get('evento'); if(e) return e.toUpperCase(); }catch(e){}
+  const m=String(txt).trim().toUpperCase().match(/^[A-Z0-9]{4}$/);
+  return m ? m[0] : '';
+}
+async function abrirScanner(){
+  if(!temLeitorDeQR()){ toast('Aqui não dá para ler o QR — use a câmera do celular ou digite o código'); return; }
+  const v=document.getElementById('scan-video');
+  try{ _scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}); }
+  catch(e){ toast('Preciso da câmera para ler o QR. Você pode digitar o código.'); return; }
+  v.srcObject=_scanStream; await v.play().catch(()=>{});
+  document.getElementById('scanner').classList.add('show');
+  const det=new BarcodeDetector({formats:['qr_code']});
+  _scanTimer=setInterval(async()=>{
+    try{
+      for(const a of await det.detect(v)){
+        const cod=codigoDoQR(a.rawValue);
+        if(cod){ fecharScanner(); openGuest(cod); return; }
+      }
+    }catch(e){}
+  },350);
+}
+function fecharScanner(){
+  clearInterval(_scanTimer); _scanTimer=null;
+  if(_scanStream){ _scanStream.getTracks().forEach(t=>t.stop()); _scanStream=null; }
+  const v=document.getElementById('scan-video'); if(v) v.srcObject=null;
+  const el=document.getElementById('scanner'); if(el) el.classList.remove('show');
 }
 
 /* ===================== QR EM TELA CHEIA (mesa do evento) ===================== */

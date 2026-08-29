@@ -384,5 +384,24 @@ checa("e o evento continua apagado", rig.store.evento("LEIT1"), None)
 C.post("/event/adotar", data={"codes": "LEIT1"}, headers=h(dona))
 checa("adotar tambem nao faz nascer evento", rig.store.evento("LEIT1"), None)
 
+
+print("")
+print("[20] Tela do convidado e botoes de envio da fotografa")
+_h = open(os.path.join(RAIZ, "app", "web", "index.html"), encoding="utf-8").read()
+# a tela mandava escanear o QR e nao dava como escanear
+checa("existe botao de escanear", _h.count(chr(39) + "btn-scan" + chr(39)) >= 1 or "id=\"btn-scan\"" in _h, True)
+checa("existe o leitor sobreposto", "id=\"scanner\"" in _h, True)
+checa("usa BarcodeDetector do navegador (sem lib nova)", "BarcodeDetector" in _h, True)
+checa("degrada quando o aparelho nao le QR", "mostrarBotaoScan" in _h, True)
+# camera do celular visivel, separada da galeria
+checa("botao de tirar foto agora", "Tirar foto agora" in _h, True)
+checa("abre a camera NATIVA (capture)", "capture=\"environment\"" in _h, True)
+checa("botao separado para a galeria", "id=\"ev-galeria\"" in _h, True)
+checa("mostra as formas sem tocar no app", "id=\"ev-semtoque\"" in _h, True)
+# o Voltar nao pode sair do app com uma foto aberta na tela
+checa("sobreposicao consome o Voltar", "fecharSobreposicao" in _h, True)
+checa("o popstate checa a sobreposicao ANTES da tela",
+      _h.index("if(fecharSobreposicao())") < _h.index("const t=telaAtiva(), f=VOLTAR_PARA[t];"), True)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)
