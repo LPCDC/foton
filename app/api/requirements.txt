@@ -1,9 +1,0 @@
-fastapi>=0.115
-uvicorn[standard]>=0.30
-python-multipart>=0.0.9
-pillow>=11
-opencv-python>=4.10
-numpy>=2.0
-# storage/db reais (descomente ao conectar):
-# boto3>=1.35          # cliente S3-compat p/ Cloudflare R2 (ADR-0011)
-# supabase>=2.7        # auth + postgres + realtime (ADR-0010)

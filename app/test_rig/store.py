@@ -316,6 +316,55 @@ def expirar(dias_biometria=7, dias_fotos=90):
         q("DELETE FROM photo WHERE id=?", (p["id"],))
     return {"convidados": len(gs), "fotos": len(ps)}
 
+def zerar_dados():
+    """Apaga TODO o conteudo (fotos, rostos, convidados, matches, contatos, eventos)
+    e mantem as CONTAS: login, senha, nome, marca, logo, creditos e retencao.
+
+    Compacta no fim, e ai esta o ponto: o SQLite NAO devolve espaco ao apagar linha —
+    o arquivo so cresce. Sem o VACUUM, "zerar" deixaria o banco do mesmo tamanho e a
+    unica coisa que zerar deveria resolver (disco) continuaria igual.
+    """
+    antes = tamanho_no_disco()
+    contagem = {t: (q("SELECT COUNT(*) FROM " + t, (), "one") or [0])[0]
+                for t in ("photo", "face", "guest", "match", "contact", "event")}
+    for t in ("match", "face", "photo", "guest", "contact", "event"):
+        q("DELETE FROM " + t)
+    depois = compacta()
+    return {**contagem, "bytes_antes": antes, "bytes_depois": depois}
+
+def compacta():
+    """VACUUM: reescreve o arquivo sem os buracos das linhas apagadas.
+
+    Nao roda dentro de transacao — por isso o isolation_level vai a None e volta.
+
+    O checkpoint no fim NAO e detalhe: o banco roda em WAL, entao o VACUUM sozinho
+    deixa o resultado no arquivo -wal e o .db principal continua do mesmo tamanho.
+    Sem o wal_checkpoint(TRUNCATE) a limpeza nao aparece no disco — foi exatamente
+    o que aconteceu no primeiro teste (11380 KB antes, 11380 KB depois).
+
+    E caro (reescreve o banco inteiro), entao e acao manual do admin, nao rotina.
+    """
+    with _lock:
+        cx = conn()
+        cx.commit()
+        antigo = cx.isolation_level
+        try:
+            cx.isolation_level = None
+            cx.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            cx.execute("VACUUM")
+            cx.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        finally:
+            cx.isolation_level = antigo
+    return tamanho_no_disco()
+
+def tamanho_no_disco():
+    """O banco ocupa .db + -wal + -shm. Olhar so o .db engana durante o WAL."""
+    n = 0
+    for suf in ("", "-wal", "-shm"):
+        try: n += os.path.getsize(DB_PATH + suf)
+        except OSError: pass
+    return n
+
 def apagar_dados_do_convidado(gid):
     """Direito de exclusão (LGPD Art. 18): o titular pede e sai tudo dele."""
     achou = bool(q("SELECT 1 FROM guest WHERE id=?", (gid,), "one"))

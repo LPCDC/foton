@@ -654,7 +654,21 @@ input{font-family:inherit}
     <div class="tips" id="adm-credito"></div>
 
     <div class="eyebrow-sm">Contas</div>
+    <p class="note" style="text-align:left;margin:0 0 10px">As <b>senhas não aparecem aqui e não podem aparecer</b>: o servidor guarda só um resumo irreversível delas (PBKDF2 com sal). É o que faz um vazamento do banco não virar um vazamento de contas. Para dar acesso a alguém, use <b>Trocar senha</b> e mande a nova.</p>
     <div id="adm-lista"></div>
+
+    <div class="eyebrow-sm">Manutenção</div>
+    <div class="tips">
+      <p class="muted" style="font-size:14.5px;margin:0 0 10px">Apagar evento <b>não devolve espaço</b>: o SQLite marca o espaço como livre dentro do arquivo, mas o arquivo não encolhe. E como o backup guarda 7 cópias do banco, cada MB não recuperado custa 8 MB de disco.</p>
+      <button class="btn ghost sm block" onclick="admCompactar()">Compactar banco (recuperar espaço)</button>
+      <div id="adm-compacta" class="note" style="text-align:left;margin-top:8px"></div>
+    </div>
+
+    <div class="tips" style="border-color:var(--live);margin-top:14px">
+      <b style="color:var(--live)">Zona de perigo</b>
+      <p class="muted" style="font-size:14.5px;margin:6px 0 10px">Apaga <b>todas as fotos, convidados, contatos e eventos</b> de <b>todas</b> as contas. Mantém logins, senhas, marca, logo, créditos e retenção. <b>Não dá para desfazer pelo app</b> — só pelo backup do servidor.</p>
+      <button class="btn ghost sm block" style="border-color:var(--live);color:var(--live)" onclick="admZerar()">Zerar todos os dados</button>
+    </div>
 
     <div class="eyebrow-sm">Contatos deixados pelos convidados</div>
     <div class="tips">
@@ -2051,12 +2065,13 @@ async function abrirAdmin(){
       const disco=mb*8;
       return `
       <div class="tips" style="margin-bottom:8px">
-        <b style="color:var(--text);text-transform:none;letter-spacing:0;font-size:15.5px">${(f.nome||f.email).replace(/[<>]/g,'')}${f.ao_vivo?' <span class="livedot"></span>':''}</b>
+        <b style="color:var(--text);text-transform:none;letter-spacing:0;font-size:15.5px">${(f.nome||f.email).replace(/[<>]/g,'')}${f.ao_vivo?' <span class="livedot"></span>':''}${(j.admins||[]).includes(f.email)?' <span class="pill" style="font-size:11px;vertical-align:middle">admin</span>':''}</b>
         <p class="muted" style="font-size:14px;margin:2px 0 8px">${(f.email||'').replace(/[<>]/g,'')}${f.marca?' · '+f.marca.replace(/[<>]/g,''):''}</p>
         <div class="c-row"><b>Eventos</b><span>${f.eventos}${f.ao_vivo?` · ${f.ao_vivo} ao vivo`:''}</span></div>
         <div class="c-row"><b>Fotos · convidados</b><span>${f.fotos} · ${f.convidados}</span></div>
         <div class="c-row"><b>Contatos capturados</b><span>${f.contatos}</span></div>
         <div class="c-row"><b>Ocupa no banco</b><span>${mb.toFixed(1)} MB <span class="muted">(${disco.toFixed(1)} MB com backup)</span></span></div>
+        <div class="c-row"><b>Login</b><span style="font-family:ui-monospace,monospace">${(f.email||'').replace(/[<>]/g,'')}</span></div>
         <div class="c-row"><b>Créditos</b><span>${f.credits} de ${f.credits_total}</span></div>
         <div class="c-row"><b>Última foto</b><span>${desde(f.ultima_foto)}</span></div>
         <div class="c-row"><b>Biometria do convidado</b><span${f.ret_bio_dias===0?' style="color:var(--warn)"':''}>${f.ret_bio_dias===0?'NÃO expira (álbum permanente)':(f.ret_bio_dias?f.ret_bio_dias+' dias':'7 dias (padrão)')}</span></div>
@@ -2127,6 +2142,36 @@ async function admCreditos(email,n){
     const r=await fetch(API+'/admin/creditos',{method:'POST',body:fd,headers:auth()});
     if(!r.ok){ toast('Não consegui dar créditos.'); return; }
     const j=await r.json(); toast(`+${n} créditos — agora ${j.credits}`); abrirAdmin();
+  }catch(e){ toast('Erro de conexão.'); }
+}
+async function admCompactar(){
+  const box=document.getElementById('adm-compacta');
+  box.textContent='Compactando…';
+  try{
+    const r=await fetch(API+'/admin/compactar',{method:'POST',headers:auth()});
+    if(!r.ok){ box.textContent='Não consegui compactar.'; return; }
+    const j=await r.json();
+    box.innerHTML=j.liberou_mb>0
+      ? `✓ Liberou <b>${j.liberou_mb} MB</b> — o banco foi de ${j.antes_mb} MB para ${j.depois_mb} MB.`
+      : `Nada a recuperar — o banco já está compacto (${j.depois_mb} MB).`;
+    abrirAdmin();
+  }catch(e){ box.textContent='Erro de conexão.'; }
+}
+async function admZerar(){
+  if(!confirm('APAGAR TODAS as fotos, convidados, contatos e eventos de TODAS as contas?
+
+Os logins e senhas ficam. Não dá para desfazer pelo app.')) return;
+  const t=prompt('Para confirmar, digite ZERAR:');
+  if(!t || t.trim().toUpperCase()!=='ZERAR'){ toast('Cancelado.'); return; }
+  try{
+    const fd=new FormData(); fd.append('confirmacao',t);
+    const r=await fetch(API+'/admin/zerar',{method:'POST',body:fd,headers:auth()});
+    if(!r.ok){ toast('Não consegui zerar.'); return; }
+    const j=await r.json();
+    toast(`Zerado: ${j.photo} fotos, ${j.guest} convidados, ${j.event} eventos · banco ${j.antes_mb}→${j.depois_mb} MB`);
+    try{ localStorage.removeItem('foton_ev'); lembrarEvento(''); }catch(e){}
+    state.events=[]; state.live=null;
+    abrirAdmin();
   }catch(e){ toast('Erro de conexão.'); }
 }
 async function admRetencao(email,dias){

@@ -72,3 +72,16 @@ logs/
 # banco local do rig (dados de teste, nunca versionar)
 app/test_rig/foton.db
 app/test_rig/foton.db-*
+
+# --- banco local do rig (dados reais nao entram no repo) ---
+app/test_rig/foton.db-shm
+app/test_rig/foton.db-wal
+*.db-shm
+*.db-wal
+
+# --- estado de build do Netlify ---
+.netlify/
+
+# --- cache do Python ---
+__pycache__/
+*.pyc

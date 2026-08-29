@@ -634,6 +634,35 @@ def admin_conta_excluir(email: str = Form(...), authorization: str = Header(None
     log.info('{"stage":"admin","acao":"conta_excluida","alvo":"%s"}' % alvo)
     return {"ok": True}
 
+@app.post("/admin/compactar")
+def admin_compactar(authorization: str = Header(None)):
+    """Devolve ao disco o espaco das linhas apagadas.
+
+    O SQLite NAO encolhe sozinho: apagar evento marca o espaco como livre dentro do
+    arquivo, e o arquivo continua do mesmo tamanho. Como as fotos moram no banco e o
+    backup guarda 7 copias dele, cada MB nao recuperado custa 8 MB de disco."""
+    _admin(authorization)
+    antes = store.tamanho_no_disco()
+    depois = store.compacta()
+    log.info('{"stage":"admin","acao":"compactar","liberou_mb":%.1f}' % ((antes - depois) / 1e6))
+    return {"ok": True, "antes_mb": round(antes / 1e6, 1), "depois_mb": round(depois / 1e6, 1),
+            "liberou_mb": round((antes - depois) / 1e6, 1)}
+
+@app.post("/admin/zerar")
+def admin_zerar(confirmacao: str = Form(...), authorization: str = Header(None)):
+    """Apaga TODO o conteudo e mantem as contas. Irreversivel pelo app.
+
+    Exige a palavra ZERAR digitada: e a unica rota que destroi dado de cliente de uma
+    vez so, e um toque errado num celular nao pode disparar isso. A rede de seguranca
+    real e o backup diario (7 copias) — conferir /admin/saude ANTES de usar."""
+    _admin(authorization)
+    if (confirmacao or "").strip().upper() != "ZERAR":
+        raise HTTPException(400, "digite ZERAR para confirmar")
+    r = store.zerar_dados()
+    log.info('{"stage":"admin","acao":"zerar","fotos":%d,"convidados":%d}' % (r["photo"], r["guest"]))
+    return {"ok": True, **{k: v for k, v in r.items() if not k.startswith("bytes")},
+            "antes_mb": round(r["bytes_antes"] / 1e6, 1), "depois_mb": round(r["bytes_depois"] / 1e6, 1)}
+
 @app.post("/admin/retencao")
 def admin_retencao(email: str = Form(...), dias: str = Form(""), authorization: str = Header(None)):
     """Retencao de biometria por conta. dias=0 -> NAO expira; vazio -> politica geral.

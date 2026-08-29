@@ -324,5 +324,38 @@ checa("biometria da conta isenta SOBREVIVEU", "gperm" in _vivos, True)
 checa("biometria da conta normal expirou", "gtemp" in _vivos, False)
 checa("admin volta ao padrao", C.post("/admin/retencao", data={"email": "dona@t.com", "dias": ""}, headers=h(chefe)).json()["ret_bio_dias"], None)
 
+
+print("")
+print("[18] Zerar dados e compactar — sem levar as contas junto")
+checa("so admin zera", C.post("/admin/zerar", data={"confirmacao": "ZERAR"}, headers=h(dona)).status_code, 403)
+checa("anonimo nao zera", C.post("/admin/zerar", data={"confirmacao": "ZERAR"}).status_code, 403)
+checa("sem a palavra certa nao zera", C.post("/admin/zerar", data={"confirmacao": "sim"}, headers=h(chefe)).status_code, 400)
+# guarda o que NAO pode sumir
+_antes = {f["email"]: (f["credits"], f["credits_total"]) for f in C.get("/admin/resumo", headers=h(chefe)).json()["fotografos_lista"]}
+_png = io.BytesIO(); Image.new("RGBA", (30, 30), (0, 255, 0, 255)).save(_png, "PNG")
+C.post("/conta/logo", files={"file": ("l.png", _png.getvalue(), "image/png")}, headers=h(dona))
+C.post("/admin/retencao", data={"email": "dona@t.com", "dias": "0"}, headers=h(chefe))
+_r = C.post("/admin/zerar", data={"confirmacao": "zerar"}, headers=h(chefe))
+checa("admin zera (aceita minusculo)", _r.status_code, 200)
+_z = C.get("/admin/resumo", headers=h(chefe)).json()
+checa("nao sobrou foto", _z["fotos"], 0)
+checa("nao sobrou convidado", _z["convidados"], 0)
+checa("nao sobrou contato", _z["contatos"], 0)
+checa("nao sobrou evento", _z["eventos"], 0)
+# o que TEM que sobreviver
+_dep = {f["email"]: (f["credits"], f["credits_total"]) for f in _z["fotografos_lista"]}
+checa("todas as contas continuam existindo", sorted(_dep), sorted(_antes))
+checa("creditos intactos", _dep, _antes)
+checa("a senha continua valendo", C.post("/login", data={"email": "dona@t.com", "senha": "senha123"}).status_code, 200)
+checa("a marca d'agua PNG sobreviveu", C.get("/me", headers=h(dona)).json()["tem_logo"], True)
+checa("a retencao por conta sobreviveu",
+      [f["ret_bio_dias"] for f in _z["fotografos_lista"] if f["email"] == "dona@t.com"], [0])
+# e o app continua servindo depois de zerar
+C.post("/event", data={"code": "DEPOIS1"}, headers=h(dona))
+_n = C.post("/ingest", data={"event": "DEPOIS1"}, files={"file": ("f.jpg", jpeg(), "image/jpeg")}, headers=h(dona))
+checa("da para usar normalmente depois de zerar", _n.status_code, 200)
+checa("compactar e so do admin", C.post("/admin/compactar", headers=h(dona)).status_code, 403)
+checa("admin compacta", C.post("/admin/compactar", headers=h(chefe)).status_code, 200)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)
