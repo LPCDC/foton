@@ -122,6 +122,7 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/foton.key ubuntu@152.67.46.113 \
 | **FTP engolia foto sem evento** | Sem evento ao vivo o arquivo ficava parado na pasta e nunca era processado — perda silenciosa. Hoje vai para fila de pendentes e entra ao abrir o evento. |
 | **Usuário de FTP só no boot** | Conta criada depois não conectava a câmera até reiniciar o serviço. Hoje o login é conferido no banco na hora. |
 | **Selfie "invertida"** | O preview mostrava a cena como a lente vê; quem se olha espera espelho. Espelha-se **só o preview** (CSS) — a foto salva fica na orientação real. |
+| **`/signup` podia reivindicar um login de admin** | O cadastro é aberto e **não conferia a lista de admins**, que vive no código de um **repo público**. Se um login de admin não tivesse conta, qualquer um se cadastrava com ele e virava admin: lia todos os contatos, apagava contas, trocava senhas. Fechado em 2026-08-29 (403), com teste. **Rota que concede poder precisa conferir quem pode.** |
 | **Deploy tem ~25 s de 502** | O auto-update reinicia o serviço. **Não fazer deploy durante evento da cliente.** |
 
 ## 8. Estado atual (o que funciona hoje)

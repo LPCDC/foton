@@ -296,3 +296,26 @@ Preço final (aguarda EXP-10, custo por evento real) · gateway de pagamento (p�
   - **Aberto:** se um dia a foto deixar de ser pública (link com escopo/expiração, como
     a §7 do CLAUDE.md prevê), este QR passa a precisar de um token próprio.
     `UNKNOWN — REQUIRES EXPERIMENT` até haver decisão sobre link temporário.
+
+## ADR-0021 — Retenção de biometria POR CONTA (álbum permanente)
+- **Status:** ACCEPTED — em produção
+- **Data:** 2026-08-29
+- **Decisão:** coluna `photographer.ret_bio_dias`. `NULL` = política geral (7 dias);
+  `0` = **não expira**; `N` = N dias. Ligado só pelo admin, em `/admin/retencao`.
+- **Contexto:** apareceu um terceiro tipo de uso — **álbum permanente** (GLAMON, salão em
+  Santos): as **mesmas pessoas** voltam toda semana. Com os 7 dias globais, cada
+  colaboradora refaria a selfie a cada 7 dias, o que inviabiliza o uso.
+- **Alternativas:** baixar a retenção global (**recusado** — enfraquece a proteção de todo
+  mundo por causa de um caso) · ignorar e deixar refazer a selfie (mata o caso de uso) ·
+  **por conta**, que é o que se fez.
+- **Justificativa:** a retenção curta é uma proteção de dado sensível, não um detalhe de
+  implementação. Afrouxar tem que ser **explícito, restrito e visível** — nunca o padrão.
+- **Consequências:**
+  - É do **admin**, pede confirmação na tela, e o painel mostra em quais contas está
+    ligado. Ninguém liga sem querer.
+  - **Só faz sentido com base legal para isso.** Álbum de empresa com colaborador tem
+    relação continuada; festa com convidado desconhecido **não tem**. Não ligar por
+    conveniência.
+  - `docs/TESTES.md` seção [17]: a biometria da conta isenta sobrevive à limpeza e a das
+    outras não — as duas metades testadas.
+  - Padrão de créditos subiu de 20 para **100** (`FOTON_CREDITOS_INICIAIS`).
