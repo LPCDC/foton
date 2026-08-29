@@ -123,6 +123,7 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/foton.key ubuntu@152.67.46.113 \
 
 **Fotógrafa:** conta com senha · criar/encerrar/apagar evento · marca d'água própria ·
 QR (tela cheia + imprimível) · upload em lote com barra de progresso e retry ·
+**receber fotos pelo menu "Compartilhar" do Android (PWA instalado)** ·
 apagar foto · convidados ao vivo · contatos · resumo ao encerrar · **FTP da câmera** ·
 créditos · PWA · faixa fixa com código + status "recebendo".
 
@@ -192,8 +193,16 @@ BLOB no SQLite × 7 backups (disco).
    após o disparo → Envio automático: Ativar`. Com isso **cada foto cai sozinha no
    celular dela**, sem tocar na câmera. Metade do caminho já está resolvida.
 
-   **O elo que falta:** celular → Fóton, automático. Hoje ela ainda precisa
-   selecionar e enviar à mão. Opções em `docs/PILOTO-1.md`.
+   **O elo que faltava — FEITO em 2026-08-29 (ADR-0018):** com o app instalado, o
+   **Fóton aparece no menu "Compartilhar" do Android**. Ela seleciona o lote na galeria,
+   toca em Compartilhar → Fóton, e **dentro do app não toca em mais nada** — o lote entra
+   sozinho no último evento que ela abriu. Medido em produção: 2 gestos no app → **0**.
+   **Ressalva honesta:** a seleção das fotos na galeria continua sendo humana, e nenhuma
+   API web no Android muda isso. Por 100 fotos: ~106 gestos antes → **~5 se a galeria
+   dela selecionar por arrasto, ~103 se não**. Qual dos dois é
+   `UNKNOWN — REQUIRES EXPERIMENT` (5 minutos no celular dela). As duas alternativas de
+   zero gesto — EOS Utility num notebook, ou app Android nativo — estão orçadas em
+   `docs/PILOTO-1.md`, aguardando decisão do dono.
 
    T6s (760D, 2015): envio automático após disparo provavelmente **não existe**
    (recurso de gerações novas) — `UNKNOWN — REQUIRES EXPERIMENT`.

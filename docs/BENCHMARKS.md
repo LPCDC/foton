@@ -187,3 +187,80 @@ Todos `UNKNOWN` até o S0.
   arquivo original e não pode ser reduzido no cliente.
 - **Ressalva medida:** numa origem perto de 4000 px de lado maior a saída fica 2000 px em vez de
   2048 (2,3% menor). Numa foto de câmera de 6000×4000 a saída é **idêntica**.
+
+---
+
+**2026-08-29 · Gestos humanos até a foto entrar no Fóton — Web Share Target** — produção
+(`https://app.foton.app.br`), Chrome, service worker ativo e controlando
+
+**Por que medir isto:** a promessa feita à cliente é "clicar e a foto já ir pro Fóton". A
+R8 já resolve a primeira metade sozinha (`Envio automático` deposita cada foto no celular).
+O que sobrou é gesto humano no celular — e gesto é a unidade que decide se ela usa ou
+abandona o produto no meio da festa.
+
+**Método:** contador de cliques instalado na página real (`addEventListener('click', …,
+true)` em `button/.evt/label/a`), fluxo disparado com cliques e submissão de formulário
+reais, contra produção. O POST de compartilhamento foi reproduzido exatamente como o
+Android faz: `<form method=POST action=/compartilhar enctype=multipart/form-data>` com o
+campo `fotos`. Reprodutível: as chamadas estão no corpo desta seção.
+
+### Medido — gestos DENTRO do Fóton, por lote
+
+| Caminho | Gestos no Fóton | O que ela toca |
+|---|---|---|
+| Antigo (`Enviar foto da câmera`) | **2** | toca no evento · toca em "Enviar foto da câmera" |
+| Novo (`Compartilhar → Fóton`) | **0** | nada — o lote entra sozinho no evento certo |
+
+Cenário do teste = o cenário real dela: **5 eventos ao vivo na conta** (eventos antigos
+nunca foram encerrados). Mesmo assim: 0 gestos, e as fotos foram para o evento certo
+(o último que ela abriu), com os outros 4 eventos intactos.
+
+| Verificação em produção | Resultado |
+|---|---|
+| 5 fotos compartilhadas → publicadas | 5/5, **10,4 s** o lote (≈2,1 s cada) |
+| 2 fotos com rosto de verdade pelo share | publicadas, **1 rosto detectado**, marca d'água aplicada |
+| Caminho antigo depois de mexer | 2/2 publicadas em **1,9 s** — intacto |
+| Evento de destino entre 5 ao vivo | correto; os outros 4 sem nenhuma foto a mais |
+| Cache do lote depois do envio | **vazio** — não fica foto de terceiro no celular |
+| Sem service worker: `POST /compartilhar` | **200** com página explicando (antes: **405**) |
+| Deslogada no meio | lote **espera**, sobe sozinho depois do login — nada perdido |
+
+### Contado, NÃO medido — o fluxo inteiro por 100 fotos
+
+Os gestos do lado do Android (galeria, menu Compartilhar) **não foram medidos**: não há
+aparelho Android nesta sessão. A contagem abaixo vem do fluxo documentado do Android.
+
+| Etapa | Antigo | Novo |
+|---|---|---|
+| abrir o app / a galeria | 1 | 1 |
+| navegar até a pasta da Canon | ~2 | 0 |
+| entrar em modo de seleção | 0 | 1 |
+| **selecionar 100 fotos** | **100** | **99 tocando uma a uma, ou 1 arrastando** |
+| confirmar / Compartilhar | 1 | 1 |
+| escolher o Fóton no menu | 0 | 1 |
+| dentro do Fóton (medido) | 2 | **0** |
+| **total por 100 fotos** | **~106** | **~103 tocando · ~5 arrastando** |
+
+### Leitura honesta
+
+- O que este trabalho eliminou de fato: **os 2 gestos dentro do Fóton e a navegação de
+  pastas**. Isso está medido e está em produção.
+- O que ele **não** eliminou: **a seleção das fotos na galeria continua sendo humana.**
+  Nenhuma API web no Android permite um site enxergar a galeria ou uma pasta — o
+  `showDirectoryPicker()` só existe no Chrome de desktop. Não há gambiarra possível aqui.
+- Portanto o ganho real depende de um fato do aparelho dela:
+  **`UNKNOWN — REQUIRES EXPERIMENT`: a galeria da Patrícia seleciona por arrasto
+  (segurar a primeira foto e arrastar) ou "selecionar tudo"?**
+  - **Se sim:** ~5 gestos por 100 fotos, contra ~106. Promessa cumprida na prática.
+  - **Se não:** ~103 contra ~106. A promessa **não** está cumprida e a decisão passa para
+    as alternativas de zero gesto (`docs/PILOTO-1.md`).
+- **Experimento para fechar isto (5 minutos, no celular dela):** abrir a galeria, segurar
+  uma foto e arrastar o dedo sobre as seguintes. Contar quantos toques para marcar 20.
+  Depois: Compartilhar → Fóton, e cronometrar até a última foto aparecer no painel.
+- **Lotes grandes, não pequenos:** o custo fixo do share (~4 gestos) só compensa se ela
+  mandar muitas fotos de uma vez. Compartilhar de 10 em 10 dá ~150 gestos por 100 fotos —
+  **pior** que o caminho antigo. Isso precisa entrar no roteiro do dia.
+- **Não medido aqui:** se o Fóton de fato aparece no menu Compartilhar do celular dela.
+  Isso exige o app instalado como PWA num Android real — `UNKNOWN — REQUIRES EXPERIMENT`.
+  Todo o resto da cadeia (POST do Android → service worker → cache → app → `/ingest` →
+  reconhecimento) está verificado em produção acima.

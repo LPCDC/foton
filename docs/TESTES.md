@@ -23,7 +23,13 @@ ali ele é o que está sendo testado. Nas camadas acima ele é dublado, porque p
 `cv2` e `insightface`. Cobre: portão anônimo, portão de outra conta, caminho feliz da
 fotógrafa, caminho do convidado, evento nasce com dono, encerrar/apagar, faixa do
 evento ("está chegando?"), freio de login, torre de controle do admin, encerrar conta.
-**46 checagens, 46 passando.**
+**63 checagens, 63 passando.**
+
+A seção [11] do `test_autorizacao.py` cobre o **Web Share Target**: o manifest declara
+`share_target` com o campo `fotos` dentro do scope · o service worker atende o POST e
+responde 303 · o `activate` **não** apaga o cache do lote (apagaria fotos em trânsito) ·
+o caminho antigo continua no HTML · e, sem service worker, `POST /compartilhar` devolve
+página explicando em vez de 405 **sem virar upload anônimo** (nenhuma foto entra).
 
 `test_ftp_camera.py` testa o servidor FTP isoladamente (sem subir o FastAPI): fila de
 pendentes, descarte por idade, login conferido no banco na hora, semente não-derivável,
@@ -62,6 +68,8 @@ perderam, o que a fotógrafa precisou digitar.
 | Upload em lote / retry | contrato | ❌ falta | rede cai no meio: nenhuma foto perdida |
 | LGPD (exclusão, expiração automática) | contrato | ⚠️ parcial | exclusão manual coberta; expiração por tempo (`store.expirar`) sem teste |
 | Disco / rajada | carga | ✅ medido em produção | ver BENCHMARKS.md 2026-08-28: 1 foto e rajada de 4, com e sem redução no celular |
+| Compartilhar (Web Share Target) | contrato + navegador | ✅ 17 checagens + ponta a ponta em produção | ver `docs/BENCHMARKS.md` 2026-08-29 |
+| Fóton no menu Compartilhar de um Android real | ensaio real | ❌ nunca feito | exige o PWA instalado no celular dela |
 | Câmera Canon física | ensaio real | ❌ nunca feito | `docs/ROTEIRO-CAMERAS.md` — bloqueador do piloto |
 | Front (galeria, lightbox, seleção múltipla) | manual | manual | fica manual por ora — 1 página, sem framework |
 

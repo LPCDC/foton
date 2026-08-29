@@ -32,18 +32,94 @@ Falhou qualquer um → **no-go**, conserta e repete. Sem negociar critério depo
 | | Bloqueador | Estado (2026-08-28) |
 |---|---|---|
 | **B1** | **Chrome mostra "Site perigoso"** no celular do convidado (reputação do domínio `duckdns.org`, não é o certificado). Correção: **domínio próprio**. | **EM ANDAMENTO** — `foton.app.br` registrado no Registro.br; DNS em propagação; script `infra/dominio.sh` pronto e commitado (mantém o duckdns funcionando em paralelo). Falta: propagação terminar + rodar o script no Cloud Shell. |
-| **B2** | **Qual câmera realmente envia sozinha.** A premissa "R8 tem FTP nativo" **estava errada** — confirmado: a R8 não tem FTP; só corpos superiores (R6/R6 II/R5/R3) têm. | **ENTENDIDO, não testado com hardware real.** O caminho FTP foi validado ponta a ponta com cliente de script (login, envio, foto entrando sozinha) — falta confirmar com uma câmera Canon física qual modelo ela realmente tem (`docs/ROTEIRO-CAMERAS.md`). |
+| **B2** | **Como a foto sai da câmera dela.** A premissa "R8 tem FTP nativo" **estava errada**: nem a R8 nem a T6s têm FTP. | **CAMINHO ENTREGUE, FALTA O ENSAIO.** O elo celular → Fóton foi construído e está em produção: menu "Compartilhar" do Android → Fóton, **zero gesto dentro do app** (ADR-0018, medido em `docs/BENCHMARKS.md`). Falta com hardware real: (a) o Fóton aparece no menu Compartilhar do celular dela? (b) a galeria dela seleciona por arrasto? (c) a T6s tem envio automático após o disparo? Os três são `UNKNOWN — REQUIRES EXPERIMENT` (`docs/ROTEIRO-CAMERAS.md`). |
 | **B3** | **Rajada**: 1 vCPU, foto de câmera grande domina o tempo. | **MITIGADO, não eliminado.** Reduzir a foto no celular antes de subir (2,9× mais rápido) + `Image.draft()` no servidor (2,7× mais rápido). Medido: 1 foto isolada agora cabe folgado no SLA de 10s; rajada de 20 ainda não (~46s extrapolado, era ~125s). |
 | **B4** | **Disco**: fotos são BLOB no SQLite × 7 backups completos. | **MEDIDO, rebaixado.** 40,5 GB livres de 48,3 GB, banco de 3,3 MB — folga real, não é risco imediato. `/admin/saude` expõe o número e alerta se passar de 80%. |
 | **B5** | Monitor externo **nunca executou** e não tinha a chave do WhatsApp. | **PARCIAL.** Secrets (`WA_PHONE`, `WA_APIKEY`) configurados no GitHub; CallMeBot testado 2x sem confirmação de entrega (chave pode precisar reativação). A aba Actions **não aparece** no repositório do dono — sinal de que Actions está desabilitado nas configurações; sem isso o workflow nunca dispara e não há alerta de queda algum hoje. **Ação do dono:** Settings → Actions → General → habilitar. |
 
-## Caminho da foto — decidir no encontro
+## Caminho da foto — estado em 2026-08-29
 
-1. **Celular (funciona com qualquer câmera, inclusive a T6s):** cartão/Wi-Fi → celular → app envia em lote. É o caminho **garantido**. Deve ser o padrão do piloto.
-2. **FTP direto (a câmera envia sozinha):** só em corpo que tem FTP no menu. **Não é o R8.** Se ela tiver um R6/R6 II, é aí que brilha. Tratar como **bônus**, não como a promessa.
+Inventário fechado (não perguntar de novo): **Canon R8 + Canon T6s (760D)**, e
+**nenhuma das duas tem FTP** — verificado no menu das duas, presencialmente. O servidor
+FTP do Fóton funciona, mas **não serve para esta cliente**.
 
-> Regra para o encontro: **fotografar a etiqueta/menu das duas câmeras** e conferir
-> se existe "Transferência FTP" no menu de rede. Não aceitar "acho que tem".
+1. **Celular → Fóton pelo menu "Compartilhar"** (feito, em produção — ADR-0018). A R8
+   deposita cada foto no celular sozinha (`Funções de comunicação → Enviar para
+   smartphone após o disparo → Envio automático`); ela seleciona o lote na galeria e
+   toca em Compartilhar → Fóton. **Dentro do Fóton: zero gesto.** É o padrão do piloto.
+2. **Celular → Fóton pelo botão "Enviar foto da câmera"** (o caminho antigo, intacto).
+   Funciona sem instalar nada e é o degrade quando o app não está instalado como PWA.
+3. **FTP direto:** só em corpo que tem FTP no menu. Não é nenhuma das duas dela. Fica
+   guardado para outros fotógrafos, não para o piloto.
+
+### O que o "Compartilhar" resolveu e o que NÃO resolveu
+
+**Resolveu:** os gestos dentro do Fóton (2 → 0, medido) e a navegação de pastas.
+**Não resolveu:** **a seleção das fotos na galeria continua sendo humana.** Nenhuma API
+web no Android deixa um site enxergar a galeria ou vigiar uma pasta (`showDirectoryPicker()`
+só existe no Chrome de desktop). Não há gambiarra web possível aqui.
+
+Por 100 fotos, num lote só (ver `docs/BENCHMARKS.md` para o método):
+~106 gestos antes · **~5 depois, SE a galeria dela selecionar por arrasto** ·
+~103 depois, se ela tiver que tocar foto por foto.
+
+> **`UNKNOWN — REQUIRES EXPERIMENT` — é o número que decide.** Experimento de 5 minutos
+> no celular dela: abrir a galeria, segurar uma foto, arrastar o dedo sobre as seguintes,
+> e contar os toques para marcar 20. Se arrastar funcionar, a promessa está cumprida e
+> nada mais precisa ser construído. Se não, decidir entre as alternativas abaixo.
+
+> Também não medido: se o Fóton **aparece** no menu Compartilhar do aparelho dela. Exige
+> o app instalado como PWA num Android real. Se ele já estiver instalado, pode precisar
+> ser **reinstalado** para o Chrome reler o manifest.
+
+## As duas alternativas de ZERO gesto por foto — decisão do dono
+
+Custos abaixo são **estimativa de engenharia**, não medição.
+
+### A) EOS Utility num notebook + pasta vigiada
+
+- **Como funciona:** EOS Utility (software oficial da Canon, grátis) recebe cada disparo
+  e grava numa pasta do notebook automaticamente. O Fóton vigia essa pasta e sobe cada
+  arquivo novo. **Gesto por foto: zero.**
+- **Cobre as duas câmeras.** É a única opção que provadamente serve para a T6s também —
+  a T6s por USB é caminho certo; por Wi-Fi (modo "EOS Utility") é
+  `UNKNOWN — REQUIRES EXPERIMENT`.
+- **Custo:** o menor dos dois. Não precisa de app novo: o Chrome de desktop tem
+  `showDirectoryPicker()`, então a pasta vigiada vira uma tela dentro do próprio Fóton.
+  Estimativa: **1 sessão para construir + 1 para endurecer** (arquivo pela metade sendo
+  gravado, duplicata, reconexão), mais um ensaio com a câmera de verdade.
+- **No dia do evento:** notebook ligado e num lugar seguro · cabo USB até a câmera (limita
+  o quanto ela anda) ou Wi-Fi para EOS Utility (sem cabo, mas com alcance e estabilidade
+  a verificar) · mais um aparelho para carregar, montar e dar defeito.
+
+### B) App Android nativo vigiando a pasta
+
+- **Como funciona:** a Camera Connect já deposita as fotos da R8 no celular. Um app nosso
+  vigia essa pasta e sobe cada arquivo novo. **Gesto por foto: zero, e sem notebook.**
+- **Cobre bem a R8.** Para a T6s depende de a câmera ter envio automático após o disparo,
+  que é recurso de geração nova — `UNKNOWN — REQUIRES EXPERIMENT`, provavelmente não tem.
+- **Custo:** o maior dos dois, e o único que cria um **segundo artefato para manter**.
+  Projeto Android de verdade: serviço em primeiro plano com notificação (restrição de
+  background do Android 8+), acesso à pasta sob armazenamento com escopo do Android 11+,
+  isenção de otimização de bateria, assinatura, e distribuição fora da Play Store
+  (instalação lateral) ou uma publicação na loja. Estimativa: **várias sessões**, mais
+  manutenção a cada versão do Android.
+- **No dia do evento:** instalar uma vez · manter Camera Connect e o app nosso vivos ao
+  mesmo tempo · celular acordado e no carregador · sem notebook e sem cabo.
+
+### Recomendação
+
+**Rodar o experimento dos 5 minutos antes de escolher.** Se a galeria dela selecionar por
+arrasto, o que já está em produção cumpre a promessa e as duas alternativas viram
+pós-piloto. Se não, **A** é a escolha: custa muito menos, cobre as duas câmeras, e não
+cria um app para manter — o preço é levar um notebook para o evento.
+
+### Higiene que apareceu na medição
+
+A conta dela tem **5 eventos marcados "ao vivo"** porque eventos antigos nunca foram
+encerrados. Para o share não ter que perguntar o destino, o Fóton agora manda para o
+**último evento que ela abriu**. Ainda assim, encerrar os eventos velhos antes do piloto
+elimina uma classe inteira de confusão.
 
 ## Roteiro do dia (ensaio, antes do evento pago)
 
