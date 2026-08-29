@@ -183,7 +183,7 @@ input{font-family:inherit}
     radial-gradient(120% 140% at 100% 0%, rgba(232,217,176,.13), transparent 60%),
     var(--surface);
   border:1px solid var(--line);border-radius:var(--r);padding:20px 21px}
-.credit .row{display:flex;justify-content:space-between;align-items:baseline}
+.credit .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
 .credit .lbl{font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .credit .mode{font-size:13px;color:var(--dim);font-weight:600}
 .credit .big{display:flex;align-items:baseline;gap:9px;margin-top:10px}
@@ -446,8 +446,8 @@ input{font-family:inherit}
         <p class="lede">Você fotografa. A imagem é tratada, reconhece quem está nela e cai sozinha na galeria da pessoa — ao vivo, sem ninguém instalar nada.</p>
         <div class="entry">
           <button class="entry-card" onclick="entrarComoFotografo()">
-            <span class="ec-t">Sou fotógrafo</span>
-            <span class="ec-s">Criar evento e enviar fotos</span>
+            <span class="ec-t">Vou fotografar</span>
+            <span class="ec-s">Com câmera ou com o celular mesmo</span>
             <span class="ec-go">→</span>
           </button>
           <button class="entry-card ghost" onclick="entrarConvidado()">
@@ -545,7 +545,7 @@ input{font-family:inherit}
   <section class="screen" id="s-dash">
     <div class="head">
       <div class="mark" role="img" aria-label="Fóton"></div>
-      <div class="word">Patrícia<small>painel do fotógrafo</small></div>
+      <div class="word">Patrícia<small>meu painel</small></div>
       <div class="grow"></div>
       <span class="srv" id="srv-status"><i></i><span>servidor</span></span>
       <button class="tag-btn" id="btn-admin" style="display:none;margin-left:6px" onclick="abrirAdmin()">admin</button>
@@ -695,6 +695,12 @@ input{font-family:inherit}
     <h1 class="title" id="ev-title">Evento</h1>
     <p class="subtitle"><span class="pill livepill" style="margin-right:4px"><span class="livedot"></span><span class="live-txt">AO VIVO</span></span> <span id="ev-date-lbl">hoje</span></p>
 
+    <!-- Enviar foto e a acao que ela repete a festa inteira; o QR ela usa uma vez,
+         no comeco. Estava abaixo da dobra, depois do QR + 5 botoes + 2 numeros:
+         num celular so aparecia rolando. Subiu para o topo, o QR segue logo abaixo. -->
+    <input type="file" id="live-upload" accept="image/*" multiple style="display:none" onchange="uploadPhoto(event)">
+    <button class="btn primary block" id="ev-shoot" style="margin-bottom:16px" onclick="shootPhoto()">Simular disparo</button>
+
     <div class="ticket">
       <span class="klbl">Convidado · aponte a câmera</span>
       <canvas id="qr" width="176" height="176"></canvas>
@@ -703,7 +709,6 @@ input{font-family:inherit}
       <span class="codelbl">toque no código para copiar</span>
     </div>
     <a id="ev-guestlink" class="link" target="_blank" rel="noopener" style="display:none;text-align:center;font-size:13px;margin-top:8px;word-break:break-all"></a>
-    <input type="file" id="live-upload" accept="image/*" multiple style="display:none" onchange="uploadPhoto(event)">
     <div class="actions-row" id="ev-actions">
       <button class="btn primary" onclick="abrirQR()">Mostrar QR grande</button>
       <button class="btn ghost" onclick="compartilharConvite()">Convite</button>
@@ -722,9 +727,6 @@ input{font-family:inherit}
     <div class="live-head">
       <span class="l">Feed ao vivo</span>
     </div>
-    <!-- Enviar foto e a acao MAIS importante do evento inteiro. Estava como
-         botao fantasma pequeno no canto; agora e o botao primario, largo. -->
-    <button class="btn primary block" id="ev-shoot" style="margin-bottom:14px" onclick="shootPhoto()">Simular disparo</button>
     <div class="grid" id="ev-grid">
       <div class="empty" id="ev-empty">Nenhuma foto ainda.</div>
     </div>
@@ -1020,6 +1022,52 @@ function go(id){
   if(id==='dash'){renderDash();checarServidor();sincronizarEventos();}
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+
+/* =============== BOTAO VOLTAR DO CELULAR ===============
+   O app tem 16 telas mas so tinha UMA entrada no historico do navegador. Resultado:
+   o Voltar do Android nao voltava uma tela — SAIA DO SITE. Era o motivo de ter que
+   reabrir o Foton o tempo todo, e no meio de um evento isso e grave.
+
+   Nao adianta `beforeunload`: em PWA instalado o Android costuma ignorar, o texto do
+   aviso e do navegador (nao da para explicar nada) e ele ainda incomodaria em toda
+   saida intencional.
+
+   O que se faz: uma entrada "sentinela" no historico. Cada Voltar cai aqui, a gente
+   decide para onde ir e recoloca a sentinela. Na tela raiz (landing / painel / galeria
+   do convidado) nao ha para onde voltar — ai sim vale o aviso, no padrao que todo app
+   Android usa: toque de novo para sair. */
+const VOLTAR_PARA = {
+  'privacidade': ()=>voltarDaPrivacidade(),
+  'guia':        ()=>sairGuia(),
+  'login':       ()=>go('landing'),
+  'instalar':    ()=>go(_voltarDeInstalar||'dash'),
+  'conta':       ()=>go('dash'),
+  'admin':       ()=>go('dash'),
+  'create':      ()=>go('dash'),
+  // sem stopEvent(): o botao da tela diz "encerrar e voltar", mas um Voltar sem
+  // querer NAO pode encerrar o evento dela. So para de pedir estatistica.
+  'event':       ()=>{ clearInterval(state.liveTimer); go('dash'); },
+  'g-code':      ()=>home(),
+  'g-start':     ()=>home(),
+  'g-consent':   ()=>go('g-start'),
+  'g-selfie':    ()=>go('g-consent'),
+};
+function telaAtiva(){
+  const el=document.querySelector('.screen.active');
+  return el ? el.id.replace(/^s-/,'') : '';
+}
+function armarVoltar(){ try{ history.pushState({foton:1},''); }catch(e){} }
+let _pedidoDeSaida=0;
+window.addEventListener('popstate',()=>{
+  const t=telaAtiva(), f=VOLTAR_PARA[t];
+  if(f){ armarVoltar(); f(); return; }                 // volta uma tela e recoloca a sentinela
+  if(Date.now()-_pedidoDeSaida < 3000){ history.back(); return; }   // 2o toque em 3s: sai mesmo
+  _pedidoDeSaida=Date.now(); armarVoltar();
+  const ev=state.live, naGaleria=(t==='g-gallery');
+  toast(ev ? `Evento "${ev.name}" esta ao vivo — toque em voltar de novo para sair`
+      : naGaleria ? 'Suas fotos ficam guardadas — toque em voltar de novo para sair'
+      : 'Toque em voltar de novo para sair do Foton');
+});
 
 /* ================== CONTA REAL (login/cadastro com senha) ================== */
 let SESSAO=null;
@@ -1564,7 +1612,8 @@ function openEvent(ev,opts){
   document.getElementById('ev-nphotos').textContent=ev.photos;
   document.getElementById('ev-nguests').textContent=ev.guests;
   drawQR(ev.code||'DEMO');renderEventGrid();go('event');
-  const sb=document.getElementById('ev-shoot'); if(sb) sb.textContent=LIVE?'Enviar foto da câmera':'Simular disparo';
+  // "da camera" excluia quem fotografa com o proprio celular — que o app ja aceita
+  const sb=document.getElementById('ev-shoot'); if(sb) sb.textContent=LIVE?'📷  Enviar fotos':'Simular disparo';
   const bp=document.getElementById('btn-preview'); if(bp) bp.style.display=LIVE?'none':'';
   const ac=document.getElementById('ev-actions'); if(ac) ac.style.display=LIVE?'flex':'none';
   if(LIVE){
@@ -1584,7 +1633,7 @@ function openEvent(ev,opts){
 }
 function renderEventGrid(){
   const g=document.getElementById('ev-grid'),ev=state.live;
-  if(!ev._photos.length){g.innerHTML=`<div class="empty">${LIVE?'Nenhuma foto ainda.<br>Toque em <b>Enviar foto da câmera</b> e escolha um retrato nítido.':'Nenhuma foto ainda.<br>Toque em <b>Simular disparo</b> para ver o feed encher.'}</div>`;return;}
+  if(!ev._photos.length){g.innerHTML=`<div class="empty">${LIVE?'Nenhuma foto ainda.<br>Toque em <b>Enviar fotos</b> — dá para tirar na hora ou escolher da galeria.':'Nenhuma foto ainda.<br>Toque em <b>Simular disparo</b> para ver o feed encher.'}</div>`;return;}
   g.innerHTML='';
   const ordem=ev._photos.slice().reverse();
   ordem.forEach((p,i)=>{
@@ -2449,6 +2498,8 @@ document.addEventListener('visibilitychange',()=>{
 });
 /* carrega eventos persistidos do fotografo (sobrevive a sair/voltar) */
 loadEvents();
+/* sentinela do historico: sem ela o Voltar do celular sai do app (ver VOLTAR_PARA) */
+armarVoltar();
 /* deep-link ?evento=CODE abre como convidado (o que o QR faz) */
 if(_params.get('evento')) openGuest(_params.get('evento'));
 /* veio do QR de uma foto: abre so aquela foto, com Salvar e Compartilhar */

@@ -253,5 +253,20 @@ checa("ensina o caminho manual quando o navegador nao oferece", "Adicionar a Tel
 checa("o titulo de .tips so pega o filho direto", ".tips > b{" in _idx2, True)
 checa("e a versao que quebrava o texto sumiu", (chr(10) + ".tips b{") in _idx2, False)
 
+print("")
+print("[14] Botao Voltar do celular: nao pode SAIR DO APP de qualquer tela")
+_i = _idx2
+checa("existe mapa de para-onde-voltar", "VOLTAR_PARA" in _i, True)
+checa("o popstate e tratado", "addEventListener('popstate'" in _i, True)
+checa("a sentinela do historico e armada no boot", "armarVoltar();" in _i, True)
+checa("tela raiz avisa antes de sair", "voltar de novo para sair" in _i, True)
+# um Voltar sem querer NAO pode encerrar o evento dela
+checa("voltar do evento nao chama stopEvent", "'event':       ()=>{ clearInterval(state.liveTimer); go('dash'); }" in _i, True)
+# a acao mais repetida da festa tem que vir ANTES do QR no HTML (acima da dobra)
+checa("enviar fotos vem antes do QR", _i.find('id="ev-shoot"') < _i.find('class="ticket"'), True)
+checa("o seletor de arquivo veio junto", _i.find('id="live-upload"') < _i.find('class="ticket"'), True)
+checa("rotulo nao exclui quem usa o celular", "da câmera':'Simular" in _i, False)
+checa("a landing fala com quem usa o celular", "Com câmera ou com o celular mesmo" in _i, True)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)
