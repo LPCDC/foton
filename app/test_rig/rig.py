@@ -199,6 +199,13 @@ def health():
 @app.post("/signup")
 def signup(email: str = Form(...), senha: str = Form(...), nome: str = Form(""), marca: str = Form("")):
     if len(senha) < 6: raise HTTPException(400, "senha muito curta (mínimo 6)")
+    # Buraco fechado em 2026-08-29: o cadastro e ABERTO e nao conferia ADMINS. Como a
+    # lista de admins vive no codigo de um repo PUBLICO, bastava alguem se cadastrar com
+    # um login de admin que ainda nao tivesse conta para virar admin — e ler todos os
+    # contatos, apagar contas e trocar senhas. Mesma trava que ja existe em
+    # /conta/credenciais (renomear-se para admin).
+    if email.strip().lower() in ADMINS:
+        raise HTTPException(403, "esse login é reservado")
     if not store.cria_conta(email, senha, nome, marca):
         raise HTTPException(409, "já existe uma conta com esse e-mail")
     c = store.autentica(email, senha)
@@ -456,7 +463,12 @@ def photo_delete(event: str = Form(...), photo_id: str = Form(...), authorizatio
     return {"ok": True}
 
 # ============================ ADMIN ============================
-ADMINS = {e.strip().lower() for e in os.environ.get("FOTON_ADMINS", "admin@foton.com").split(",")}
+# Logins com poder de admin. Vem do ambiente quando definido; o padrao existe para o
+# dono nao ficar trancado fora do proprio painel. Nao ha segredo aqui — o login e
+# publico, a senha nao. E o /signup agora recusa qualquer login desta lista, entao
+# ninguem reivindica um admin que ainda nao tenha conta.
+ADMINS = {e.strip().lower() for e in
+          os.environ.get("FOTON_ADMINS", "admin@foton.com,glamoncoolabs").split(",")}
 
 def _admin(authorization):
     c = _dono(authorization)
@@ -471,7 +483,7 @@ def admin_resumo(authorization: str = Header(None)):
     du = shutil.disk_usage("/")
     return {**store.resumo_geral(),
             "disco_livre_gb": round(du.free / 1e9, 1), "disco_total_gb": round(du.total / 1e9, 1),
-            "credito": store.uso_de_credito(),
+            "credito": store.uso_de_credito(), "admins": sorted(ADMINS),
             "fotografos_lista": store.todos_fotografos()}
 
 @app.get("/admin/contatos")
@@ -621,6 +633,23 @@ def admin_conta_excluir(email: str = Form(...), authorization: str = Header(None
     if not store.apaga_conta(alvo): raise HTTPException(404, "fotógrafo não encontrado")
     log.info('{"stage":"admin","acao":"conta_excluida","alvo":"%s"}' % alvo)
     return {"ok": True}
+
+@app.post("/admin/retencao")
+def admin_retencao(email: str = Form(...), dias: str = Form(""), authorization: str = Header(None)):
+    """Retencao de biometria por conta. dias=0 -> NAO expira; vazio -> politica geral.
+
+    Existe por um caso real: album permanente (GLAMON) onde as MESMAS pessoas voltam
+    toda semana. Com os 7 dias globais elas refariam a selfie a cada semana.
+    Isto AFROUXA uma protecao de dado sensivel — por isso e do admin, e por isso o
+    painel mostra em quais contas esta ligado."""
+    _admin(authorization)
+    alvo = email.strip().lower()
+    if not store.conta(alvo): raise HTTPException(404, "conta não encontrada")
+    d = None if dias.strip() == "" else int(dias)
+    if d is not None and (d < 0 or d > 3650): raise HTTPException(400, "dias fora do intervalo")
+    store.define_retencao_bio(alvo, d)
+    log.info('{"stage":"admin","acao":"retencao_bio","dias":"%s"}' % dias)
+    return {"ok": True, "email": alvo, "ret_bio_dias": d}
 
 @app.post("/admin/senha")
 def admin_senha(email: str = Form(...), nova: str = Form(...), authorization: str = Header(None)):

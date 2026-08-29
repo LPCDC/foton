@@ -49,6 +49,11 @@ def conn():
         _conn.executescript(SCHEMA)
         try: _conn.execute("ALTER TABLE photographer ADD COLUMN logo BLOB")
         except sqlite3.OperationalError: pass   # coluna ja existe (banco de producao antigo)
+        # retencao de biometria POR CONTA. NULL = segue a politica geral (7 dias).
+        # 0 = nao expira — so para album permanente, onde as MESMAS pessoas voltam
+        # toda semana e refazer a selfie a cada 7 dias inviabilizaria o uso.
+        try: _conn.execute("ALTER TABLE photographer ADD COLUMN ret_bio_dias INTEGER")
+        except sqlite3.OperationalError: pass
         _conn.commit()
     return _conn
 
@@ -73,12 +78,14 @@ def confere_senha(senha, guardado):
     except Exception:
         return False
 
+CREDITOS_INICIAIS = int(os.environ.get("FOTON_CREDITOS_INICIAIS", "100"))
+
 def cria_conta(email, senha, nome="", marca=""):
     email = email.strip().lower()
     if q("SELECT 1 FROM photographer WHERE email=?", (email,), "one"):
         return None
     q("INSERT INTO photographer(email,senha,nome,marca,credits,credits_total,criado) VALUES(?,?,?,?,?,?,?)",
-      (email, hash_senha(senha), nome.strip()[:60], marca.strip()[:40], 20, 20, time.time()))
+      (email, hash_senha(senha), nome.strip()[:60], marca.strip()[:40], CREDITOS_INICIAIS, CREDITOS_INICIAIS, time.time()))
     return email
 
 def autentica(email, senha):
@@ -161,10 +168,15 @@ def todos_fotografos():
                     (SELECT code FROM event WHERE dono=p.email)) contatos,
                 (SELECT COALESCE(SUM(LENGTH(bytes)),0) FROM photo WHERE event_code IN
                     (SELECT code FROM event WHERE dono=p.email)) bytes,
+                p.ret_bio_dias,
                 (SELECT MAX(criado) FROM photo WHERE event_code IN
                     (SELECT code FROM event WHERE dono=p.email)) ultima_foto
               FROM photographer p ORDER BY p.criado DESC""", (), "all")
     return [dict(r) for r in rs]
+
+def define_retencao_bio(email, dias):
+    """dias=0 -> biometria NAO expira nessa conta. dias=None -> volta a politica geral."""
+    q("UPDATE photographer SET ret_bio_dias=? WHERE email=?", (dias, (email or "").strip().lower()))
 
 def contatos_todos(limite=300):
     """Todo contato que convidado deixou, em qualquer evento, com o dono do evento.
@@ -275,8 +287,22 @@ def expirar(dias_biometria=7, dias_fotos=90):
     agora = _t.time()
     lim_bio = agora - dias_biometria * 86400
     lim_fot = agora - dias_fotos * 86400
-    # 1) biometria dos convidados (dado sensível) — vida curta
-    gs = q("SELECT id FROM guest WHERE criado < ?", (lim_bio,), "all")
+    # 1) biometria dos convidados (dado sensível) — vida curta.
+    #    Conta com ret_bio_dias definido manda no proprio dado: 0 = nao expira
+    #    (album permanente), N = N dias. Sem valor, vale a politica geral.
+    isentos = [r["email"] for r in (q(
+        "SELECT email FROM photographer WHERE ret_bio_dias IS NOT NULL AND ret_bio_dias=0", (), "all") or [])]
+    gs = []
+    for g in (q("""SELECT g.id, e.dono, p.ret_bio_dias FROM guest g
+                   LEFT JOIN event e ON e.code=g.event_code
+                   LEFT JOIN photographer p ON p.email=e.dono
+                   WHERE g.criado < ?""", (agora,), "all") or []):
+        rd = g["ret_bio_dias"]
+        limite = lim_bio if rd is None else (None if rd == 0 else agora - rd * 86400)
+        if limite is None:
+            continue                      # conta isenta: biometria fica
+        if q("SELECT 1 FROM guest WHERE id=? AND criado < ?", (g["id"], limite), "one"):
+            gs.append(g)
     for g in gs:
         q("DELETE FROM match WHERE guest_id=?", (g["id"],))
         q("DELETE FROM guest WHERE id=?", (g["id"],))

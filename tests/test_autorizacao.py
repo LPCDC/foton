@@ -9,7 +9,7 @@ foto na galeria dos outros e baixava a lista de contatos.
 
     python tests/test_autorizacao.py
 """
-import io, os, sys, tempfile, types
+import io, os, sys, tempfile, time, types
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(RAIZ, "app", "test_rig"))
@@ -117,7 +117,9 @@ checa("passada a janela, volta a entrar", C.post("/login", data={"email": "dona@
 print("\n[8] Torre de controle do admin")
 checa("fotógrafa comum não vê a saúde", C.get("/admin/saude", headers=h(dona)).status_code, 403)
 checa("anônimo não vê", C.get("/admin/saude").status_code, 403)
-chefe = C.post("/signup", data={"email": "chefe@t.com", "senha": "senha123"}).json()["token"]
+# o admin NAO nasce por /signup (ver [16]): a conta tem que pre-existir no banco
+rig.store.cria_conta("chefe@t.com", "senha123", "Chefe")
+chefe = C.post("/login", data={"email": "chefe@t.com", "senha": "senha123"}).json()["token"]
 r = C.get("/admin/saude", headers=h(chefe))
 checa("admin vê", r.status_code, 200)
 s = r.json()
@@ -294,6 +296,33 @@ C.post("/selfie", data={"event": "CONT1", "consent": "true", "nome": "Bia", "con
 _cs = C.get("/admin/contatos", headers=h(chefe)).json()["contatos"]
 checa("traz o contato com o evento e o dono",
       all(k in (_cs[0] if _cs else {}) for k in ("nome", "contato", "evento", "dono", "ts")), True)
+
+
+print("")
+print("[16] Cadastro NAO pode reivindicar um login de admin")
+checa("signup com login de admin JA existente", C.post("/signup", data={"email": "chefe@t.com", "senha": "outra123"}).status_code, 403)
+checa("signup com login de admin SEM conta", C.post("/signup", data={"email": "reservado@t.com", "senha": "outra123"}).status_code, 403)
+checa("e a conta reservada continua sem existir", rig.store.conta("reservado@t.com"), None)
+checa("cadastro normal continua funcionando", C.post("/signup", data={"email": "gente@t.com", "senha": "senha123"}).status_code, 200)
+checa("conta nova nasce com 100 creditos", C.post("/login", data={"email": "gente@t.com", "senha": "senha123"}).json()["credits"], 100)
+
+print("")
+print("[17] Retencao de biometria por conta (album permanente)")
+checa("so admin muda retencao", C.post("/admin/retencao", data={"email": "dona@t.com", "dias": "0"}, headers=h(dona)).status_code, 403)
+checa("anonimo nao muda", C.post("/admin/retencao", data={"email": "dona@t.com", "dias": "0"}).status_code, 403)
+checa("conta inexistente", C.post("/admin/retencao", data={"email": "nao@existe", "dias": "0"}, headers=h(chefe)).status_code, 404)
+checa("admin desliga a expiracao", C.post("/admin/retencao", data={"email": "dona@t.com", "dias": "0"}, headers=h(chefe)).json()["ret_bio_dias"], 0)
+import numpy as _np
+C.post("/event", data={"code": "PERM1"}, headers=h(dona))
+C.post("/event", data={"code": "TEMP1"}, headers=h(outra))
+rig.store.salva_convidado("gperm", "PERM1", _np.zeros(512, _np.float32))
+rig.store.salva_convidado("gtemp", "TEMP1", _np.zeros(512, _np.float32))
+rig.store.q("UPDATE guest SET criado=? WHERE id IN (?,?)", (time.time() - 40 * 86400, "gperm", "gtemp"))
+rig.store.expirar(7, 90)
+_vivos = [r["id"] for r in rig.store.q("SELECT id FROM guest", (), "all")]
+checa("biometria da conta isenta SOBREVIVEU", "gperm" in _vivos, True)
+checa("biometria da conta normal expirou", "gtemp" in _vivos, False)
+checa("admin volta ao padrao", C.post("/admin/retencao", data={"email": "dona@t.com", "dias": ""}, headers=h(chefe)).json()["ret_bio_dias"], None)
 
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

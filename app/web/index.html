@@ -2059,9 +2059,11 @@ async function abrirAdmin(){
         <div class="c-row"><b>Ocupa no banco</b><span>${mb.toFixed(1)} MB <span class="muted">(${disco.toFixed(1)} MB com backup)</span></span></div>
         <div class="c-row"><b>Créditos</b><span>${f.credits} de ${f.credits_total}</span></div>
         <div class="c-row"><b>Última foto</b><span>${desde(f.ultima_foto)}</span></div>
+        <div class="c-row"><b>Biometria do convidado</b><span${f.ret_bio_dias===0?' style="color:var(--warn)"':''}>${f.ret_bio_dias===0?'NÃO expira (álbum permanente)':(f.ret_bio_dias?f.ret_bio_dias+' dias':'7 dias (padrão)')}</span></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
           <button class="btn ghost sm" onclick="admCreditos('${f.email}',10)">+10 créditos</button>
           <button class="btn ghost sm" onclick="admSenha('${f.email}')">Trocar senha</button>
+          <button class="btn ghost sm" onclick="admRetencao('${f.email}',${f.ret_bio_dias===0?'null':'0'})">${f.ret_bio_dias===0?'Voltar a expirar em 7 dias':'Biometria não expira'}</button>
         </div>
       </div>`;}).join('') || '<div class="empty">Nenhuma conta ainda.</div>';
   }catch(e){ toast('Servidor indisponível.'); }
@@ -2125,6 +2127,17 @@ async function admCreditos(email,n){
     const r=await fetch(API+'/admin/creditos',{method:'POST',body:fd,headers:auth()});
     if(!r.ok){ toast('Não consegui dar créditos.'); return; }
     const j=await r.json(); toast(`+${n} créditos — agora ${j.credits}`); abrirAdmin();
+  }catch(e){ toast('Erro de conexão.'); }
+}
+async function admRetencao(email,dias){
+  const desliga = dias===0;
+  if(desliga && !confirm(`Desligar a expiração da biometria de ${email}?
+
+Os vetores faciais dos convidados dessa conta deixam de ser apagados em 7 dias. Só faz sentido em álbum permanente, onde as mesmas pessoas voltam sempre.`)) return;
+  try{ const fd=new FormData(); fd.append('email',email); fd.append('dias',dias===null?'':String(dias));
+    const r=await fetch(API+'/admin/retencao',{method:'POST',body:fd,headers:auth()});
+    if(!r.ok){ toast('Não consegui mudar a retenção.'); return; }
+    toast(desliga?'Biometria dessa conta não expira mais':'Voltou para 7 dias'); abrirAdmin();
   }catch(e){ toast('Erro de conexão.'); }
 }
 async function admSenha(email){
