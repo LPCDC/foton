@@ -64,11 +64,23 @@ CFG
 sudo systemctl daemon-reload && sudo systemctl restart foton
 echo "painel passa a mostrar $PRINCIPAL como servidor de FTP: ok"
 
-sleep 4
+# Esperar o servico VOLTAR antes de testar. O Foton carrega ~380 MB de modelo
+# facial numa VM de 1 GB e leva ~40s para responder. Testar antes disso mostrava
+# um 502 assustador em todos os dominios — parecia que o deploy tinha quebrado,
+# quando na verdade so estava subindo.
+echo; echo -n "aguardando o Foton subir (carrega o modelo facial)"
+for i in $(seq 1 30); do
+  if curl -sf -m 5 "https://$PRINCIPAL/health" >/dev/null 2>&1; then echo " pronto em ~$((i*3))s"; break; fi
+  echo -n "."; sleep 3
+done
+
 echo; echo "=== TESTE ==="
+FALHOU=0
 for d in "${OK[@]}"; do
   printf "  https://%s/health -> " "$d"
-  curl -s -m 20 "https://$d/health" || echo "FALHOU"
+  curl -s -m 20 "https://$d/health" || { echo -n "FALHOU"; FALHOU=1; }
   echo
 done
-echo ">>> app no ar em https://$PRINCIPAL"
+echo
+if [ "$FALHOU" = "0" ]; then echo ">>> TUDO NO AR — https://$PRINCIPAL"
+else echo "!! algum dominio nao respondeu. Ver: sudo systemctl status foton && sudo journalctl -u foton -n 40"; fi

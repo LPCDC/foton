@@ -23,7 +23,8 @@ aparece caem na galeria dele ao vivo.
 
 | | |
 |---|---|
-| **App (tudo)** | **https://getfoton.duckdns.org** |
+| **App (tudo)** | **https://app.foton.app.br** (dominio proprio, desde 2026-08-29) |
+| App (endereco antigo) | https://getfoton.duckdns.org — continua funcionando, mesmo certificado |
 | Servidor | Oracle Cloud Always Free, São Paulo · `152.67.46.113` |
 | Máquina | `VM.Standard.E2.1.Micro` — 1 vCPU, 1 GB RAM + 2 GB swap |
 | Código | https://github.com/LPCDC/foton (público — ver §7) |
