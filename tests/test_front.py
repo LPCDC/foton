@@ -36,45 +36,26 @@ for nome in ("sw.js", "manifest.webmanifest"):
     checa(f"{nome} nao esta vazio", os.path.getsize(os.path.join(WEB, nome)) > 200, True)
 
 print("")
-print("[2] Nenhuma string JavaScript cortada no meio (o erro que apagou o app)")
+print("[2] O JavaScript COMPILA (parser de verdade, nao chute)")
+# Ate aqui eu adivinhava por contagem de aspas, e escapava coisa. Com o Node instalado
+# da para pedir ao parser de verdade. Isto teria pego, sozinho, todos os estragos do
+# dia: string cortada ao meio, funcao com o miolo comido, `let` repetido e um
+# fragmento solto que sobrou de um corte errado.
+import subprocess, tempfile
+_msg = None
+try:
+    _f = tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8")
+    _f.write(js); _f.close()
+    _r = subprocess.run(["node", "--check", _f.name], capture_output=True, text=True)
+    os.unlink(_f.name)
+    _msg = None if _r.returncode == 0 else (_r.stderr.strip().splitlines() or ["erro"])[-1][:90]
+except FileNotFoundError:
+    print("  AVISO: node nao encontrado — checagem de sintaxe PULADA (instale o Node)")
+if _msg is not None:
+    checa("javascript compila", _msg, None)
+elif _msg is None and "AVISO" not in "":
+    checa("javascript compila", True, True)
 
-ASPA_DUPLA = '"'
-ASPA_SIMPLES = "'"
-CRASE = "`"
-
-def limpa(linha):
-    """Deixa so o que conta para saber se sobrou aspa aberta."""
-    t = re.sub(r"\\.", "", linha)                 # escapes: \\' \\" \\n ...
-    t = re.sub(CRASE + "[^" + CRASE + "]*" + CRASE, "", t)   # template que abre e fecha aqui
-    t = re.sub(r"'[^']*'", "", t)                 # string simples completa
-    t = re.sub(r'"[^"]*"', "", t)                 # string dupla completa
-    return t
-
-dentro_de_bloco = False
-dentro_de_template = False
-suspeitas = []
-for n, linha in enumerate(linhas, 1):
-    s = linha.strip()
-    if "/*" in s and "*/" not in s:
-        dentro_de_bloco = True
-        continue
-    if dentro_de_bloco:
-        if "*/" in s: dentro_de_bloco = False
-        continue
-    if s.startswith("//") or s.startswith("*"):
-        continue
-    # template literal aberto em varias linhas: o miolo dele nao e codigo
-    if linha.count(CRASE) % 2:
-        dentro_de_template = not dentro_de_template
-        continue
-    if dentro_de_template:
-        continue
-    t = limpa(linha)
-    if t.count(ASPA_SIMPLES) or t.count(ASPA_DUPLA):
-        suspeitas.append((n, s[:60]))
-checa("linhas com aspas abertas", suspeitas, [])
-
-print("")
 print("[3] As funcoes que o HTML chama existem de verdade")
 chamadas = set(re.findall(r'onclick="([A-Za-z_$][\w$]*)\(', html))
 definidas = set(re.findall(r"(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(", js))
@@ -100,6 +81,14 @@ print("")
 print("[5] Cada funcao so pode ser definida UMA vez")
 todas = re.findall(r"(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(", js)
 checa("funcoes definidas em duplicata", sorted({f for f in todas if todas.count(f) > 1}), [])
+
+print("")
+print("[5a] Nenhuma variavel de topo declarada duas vezes")
+# `let x` repetido e SyntaxError: o arquivo inteiro para de carregar, app em branco.
+# Aconteceu com _camStream, quando reescrevi a camera e a declaracao antiga ficou.
+_decl = re.findall(r"^(?:let|const)\s+([A-Za-z_$][\w$]*)", js, re.M)
+checa("variaveis declaradas em duplicata",
+      sorted({d for d in _decl if _decl.count(d) > 1}), [])
 
 print("")
 print("[5b] Nenhum id repetido no HTML")
