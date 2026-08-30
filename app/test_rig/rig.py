@@ -293,6 +293,46 @@ def _startup():
             time.sleep(12 * 3600)
     threading.Thread(target=_limpeza, daemon=True).start()
 
+def _versao():
+    """Qual codigo esta rodando AGORA na VM.
+
+    Sem isto, 'o push ja subiu?' era fe: um deploy que nao pegou e um deploy que pegou
+    respondiam exatamente igual. Le o SHA do .git sem subprocess (so leitura de
+    arquivo); se nao houver .git, cai para uma impressao digital do proprio fonte, que
+    muda a cada alteracao. Um dos dois sempre responde."""
+    import hashlib as _hl
+    try:
+        d = os.path.dirname(os.path.abspath(__file__))
+        for _ in range(4):
+            g = os.path.join(d, ".git")
+            if os.path.isdir(g):
+                with open(os.path.join(g, "HEAD")) as f:
+                    h = f.read().strip()
+                if not h.startswith("ref:"):
+                    return h[:7]
+                ref = h[4:].strip()
+                alvo = os.path.join(g, ref)
+                if os.path.exists(alvo):
+                    with open(alvo) as f:
+                        return f.read().strip()[:7]
+                pr = os.path.join(g, "packed-refs")     # repo com refs empacotadas
+                if os.path.exists(pr):
+                    with open(pr) as f:
+                        for ln in f:
+                            if ln.rstrip().endswith(" " + ref):
+                                return ln.split()[0][:7]
+                break
+            d = os.path.dirname(d)
+    except Exception:
+        pass
+    try:
+        with open(os.path.abspath(__file__), "rb") as f:
+            return "src:" + _hl.sha256(f.read()).hexdigest()[:7]
+    except Exception:
+        return "desconhecida"
+
+_VERSAO = _versao()
+
 @app.get("/health")
 def health():
     """Saude do PIPELINE, nao so 'o processo respondeu'.
@@ -314,7 +354,7 @@ def health():
         db_ok, db_ms = True, int((time.time() - t0) * 1000)
     except Exception:
         db_ok, db_ms = False, None
-    return {"ok": db_ok, "db": "sqlite", "db_ok": db_ok, "db_ms": db_ms,
+    return {"ok": db_ok, "versao": _VERSAO, "db": "sqlite", "db_ok": db_ok, "db_ms": db_ms,
             "engine": "InsightFace buffalo_s (SCRFD+ArcFace) CPU",
             "engine_carregado": _fa is not None}
 
