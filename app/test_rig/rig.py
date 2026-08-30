@@ -240,7 +240,8 @@ def signup(email: str = Form(...), senha: str = Form(...), nome: str = Form(""),
         raise HTTPException(409, "já existe uma conta com esse e-mail")
     c = store.autentica(email, senha)
     return {"token": store.novo_token(c["email"]), "nome": c["nome"], "marca": c["marca"],
-            "credits": c["credits"], "credits_total": c["credits_total"], "email": c["email"]}
+            "credits": c["credits"], "credits_total": c["credits_total"], "email": c["email"],
+            "admin": c["email"].lower() in ADMINS}
 
 _tentativas = {}          # ip -> [instantes de falha]
 LIMITE_FALHAS, JANELA_S = 10, 600
@@ -268,7 +269,8 @@ def login(request: Request, email: str = Form(...), senha: str = Form(...)):
         raise HTTPException(401, "e-mail ou senha incorretos")
     _tentativas.pop(ip, None)                     # acertou: zera o histórico
     return {"token": store.novo_token(c["email"]), "nome": c["nome"], "marca": c["marca"],
-            "credits": c["credits"], "credits_total": c["credits_total"], "email": c["email"]}
+            "credits": c["credits"], "credits_total": c["credits_total"], "email": c["email"],
+            "admin": c["email"].lower() in ADMINS}
 
 @app.post("/conta/logo")
 async def conta_logo(file: UploadFile = File(...), authorization: str = Header(None)):
@@ -321,10 +323,12 @@ def create_event(code: str = Form(...), brand: str = Form("FÓTON"),
     # ate 8 vezes quando a rede esta ruim (cold start): um unico evento podia queimar 8
     # creditos. `cria_evento` usa INSERT OR REPLACE, entao reenviar o mesmo codigo nao
     # duplicava o evento — so o credito ia embora, em silencio.
-    ja_existia = store.evento(code) is not None
+    # CREDITO DESLIGADO (2026-08-30, decisao do dono): nesta fase tudo e gratis, com
+    # login. As colunas continuam na base para nao perder historico e para o painel do
+    # admin nao quebrar, mas nada e gasto e nada bloqueia. O substituto planejado e
+    # limite de UPLOAD, que mede o que de fato custa (disco e CPU) — docs/PRODUTO.md 3c.
     store.cria_evento(code, dono=(c["email"] if c else None), nome=(name or "Evento"),
                       data=date, marca=brand, auto=0)
-    if c and not ja_existia: store.gasta_credito(c["email"])
     log.info('{"stage":"event","code":"%s","status":"created"}' % code)
     if c:
         # Fotos que a câmera mandou ANTES do evento existir entram agora, sozinhas.

@@ -75,6 +75,9 @@ essenciais = [
     "abrirAdmin", "admZerar", "admCompactar",                 # painel do admin
     "filaGravar", "filaApagar", "filaContar", "retomarFila",  # fila em disco
     "salvarCredenciais",                                      # trocar a propria senha
+    "estadoDaCamera",                                         # "minha camera vai mandar?"
+    "armarToqueLongo", "apagarSelecionadas",                  # segurar para selecionar
+    "excluirMeusDados",                                       # a saida da convidada
 ]
 checa("funcoes essenciais ausentes", [f for f in essenciais if f not in definidas], [])
 
@@ -122,6 +125,24 @@ checa("so apaga da fila DEPOIS de o servidor confirmar",
       _el.find("filaApagar") > _el.find("if(!j)"), True)
 checa("usa IndexedDB (guarda Blob), nao localStorage", "indexedDB.open" in js, True)
 checa("retoma quando a rede volta", "addEventListener('online'" in js, True)
+
+print("")
+print("[6c] O que a decisao do dono tornou obrigatorio")
+# A saida da convidada nao e enfeite: e a condicao do desenho onde o DONO do evento
+# cadastra nome e Instagram dela. Sem botao, "reclame com o dono" deixa de ser resposta.
+checa("saida da convidada visivel na galeria dela",
+      'onclick="excluirMeusDados()"' in html, True)
+# Credito cortado (2026-08-30): tudo gratis com login. Se a interface voltar a mostrar
+# saldo, alguem religou o contador — e ele bloqueia a fotografa no meio de uma festa.
+checa("nenhum resto da interface de credito",
+      [x for x in ('id="credit-n"', 'credit-bar', 'Consome 1 crédito') if x in html], [])
+# O botao de admin dependia de /^admin@/ e o login virou `admin`: o painel existia e
+# nao tinha porta. Quem decide e o servidor.
+checa("admin vem do servidor, nao de regex no login", "SESSAO.admin" in js, True)
+# Segurar a miniatura abria o menu do Chrome em vez de selecionar.
+checa("a miniatura nao e alvo de toque (era ela que abria o menu do navegador)",
+      "pointer-events:none" in html.split(".ph img{")[1][:200], True)
+checa("o toque longo barra o menu de contexto", "contextmenu" in js, True)
 
 print("")
 print("[7] O manifest continua valido (o Compartilhar do Android depende dele)")

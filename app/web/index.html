@@ -183,6 +183,21 @@ input{font-family:inherit}
 .link:hover{text-decoration:underline}
 
 /* ---------- dashboard ---------- */
+/* Cartao da camera no painel. Tres estados e uma luz que se le de longe:
+   verde = chegou foto agora · ambar = configurado, nada chegou ainda · cinza = pelo
+   celular (R8/T6s, que nao tem FTP). Nunca escreve "conectada" quando nao da para saber. */
+.camcard{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;width:100%;
+  text-align:left;padding:16px 18px;border-radius:18px;background:var(--surface);
+  border:1px solid var(--line);color:var(--text);cursor:pointer;transition:transform .14s}
+.camcard:active{transform:scale(.99)}
+.cc-luz{width:14px;height:14px;border-radius:50%;background:var(--dim);flex-shrink:0;
+  box-shadow:0 0 0 4px rgba(255,255,255,.05)}
+.camcard.viva .cc-luz{background:#4ad07a;box-shadow:0 0 0 4px rgba(74,208,122,.16);animation:pulsa 2s ease-in-out infinite}
+.camcard.espera .cc-luz{background:#ffcf7a;box-shadow:0 0 0 4px rgba(255,207,122,.14)}
+@keyframes pulsa{0%,100%{opacity:1}50%{opacity:.45}}
+.cc-txt b{display:block;font-size:17px;font-weight:600;line-height:1.25}
+.cc-txt small{display:block;font-size:15px;color:var(--muted);margin-top:3px;line-height:1.35}
+.cc-go{color:var(--muted);font-size:20px}
 .credit{background:
     radial-gradient(120% 140% at 100% 0%, rgba(232,217,176,.13), transparent 60%),
     var(--surface);
@@ -389,7 +404,14 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .ph{position:relative;aspect-ratio:1;border-radius:13px;overflow:hidden;background:var(--surface-2);
   border:1px solid var(--line-soft);animation:phin .55s cubic-bezier(.2,.8,.25,1.3) both}
-.ph img{width:100%;height:100%;object-fit:cover;display:block}
+/* Segurar o dedo na miniatura abria o menu do Chrome ("salvar imagem", "abrir em
+   nova aba") em vez de selecionar. Duas causas, as duas tratadas aqui:
+   o alvo do toque era o <img> (por isso o navegador ofereceu acoes de IMAGEM), e o
+   texto/imagem ficava selecionavel. pointer-events:none entrega o toque a div .ph,
+   que e quem sabe o que fazer com ele. */
+.ph img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;
+  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.ph{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .ph::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.4),transparent 42%)}
 .ph .wm{position:absolute;right:7px;bottom:6px;font-family:var(--sans);font-size:6.5px;font-weight:700;
   letter-spacing:.06em;color:rgba(255,255,255,.9);z-index:2;text-shadow:0 1px 2px rgba(0,0,0,.5)}
@@ -643,11 +665,20 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
       <button class="tag-btn" id="btn-admin" style="display:none;margin-left:6px" onclick="abrirAdmin()">admin</button>
     </div>
 
-    <div class="credit">
-      <div class="row"><span class="lbl">Créditos</span><span class="mode">pagamento único · sem mensalidade</span></div>
-      <div class="big"><span class="num" id="credit-n">18</span><span class="of">de 20 eventos</span></div>
-      <div class="bar"><i id="credit-bar" style="width:90%"></i></div>
-    </div>
+    <!-- Onde ficava CREDITOS. O credito foi cortado (tudo gratis nesta fase) e o
+         espaco nobre do painel passou a responder a pergunta que ela realmente faz
+         antes de sair de casa: "minha camera vai mandar as fotos?".
+         Honestidade importa aqui: com a R8/T6s NAO existe FTP, entao nao da para
+         dizer "conectada". O que da para dizer com verdade e por onde as fotos
+         entram e se ja entrou alguma. E isso que o cartao mostra. -->
+    <button class="camcard" id="dash-cam" onclick="go('guia')">
+      <span class="cc-luz" id="cc-luz"></span>
+      <span class="cc-txt">
+        <b id="cc-t">Verificando a câmera…</b>
+        <small id="cc-s">um instante</small>
+      </span>
+      <span class="cc-go">→</span>
+    </button>
 
     <div class="stats">
       <div class="stat"><div class="n" id="st-photos">0</div><div class="l">Fotos entregues</div></div>
@@ -773,7 +804,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
   <section class="screen" id="s-create">
     <button class="back" onclick="go('dash')">←&nbsp; voltar</button>
     <h1 class="title">Novo evento</h1>
-    <p class="subtitle">Consome 1 crédito ao iniciar. Você recebe um QR para os convidados.</p>
+    <p class="subtitle">Você recebe um QR para os convidados. Sem custo nesta fase.</p>
     <div class="card">
       <div class="field"><label>Nome do evento</label><input id="ev-name" placeholder="Ex.: Casamento Ana &amp; Léo"></div>
       <div class="field"><label>Data</label><input id="ev-date" type="date"></div>
@@ -1020,6 +1051,13 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
       <button class="link btn-instalar" style="display:none" onclick="instalarApp()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.8" width="11" height="18.4" rx="2"/><path d="M12 7.5v6.4m0 0l-2.4-2.4M12 13.9l2.4-2.4"/></svg> Guardar na tela inicial</button>
     </p>
     <p class="note" style="margin-top:6px"><button class="link" onclick="refazerSelfie()">Não sou eu — tirar outra selfie</button></p>
+    <!-- A SAIDA. Ela e a condicao do desenho onde o dono do evento cadastra nome e
+         Instagram da convidada: se a convidada nao consegue sair sozinha, "reclame
+         com o dono" deixa de ser resposta. Fica na galeria, onde ela esta — nao
+         escondida numa tela de privacidade que ninguem abre. -->
+    <p class="note" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+      <button class="link" style="color:var(--dim)" onclick="excluirMeusDados()">Apagar minha selfie e sair deste evento</button>
+    </p>
   </section>
 
 </div>
@@ -1450,13 +1488,43 @@ async function entrarComoFotografo(){
   go('login');
 }
 
+/* O QUE ESTE CARTAO PODE E NAO PODE AFIRMAR.
+   Com FTP, o servidor sabe de verdade quando a camera se conectou (conectada_ha_s) —
+   ai da para dizer "conectada". Sem FTP (R8 e T6s, verificado na pratica), a foto
+   passa pelo celular e o servidor NAO tem como saber se a camera esta ligada. Nesse
+   caso o cartao diz o caminho e a ultima foto que entrou, e nao inventa conexao. */
+async function estadoDaCamera(){
+  const card=document.getElementById('dash-cam');
+  if(!card) return;
+  const luz=(cls)=>{card.className='camcard'+(cls?' '+cls:'');};
+  const t=document.getElementById('cc-t'), sub=document.getElementById('cc-s');
+  if(!LIVE){ luz(''); t.textContent='Conectar câmera'; sub.textContent='veja como ligar a sua'; return; }
+  try{
+    const r=await fetch(API+'/camera/config',{headers:auth()});
+    if(!r.ok) throw 0;
+    const j=await r.json();
+    const ha=j.conectada_ha_s;
+    if(j.ativo && ha!==null && ha!==undefined && ha<600){
+      luz('viva');
+      t.textContent='Câmera conectada';
+      sub.textContent = ha<60 ? 'enviou agora mesmo pelo FTP'
+                              : 'último envio há '+Math.round(ha/60)+' min · FTP';
+    } else if(j.ativo){
+      luz('espera');
+      t.textContent='Pronta para receber';
+      sub.textContent = j.evento_ao_vivo
+        ? 'FTP ligado, nenhuma foto ainda — evento '+j.evento_ao_vivo
+        : 'FTP ligado. Abra um evento antes de fotografar.';
+    } else {
+      luz('');
+      t.textContent='Sua câmera envia pelo celular';
+      sub.textContent='Canon R8 e T6s não têm FTP. Toque para ver o caminho.';
+    }
+  }catch(e){ luz(''); t.textContent='Conectar câmera'; sub.textContent='toque para ver como'; }
+}
 function renderDash(){
   // numeros REAIS da conta (quando ao vivo); no modo demo, os do mock
-  const cr = SESSAO ? SESSAO.credits : state.credits;
-  const tot = SESSAO ? SESSAO.credits_total : state.totalCredits;
-  document.getElementById('credit-n').textContent=cr;
-  document.querySelector('.credit .of').textContent='de '+tot+' eventos';
-  document.getElementById('credit-bar').style.width=(tot?cr/tot*100:0)+'%';
+  estadoDaCamera();                     // credito saiu daqui; agora o destaque e a camera
   document.getElementById('st-photos').textContent=SESSAO?(SESSAO.total_fotos||0):state.totPhotos;
   document.getElementById('st-guests').textContent=SESSAO?(SESSAO.total_convidados||0):state.totGuests;
   const nomeEl=document.querySelector('#s-dash .word');
@@ -1560,13 +1628,12 @@ async function apagarLogo(){
 function criarEvento(){
   const name=document.getElementById('ev-name').value.trim()||'Evento sem nome';
   const date=document.getElementById('ev-date').value||new Date().toISOString().slice(0,10);
-  const creditos = SESSAO ? SESSAO.credits : state.credits;
-  if(creditos<=0){toast('Seus créditos acabaram. Fale com o Fóton para renovar.');return;}
+
   const brand=(document.getElementById('ev-brand').value||'').trim().slice(0,40) || (SESSAO&&SESSAO.marca)||'';
   const leads=document.getElementById('ev-leads').checked;
   const ev={id:'e'+Date.now(),name,date,photos:0,guests:0,status:'live',code:genCode(),brand,leads};
   state.events.unshift(ev);
-  if(SESSAO) SESSAO.credits=Math.max(0,SESSAO.credits-1); else state.credits--;
+
   saveEvents();
   // registra no servidor em 2º plano e abre a tela na hora (evento novo não tem
   // fotos, então openEvent não precisa consultar o servidor — era isso que criava
@@ -1883,6 +1950,40 @@ function mostrarResumo(ev){
 }
 function fecharResumo(){ document.getElementById('resumo').classList.remove('show'); }
 /* apagar 1 foto */
+/* ===================== SELECIONAR VARIAS (painel da fotografa) =====================
+   Ela tira 200 fotos e 30 sao ruins. Apagar uma a uma, com um confirm() em cada,
+   nao e caminho. Segurar entra no modo e a partir dai um toque marca. */
+let SELF=null;                                    // null = normal; Set de photo_id = selecionando
+function alternarSelFoto(id){ SELF.has(id)?SELF.delete(id):SELF.add(id); renderEventGrid(); barraFoto(); }
+function sairSelFoto(){ SELF=null; renderEventGrid(); barraFoto(); }
+function barraFoto(){
+  let b=document.getElementById('barra-foto');
+  if(!SELF){ if(b)b.remove(); return; }
+  if(!b){ b=document.createElement('div'); b.id='barra-foto'; b.className='barra-sel'; document.body.appendChild(b); }
+  const n=SELF.size;
+  b.innerHTML=`<span class="q">${n?n+(n>1?' fotos selecionadas':' foto selecionada'):'Toque nas fotos'}</span>
+    <button class="btn sm" ${n?'':'disabled style="opacity:.45"'} onclick="apagarSelecionadas()">Apagar</button>
+    <button class="btn ghost sm" onclick="sairSelFoto()">Sair</button>`;
+}
+async function apagarSelecionadas(){
+  const ev=state.live; if(!SELF||!SELF.size||!ev)return;
+  const ids=[...SELF], n=ids.length;
+  if(!confirm(`Apagar ${n} foto${n>1?'s':''}? Sai${n>1?'em':''} também da galeria dos convidados.`))return;
+  SELF=null; barraFoto();
+  ev._photos=ev._photos.filter(p=>ids.indexOf(p.id)<0);
+  ev.photos=ev._photos.length;
+  const el=document.getElementById('ev-nphotos'); if(el) el.textContent=ev.photos;
+  renderEventGrid(); saveEvents();
+  let falhou=0;
+  if(LIVE) for(const pid of ids){
+    try{ const fd=new FormData(); fd.append('event',ev.code); fd.append('photo_id',pid);
+      const r=await fetch(API+'/photo/delete',{method:'POST',headers:auth(),body:fd});
+      if(!r.ok) falhou++;
+    }catch(e){ falhou++; }
+  }
+  toast(falhou ? `${n-falhou} apagada(s), ${falhou} falhou(ram)` : `${n} foto${n>1?'s':''} apagada${n>1?'s':''}`);
+}
+
 async function deletarFoto(pid,ev){
   if(!confirm('Apagar esta foto? Ela sai também da galeria dos convidados.'))return;
   ev._photos=ev._photos.filter(p=>p.id!==pid);
@@ -2024,11 +2125,16 @@ function renderEventGrid(){
     const d=document.createElement('div');d.className='ph';
     const badge=p.faces?`<span class="tag">✓ ${p.faces} rosto${p.faces>1?'s':''}</span>`
                        :`<span class="noface">sem rosto</span>`;
-    d.innerHTML=`<img src="${mini(p.src)}" alt="Foto ${i+1}" loading="lazy">${badge}`;
-    if(p.id){ const x=document.createElement('button');x.className='del';x.innerHTML='×';
+    const marcada = SELF && p.id && SELF.has(p.id);
+    if(marcada) d.className+=' sel';
+    d.innerHTML=`<img src="${mini(p.src)}" alt="Foto ${i+1}" loading="lazy">${badge}`
+      +(SELF?`<span class="marca-sel">${marcada?'✓':''}</span>`:'');
+    if(p.id && !SELF){ const x=document.createElement('button');x.className='del';x.innerHTML='×';
       x.setAttribute('aria-label','Apagar foto');
       x.onclick=(e)=>{e.stopPropagation();deletarFoto(p.id,ev);}; d.appendChild(x); }
-    d.onclick=()=>abrirFoto(ordem,i);
+    // segurar seleciona; no modo selecao o toque marca em vez de abrir
+    if(p.id) armarToqueLongo(d, ()=>{ if(!SELF) SELF=new Set(); SELF.add(p.id); renderEventGrid(); barraFoto(); });
+    d.onclick=()=> (SELF && p.id) ? alternarSelFoto(p.id) : abrirFoto(ordem,i);
     g.appendChild(d);
   });
 }
@@ -2469,6 +2575,8 @@ function renderGuestGrid(){
       d.className='ph'+(p._nova?' nova':'')+(marcada?' sel':'');
       // fora do modo seleção o toque abre a FOTO (não o menu); dentro dele, marca
       d.onclick=()=> SEL ? alternarSel(p.src) : abrirFoto(ordem,i);
+      // segurar entra no modo selecao JA com esta foto marcada
+      armarToqueLongo(d, ()=>{ if(!SEL) SEL=new Set(); SEL.add(p.src); renderGuestGrid(); barraSel(); });
       d.innerHTML=`<img src="${mini(p.src)}" alt="Foto ${i+1}" loading="lazy">`
         +(SEL?`<span class="marca-sel">${marcada?'✓':''}</span>`:'');
       g.appendChild(d);});};
@@ -2477,6 +2585,35 @@ function renderGuestGrid(){
   const tem=(todasAba?guestState.todas.length:c);
   const dl=document.getElementById('g-download'); if(dl) dl.style.display=tem?'':'none';
   const es=document.getElementById('g-escolher'); if(es) es.style.display=(tem>1&&!SEL)?'':'none';
+}
+
+/* ===================== TOQUE LONGO =====================
+   O gesto que todo celular ensina — segurar para selecionar — nao existia: so havia
+   um botao "Escolher algumas", e quem segurava caia no menu do navegador.
+
+   450ms e o limiar do Android. Cancela se o dedo andar mais de 10px, senao rolar a
+   galeria vira selecao sem querer. O contextmenu e barrado no proprio elemento: no
+   iPhone o callout do Safari nao respeita preventDefault em qualquer lugar. */
+function armarToqueLongo(el, aoSegurar){
+  let t=null, x0=0, y0=0, disparou=false;
+  const cancela=()=>{ if(t){clearTimeout(t); t=null;} };
+  el.addEventListener('contextmenu', e=>e.preventDefault());
+  el.addEventListener('touchstart', e=>{
+    const p=e.touches[0]; x0=p.clientX; y0=p.clientY; disparou=false;
+    t=setTimeout(()=>{ disparou=true; t=null;
+      if(navigator.vibrate) try{navigator.vibrate(12);}catch(_){}   // confirma no dedo
+      aoSegurar(); }, 450);
+  }, {passive:true});
+  el.addEventListener('touchmove', e=>{
+    const p=e.touches[0];
+    if(Math.abs(p.clientX-x0)>10||Math.abs(p.clientY-y0)>10) cancela();   // rolagem
+  }, {passive:true});
+  el.addEventListener('touchend', e=>{ cancela();
+    // o toque que virou "segurar" nao pode ABRIR a foto tambem
+    if(disparou){ e.preventDefault(); disparou=false; } });
+  el.addEventListener('touchcancel', cancela, {passive:true});
+  // no computador o equivalente do "segurar" e o botao direito
+  el.addEventListener('mousedown', e=>{ if(e.button===2) aoSegurar(); });
 }
 
 /* ===================== SELEÇÃO MÚLTIPLA (convidado) =====================
@@ -2548,7 +2685,7 @@ async function abrirPrivacidade(){
 function voltarDaPrivacidade(){ go(_voltaPrivacidade||'landing'); }
 async function excluirMeusDados(){
   if(!guestState.id){ toast('Você ainda não registrou uma selfie neste aparelho.'); return; }
-  if(!confirm('Excluir seus dados?\n\nSeu código facial e seus contatos serão apagados, e você deixa de receber as fotos deste evento.'))return;
+  if(!confirm('Apagar minha selfie e sair?\n\n• seu código facial é apagado do servidor\n• você para de receber as fotos deste evento\n• as fotos já salvas no seu celular continuam suas\n\nNão dá para desfazer — mas você pode entrar de novo com uma selfie nova.'))return;
   try{
     const fd=new FormData(); fd.append('guest_id',guestState.id);
     const r=await fetch(API+'/convidado/excluir',{method:'POST',body:fd});
@@ -2561,7 +2698,10 @@ async function excluirMeusDados(){
 }
 
 /* ========================= ADMIN ========================= */
-const EH_ADMIN = () => !!(SESSAO && /^admin@/i.test(SESSAO.email||''));
+/* Era `/^admin@/.test(email)`. O login virou `admin`, sem arroba, entao o teste dava
+   FALSO e o botao de administracao nunca aparecia — o painel existia e nao tinha porta.
+   Quem sabe quem e admin e o servidor (a lista FOTON_ADMINS); o cliente so obedece. */
+const EH_ADMIN = () => !!(SESSAO && SESSAO.admin);
 async function abrirAdmin(){
   go('admin');
   try{

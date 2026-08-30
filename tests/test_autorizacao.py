@@ -406,17 +406,25 @@ checa("o popstate checa a sobreposicao ANTES da tela",
 
 
 print("")
-print("[21] Credito so sai em evento NOVO")
+print("[21] Credito DESLIGADO — nesta fase criar evento e de graca")
+# Ate 2026-08-30 sair 1 credito por evento novo era o comportamento certo, e este
+# teste guardava a regra "8 tentativas do mesmo evento = 1 credito" (bug real: o app
+# repete o POST quando a rede esta ruim e o evento queimava 8). O dono cortou o
+# credito: tudo gratis, com login. O teste agora guarda o OPOSTO — que nada e gasto —
+# porque um contador que volta a descontar em silencio bloquearia a fotografa no meio
+# de uma festa. As colunas continuam na base de proposito (historico + painel do admin).
 _tk = C.post("/signup", data={"email": "cred@t.com", "senha": "senha123"}).json()["token"]
 _c0 = C.get("/me", headers=h(_tk)).json()["credits"]
-# o app tenta ate 8 vezes quando a rede esta ruim; antes cada tentativa queimava 1
 for _ in range(8): C.post("/event", data={"code": "REPET"}, headers=h(_tk))
-checa("8 tentativas do MESMO evento = 1 credito", _c0 - C.get("/me", headers=h(_tk)).json()["credits"], 1)
 C.post("/event", data={"code": "OUTRO1"}, headers=h(_tk))
-checa("evento diferente gasta mais 1", _c0 - C.get("/me", headers=h(_tk)).json()["credits"], 2)
+checa("criar 2 eventos NAO gasta credito", _c0 - C.get("/me", headers=h(_tk)).json()["credits"], 0)
+checa("e a criacao continua funcionando",
+      C.post("/event", data={"code": "TERCE"}, headers=h(_tk)).status_code, 200)
 checa("entrar na conta NAO gasta credito",
       C.post("/login", data={"email": "cred@t.com", "senha": "senha123"}).json()["credits"],
       C.get("/me", headers=h(_tk)).json()["credits"])
+checa("o login diz se a conta e admin (o botao do painel depende disso)",
+      C.post("/login", data={"email": "cred@t.com", "senha": "senha123"}).json().get("admin"), False)
 
 print("")
 print("[22] Conta de EMPRESA: ve e baixa tudo, mas nao cria nem apaga sem senha de admin")
