@@ -1588,7 +1588,86 @@ async function registerEvent(code,tries=8,brand='',name='',date=''){
   toast('Servidor demorou — se a foto nao subir, recarregue e tente de novo');
 }
 /* upload REAL da foto (modo ao vivo): camera -> celular -> /ingest */
-let filaFalhas=[];                       // fotos que nao subiram (rede ruim) -> reenviar
+/* ===================== FILA EM DISCO =====================
+   Antes isto era um array em memoria. A tela dizia "elas nao se perderam" e era
+   MENTIRA: recarregar a pagina, o app cair ou o celular matar a aba levava as fotos
+   junto — e o criterio #2 do piloto e "zero foto perdida".
+
+   Agora toda foto vai para o IndexedDB ANTES de qualquer tentativa de rede, e so sai
+   de la quando o servidor confirma. Fechar o app no meio do envio nao perde nada: ao
+   voltar, o que faltava continua na fila e retoma sozinho.
+
+   IndexedDB e nao localStorage porque guarda Blob de verdade, sem virar texto. */
+const FILA_BD='foton-fila', FILA_LOJA='pendentes';
+let _bdFila=null;
+function bdFila(){
+  if(_bdFila) return _bdFila;
+  _bdFila=new Promise((res,rej)=>{
+    let r; try{ r=indexedDB.open(FILA_BD,1); }catch(e){ rej(e); return; }
+    r.onupgradeneeded=()=>{ const d=r.result;
+      if(!d.objectStoreNames.contains(FILA_LOJA)) d.createObjectStore(FILA_LOJA,{keyPath:'id'}); };
+    r.onsuccess=()=>res(r.result);
+    r.onerror=()=>rej(r.error);
+  });
+  return _bdFila;
+}
+function filaOp(modo, fn){
+  return bdFila().then(d=>new Promise((res,rej)=>{
+    const tx=d.transaction(FILA_LOJA,modo), st=tx.objectStore(FILA_LOJA);
+    let pedido=null;
+    try{ pedido=fn(st); }catch(e){ rej(e); return; }
+    tx.oncomplete=()=>res(pedido?pedido.result:undefined);
+    tx.onerror=()=>rej(tx.error);
+    tx.onabort=()=>rej(tx.error);
+  }));
+}
+async function filaGravar(evento,file){
+  const id='f'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  await filaOp('readwrite',st=>st.put({id, evento,
+    nome:(file&&file.name)||'foto.jpg', tipo:(file&&file.type)||'image/jpeg',
+    blob:file, ts:Date.now(), tentativas:0}));
+  return id;
+}
+async function filaApagar(id){ try{ await filaOp('readwrite',st=>st.delete(id)); }catch(e){} }
+async function filaListar(){ try{ return (await filaOp('readonly',st=>st.getAll()))||[]; }catch(e){ return []; } }
+async function filaContar(){ try{ return (await filaOp('readonly',st=>st.count()))||0; }catch(e){ return 0; } }
+
+/* Retoma o que ficou para tras. Chamado no boot, ao abrir o evento e quando a rede
+   volta — os tres momentos em que faz sentido tentar de novo. */
+let _retomando=false;
+async function retomarFila(silencioso){
+  if(_retomando || !LIVE || !tokenSalvo()) return;
+  const itens=await filaListar();
+  if(!itens.length){ renderFalhas(0); return; }
+  _retomando=true;
+  renderFalhas(itens.length);
+  if(!silencioso) toast(`${itens.length} foto(s) da fila — retomando o envio`);
+  let ok=0;
+  progresso(0,itens.length,`Retomando ${itens.length} foto(s)…`);
+  for(let i=0;i<itens.length;i++){
+    const it=itens[i];
+    const arq=new File([it.blob], it.nome, {type:it.tipo});
+    const j=await enviarUma({code:it.evento}, arq, 2);
+    progresso(i+1,itens.length,'Retomando envio…');
+    if(j){
+      await filaApagar(it.id); ok++;
+      if(state.live && state.live.code===it.evento){
+        state.live._photos.push({id:j.photo_id, src:`${API}/img/${it.evento}/${j.photo_id}.jpg`, faces:j.n_faces});
+        state.live.photos=(state.live.photos||0)+1;
+        const el=document.getElementById('ev-nphotos'); if(el) el.textContent=state.live.photos;
+        renderEventGrid();
+      }
+    }
+  }
+  progressoFim(ok?`${ok} foto(s) da fila publicada(s)`:'');
+  _retomando=false;
+  const resta=await filaContar();
+  renderFalhas(resta);
+  if(ok) { saveEvents(); atualizarStats(); toast(`${ok} foto(s) que faltavam foram publicadas`); }
+}
+window.addEventListener('online',()=>retomarFila(true));
+
+let filaFalhas=[];                       // compatibilidade: a fila de verdade vive em disco
 /* Reduz a foto ANTES de subir. O servidor ja reduz para 2048px de lado maior, entao
    isto nao perde nada de qualidade — so evita empurrar 13 MB por 4G e decodificar
    24 MP no unico nucleo da VM. E o maior ganho na rajada.
@@ -1644,48 +1723,46 @@ function progressoFim(msg){
 }
 async function enviarLote(files){
   const ev=state.live; if(!ev)return;
-  let ok=0, semRosto=0; const falhou=[];
+  // 1) GRAVA TUDO NO DISCO ANTES de tocar na rede. Se o app morrer no meio do envio,
+  //    nada se perdeu — e essa e a unica ordem que garante isso.
+  const ids=[];
+  for(const f of files){ ids.push(await filaGravar(ev.code,f)); }
+  renderFalhas(await filaContar());
+
+  let ok=0, semRosto=0, falhou=0;
   progresso(0,files.length, files.length>1?`Enviando ${files.length} fotos…`:'Enviando foto…');
   for(let i=0;i<files.length;i++){
-    progresso(i,files.length, `Tratando e reconhecendo rostos…`);
+    progresso(i,files.length,'Tratando e reconhecendo rostos…');
     const j=await enviarUma(ev,files[i]);
-    progresso(i+1,files.length, `Tratando e reconhecendo rostos…`);
-    if(!j){ falhou.push(files[i]); continue; }
+    progresso(i+1,files.length,'Tratando e reconhecendo rostos…');
+    if(!j){ falhou++; continue; }            // fica na fila; retoma depois
+    await filaApagar(ids[i]);                // 2) so sai da fila quando o servidor CONFIRMA
     ev._photos.push({id:j.photo_id, src:`${API}/img/${ev.code}/${j.photo_id}.jpg`, faces:j.n_faces});
     ev.photos=(ev.photos||0)+1; ok++; if(!j.n_faces) semRosto++;
     document.getElementById('ev-nphotos').textContent=ev.photos; renderEventGrid();
   }
   progressoFim(ok?`${ok} foto(s) publicada(s)`:'Nada foi publicado');
-  filaFalhas=falhou; renderFalhas();
+  renderFalhas(await filaContar());
   saveEvents(); atualizarStats();
   const p=[]; if(ok)p.push(`${ok} foto(s) publicada(s)`);
   if(semRosto)p.push(`${semRosto} sem rosto`);
-  if(falhou.length)p.push(`${falhou.length} não subiu(ram) — toque em reenviar`);
+  if(falhou)p.push(`${falhou} na fila — retoma sozinho`);
   toast(p.join(' · ')||'Nada enviado');
 }
-function renderFalhas(){
+function renderFalhas(n){
   const box=document.getElementById('box-falhas'); if(!box)return;
-  if(!filaFalhas.length){ box.style.display='none'; return; }
+  if(!n){ box.style.display='none'; return; }
   box.style.display='';
-  document.getElementById('falhas-txt').textContent=
-    `${filaFalhas.length} foto(s) não subiram (rede instável). Elas não se perderam.`;
+  document.getElementById('falhas-txt').textContent =
+    `${n} foto(s) ainda não subiram (rede instável). Estão guardadas no aparelho e vão sozinhas quando a rede voltar.`;
 }
-async function reenviarFalhas(){
-  if(!filaFalhas.length)return;
-  const lote=filaFalhas.slice(); filaFalhas=[]; renderFalhas();
-  await enviarLote(lote);
-}
+async function reenviarFalhas(){ await retomarFila(); }
 
-/* ============ COMPARTILHAR: o Android entrega as fotos aqui ============
-   Com o app instalado, o Fóton aparece no menu "Compartilhar" do celular. A
-   fotógrafa seleciona as fotos na galeria (onde a R8 as deposita sozinha depois
-   de cada disparo), toca em Compartilhar -> Fóton, e acabou: o service worker
-   guarda o lote no cache e reabre o app em /?compartilhado=<id>; daqui a frente
-   é o mesmo caminho de sempre (reduzir -> /ingest -> reconhecer).
-   Se o app NÃO estiver instalado, nada disto existe e o botão "Enviar foto da
-   câmera" continua sendo o caminho — por isso nada aqui substitui aquele fluxo. */
-let _compartilhadas=[];                       // lote recebido, ainda sem evento de destino
 /* qual evento ela estava usando — o share reabre o app do zero e perde state.live */
+/* Lote que chegou pelo menu "Compartilhar" do Android e ainda nao tem evento
+   de destino. Declarado aqui porque o openEvent o consulta. */
+let _compartilhadas=[];
+
 function ultimoEvento(){ try{ return localStorage.getItem('foton_ultimo_ev')||''; }catch(e){ return ''; } }
 function lembrarEvento(code){ try{ code?localStorage.setItem('foton_ultimo_ev',code):localStorage.removeItem('foton_ultimo_ev'); }catch(e){} }
 
@@ -1746,6 +1823,7 @@ async function entregarCompartilhadas(){
   _compartilhadas=[];                                          // limpa ANTES: nada de reenvio em loop
   await enviarLote(files);
 }
+
 /* acoes do evento */
 function guestURL(){ return state.live?`${API}/?evento=${state.live.code}`:''; }
 function compartilharConvite(){
@@ -1926,6 +2004,8 @@ function openEvent(ev,opts){
   else state.liveTimer=setInterval(()=>{if(Math.random()<.5){ev.guests++;document.getElementById('ev-nguests').textContent=ev.guests;}},2600);
   // lote que chegou pelo menu "Compartilhar" e estava esperando um evento
   if(_compartilhadas.length) setTimeout(entregarCompartilhadas,0);
+  // e o que ficou na fila em disco de uma sessao anterior
+  setTimeout(()=>retomarFila(true),400);
 }
 function renderEventGrid(){
   const g=document.getElementById('ev-grid'),ev=state.live;
@@ -3102,6 +3182,9 @@ loadEvents();
   if(!LIVE || !tokenSalvo()) return;
   if(_params.get('evento') || _params.get('foto') || _params.get('compartilhado')) return;
   if(await carregarConta()) go('dash');
+  // fotos que ficaram na fila quando o app foi fechado no meio do envio
+  const pend=await filaContar();
+  if(pend){ renderFalhas(pend); retomarFila(); }
 })();
 /* sentinela do historico: sem ela o Voltar do celular sai do app (ver VOLTAR_PARA) */
 armarVoltar();

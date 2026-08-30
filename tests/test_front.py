@@ -73,6 +73,7 @@ essenciais = [
     "tirarFotoAgora", "abrirScanner",                         # camera e leitor de QR
     "entrarComoEmpresa", "senhaAdminSeNecessario",            # conta de empresa
     "abrirAdmin", "admZerar", "admCompactar",                 # painel do admin
+    "filaGravar", "filaApagar", "filaContar", "retomarFila",  # fila em disco
     "salvarCredenciais",                                      # trocar a propria senha
 ]
 checa("funcoes essenciais ausentes", [f for f in essenciais if f not in definidas], [])
@@ -108,6 +109,19 @@ dinamicos = set(re.findall(r"\.id\s*=\s*['\"]([^'\"]+)['\"]", js))
 dinamicos |= {"prog", "prog-t", "prog-c", "prog-i"}
 checa("getElementById para id que nao existe",
       sorted(p for p in procurados if p not in ids_no_html and p not in dinamicos), [])
+
+print("")
+print("[6b] A fila grava no disco ANTES de tentar a rede")
+# A ordem e a garantia inteira: se o app morrer no meio do envio, so nao se perde o
+# que ja estava gravado. Se a gravacao viesse depois da tentativa, a promessa cairia.
+_el = js[js.find("async function enviarLote"):]
+_el = _el[:_el.find(chr(10) + "function ")]
+checa("grava na fila antes do primeiro envio",
+      _el.find("filaGravar") < _el.find("enviarUma"), True)
+checa("so apaga da fila DEPOIS de o servidor confirmar",
+      _el.find("filaApagar") > _el.find("if(!j)"), True)
+checa("usa IndexedDB (guarda Blob), nao localStorage", "indexedDB.open" in js, True)
+checa("retoma quando a rede volta", "addEventListener('online'" in js, True)
 
 print("")
 print("[7] O manifest continua valido (o Compartilhar do Android depende dele)")
