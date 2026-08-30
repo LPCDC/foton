@@ -374,3 +374,46 @@ Preço final (aguarda EXP-10, custo por evento real) · gateway de pagamento (p�
 - **A decidir quando chegar a hora:** 1 quadro/s é suficiente ou perde quem aparece de
   relance? Guardar o clipe original ou uma versão reduzida? Áudio entra na retenção
   LGPD como dado novo? `UNKNOWN — REQUIRES EXPERIMENT`.
+
+
+---
+
+## ADR-0024 — Cortar o sistema de créditos: tudo grátis, com login
+
+**Data:** 2026-08-30 · **Estado:** aceita · **Decisão do dono**
+
+**Contexto.** Cada evento novo gastava 1 crédito; a conta nascia com 100. O contador já
+tinha causado um incidente real: o app repete o `POST /event` até 8 vezes quando a rede
+está ruim, e um único evento chegou a queimar 8 créditos em silêncio (corrigido em
+2026-08-29 com `ja_existia`).
+
+**Decisão.** Nesta fase **não se gasta nem se bloqueia crédito**. Login continua
+obrigatório — grátis não é anônimo.
+
+**Por que não apagar as colunas.** `credits` e `credits_total` ficam na base. Apagá-las
+exigiria migração num banco em produção com cliente real, para ganhar nada. Elas guardam
+o histórico e alimentam o painel do admin.
+
+**O risco que isto cria, e como está guardado.** Um contador desligado pela metade é pior
+que um contador ligado: se alguém religar o desconto sem religar a recarga, a fotógrafa
+é bloqueada **no meio de uma festa**. O teste `[21]` de `tests/test_autorizacao.py`, que
+guardava "8 tentativas = 1 crédito", agora guarda o **oposto** — que nada é gasto.
+
+**O substituto planejado** é limite de **upload**, não crédito: mede o que de fato custa
+(disco e CPU) e é o único número que a fotógrafa entende sem explicação. Ver
+`docs/PRODUTO.md` §3c. **Ainda sem COGS medido** — `UNKNOWN — REQUIRES EXPERIMENT`.
+
+---
+
+## ADR-0025 — O cliente não decide quem é admin
+
+**Data:** 2026-08-30 · **Estado:** aceita
+
+**O que estava errado.** `EH_ADMIN` era `/^admin@/i.test(email)`. Quando o login de
+administração virou `admin` (sem arroba), o teste passou a dar **falso**: o painel de
+administração existia, o servidor autorizava, e **o botão nunca aparecia**. Um mês de
+painel invisível por causa de um regex no cliente.
+
+**Decisão.** Quem sabe quem é admin é o servidor — a lista `FOTON_ADMINS`. `/me` já
+informava; `/login` e `/signup` passam a informar também. O cliente **obedece**, não
+adivinha. Regra geral: **autorização nunca se infere do formato de um dado no cliente.**

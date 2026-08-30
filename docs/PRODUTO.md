@@ -156,6 +156,38 @@ ser encontrada depois.
 se apontar? (Eu diria **não** — senão vira uma lista de quem vai à festa, aberta a
 qualquer um com o QR.)
 
+### 3d. Chat ao vivo dentro do evento — e por que ele deve ser SÓ emoji
+
+**Ideia do dono:** um chat em tempo real dentro de cada evento, em emoji, com link para
+a pessoa que está falando e para as fotos onde ela aparece.
+
+**Dá, e é barato.** Não precisa de WebSocket nem de dependência nova: o app do convidado
+**já faz poll a cada 2,5 s** para buscar fotos novas. As reações pegam carona nesse
+mesmo pedido. Custo real: uma tabela (`evento, guest_id, emoji, foto_id, ts`), um POST e
+um campo a mais na resposta do `/feed`. Nada de infraestrutura nova, nada de ADR de
+dependência.
+
+**A parte forte da ideia não é o chat — é o link.** Tocar em quem reagiu e cair no álbum
+daquela pessoa transforma a conversa num **diretório de gente da festa**. É a camada
+social do Fóton Festa entrando por uma porta pequena, sem construir o Fóton Festa
+inteiro. Esse é o motivo para fazer.
+
+**Só emoji é a decisão certa, e não por preguiça:**
+
+1. **Sem texto não há moderação.** Chat com texto numa festa vira, no primeiro
+   incidente, cantada, número de telefone, briga ou spam — e o dono do problema passa a
+   ser o Fóton, não o organizador. Emoji não carrega assédio nem número de telefone.
+2. **Ninguém digita numa festa.** Uma fileira de emojis é um toque; texto é dez.
+3. **Emoji funciona sem idioma e sem alfabetização digital** — o mesmo público idoso que
+   motivou o desenho Bauhaus das telas.
+
+**A linha, que é a mesma da lista de convidados:** o link para o álbum de alguém só pode
+existir se **aquela pessoa** ligou a exibição do nome (§3b-2). Reação de quem está com o
+nome desligado aparece **sem link e sem nome** — o emoji some na multidão, que é o certo.
+
+**Quando fazer:** depois do piloto. O piloto responde "a foto chega?"; isto responde
+"a festa conversa?". Inverter a ordem é resolver o problema errado.
+
 ### 3c. Limite de UPLOAD — a métrica que substitui o crédito
 
 **Dá, e é melhor que crédito.** Crédito conta uma coisa que só existe para nós. Limite de
@@ -245,6 +277,9 @@ vivo", "chegando", "sua"), e o logo.
 3. **Pré-cadastro com foto de referência** (§3b) — barato e muda o primeiro minuto do
    convidado.
 4. **Fóton Festa** (§2) — o produto que ninguém atende.
-5. **Modelo comercial** (§5/§3c) — decisão do dono; a engenharia é pequena.
+5. **Chat em emoji** (§3d) — pequeno, e é a camada social entrando por uma porta
+   pequena. Depois do piloto.
+6. **Limite de upload** (§3c) — o crédito foi CORTADO em 2026-08-30 (ADR-0024): nesta
+   fase tudo é grátis, com login. Antes de pôr limite, medir o COGS.
 6. **Branding e a porta da festa** (§4/§6).
 7. **Login por selfie global** (§3) — maior risco de privacidade. Por último.
