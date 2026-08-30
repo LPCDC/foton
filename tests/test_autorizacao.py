@@ -504,5 +504,26 @@ checa("expirar roda e devolve contagem", set(rig.store.expirar(7, 90).keys()) >=
 _h3 = open(os.path.join(RAIZ, "app", "web", "index.html"), encoding="utf-8").read()
 checa("o app chama a rota de exclusao", "/convidado/excluir" in _h3, True)
 
+print("")
+print("[25] PERFIL de conta (ADR-0030): o servidor declara, o cliente obedece")
+# O perfil e APRESENTACAO (vocabulario, blocos visiveis, tokens de cor) — nunca poder.
+# Poder continua nos testes [22] (empresa/_exige_elevacao) e de admin. Aqui se guarda o
+# contrato: conta comum e 'pro'; virou empresa, o perfil acompanha nos TRES lugares em
+# que o app pode ficar sabendo (/signup, /login e /me — regra da ADR-0025).
+_pj = C.post("/signup", data={"email": "perfil@t.com", "senha": "senha123"}).json()
+checa("conta nova nasce 'pro' ja no /signup", _pj.get("perfil"), "pro")
+checa("e o /signup tambem diz que nao e empresa", _pj.get("empresa"), False)
+_pl = C.post("/login", data={"email": "perfil@t.com", "senha": "senha123"}).json()
+checa("o /login informa o perfil", _pl.get("perfil"), "pro")
+checa("o /me informa o perfil", C.get("/me", headers=h(_pl["token"])).json().get("perfil"), "pro")
+C.post("/admin/empresa", data={"email": "perfil@t.com", "ligado": "1"}, headers=h(chefe))
+checa("marcada como empresa, o perfil acompanha no /me",
+      C.get("/me", headers=h(_pl["token"])).json().get("perfil"), "empresa")
+checa("e no /login tambem",
+      C.post("/login", data={"email": "perfil@t.com", "senha": "senha123"}).json().get("perfil"), "empresa")
+C.post("/admin/empresa", data={"email": "perfil@t.com", "ligado": "0"}, headers=h(chefe))
+checa("desligada, volta a 'pro'",
+      C.get("/me", headers=h(_pl["token"])).json().get("perfil"), "pro")
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

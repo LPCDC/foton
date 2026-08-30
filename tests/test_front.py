@@ -78,6 +78,7 @@ essenciais = [
     "estadoDaCamera",                                         # "minha camera vai mandar?"
     "armarToqueLongo", "apagarSelecionadas",                  # segurar para selecionar
     "excluirMeusDados",                                       # a saida da convidada
+    "PERFIL", "aplicarPerfil",                                # tres peles (ADR-0030)
 ]
 checa("funcoes essenciais ausentes", [f for f in essenciais if f not in definidas], [])
 
@@ -143,6 +144,22 @@ checa("admin vem do servidor, nao de regex no login", "SESSAO.admin" in js, True
 checa("a miniatura nao e alvo de toque (era ela que abria o menu do navegador)",
       "pointer-events:none" in html.split(".ph img{")[1][:200], True)
 checa("o toque longo barra o menu de contexto", "contextmenu" in js, True)
+
+print("")
+print("[6d] Perfil de conta (ADR-0030): tres peles, uma estrutura")
+checa("o perfil vem do SERVIDOR (SESSAO.perfil), nao de adivinhacao", "SESSAO.perfil" in js, True)
+_vb = js[js.find("const VOCAB"):]
+_vb = _vb[:_vb.find("};") + 2]
+_chaves = {p: set(re.findall(r"(\w+):'", b))
+           for p, b in re.findall(r"(pro|empresa|social):\{(.*?)\}", _vb, re.S)}
+checa("os tres perfis existem no vocabulario", sorted(_chaves), ["empresa", "pro", "social"])
+checa("os tres perfis tem AS MESMAS chaves (pele nova nao pode esquecer texto)",
+      [p for p in _chaves if _chaves[p] != _chaves.get("pro")], [])
+checa("ha elementos marcados para o vocabulario", html.count('data-voc="') >= 8, True)
+checa("cartao de camera/FTP marcado como so-de-pro", 'data-so="pro"' in html, True)
+checa("marca d'agua vale para pro E empresa", 'data-so="pro,empresa"' in html, True)
+checa("os tokens de cor dos perfis existem no CSS",
+      "perfil-empresa" in html and "perfil-social" in html, True)
 
 print("")
 print("[7] O manifest continua valido (o Compartilhar do Android depende dele)")

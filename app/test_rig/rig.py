@@ -298,6 +298,13 @@ def health():
     return {"ok": True, "engine": "InsightFace buffalo_s (SCRFD+ArcFace) CPU", "db": "sqlite"}
 
 # ============================ CONTAS ============================
+def _perfil(c):
+    # ADR-0030: o perfil de APRESENTACAO (vocabulario, blocos, tokens) e declarado
+    # pelo servidor — o cliente obedece (regra da ADR-0025). Derivado, sem coluna:
+    # 'social' e valor reservado para a frente da Ana (PRODUTO §2). Poder continua
+    # sendo `empresa` (_exige_elevacao) e a lista FOTON_ADMINS; perfil nao abre porta.
+    return "empresa" if c.get("empresa") else "pro"
+
 @app.post("/signup")
 def signup(email: str = Form(...), senha: str = Form(...), nome: str = Form(""), marca: str = Form("")):
     if len(senha) < 6: raise HTTPException(400, "senha muito curta (mínimo 6)")
@@ -313,7 +320,8 @@ def signup(email: str = Form(...), senha: str = Form(...), nome: str = Form(""),
     c = store.autentica(email, senha)
     return {"token": store.novo_token(c["email"]), "nome": c["nome"], "marca": c["marca"],
             "credits": c["credits"], "credits_total": c["credits_total"], "email": c["email"],
-            "admin": c["email"].lower() in ADMINS}
+            "admin": c["email"].lower() in ADMINS,
+            "empresa": bool(c.get("empresa")), "perfil": _perfil(c)}
 
 _tentativas = {}          # ip -> [instantes de falha]
 LIMITE_FALHAS, JANELA_S = 10, 600
@@ -342,7 +350,8 @@ def login(request: Request, email: str = Form(...), senha: str = Form(...)):
     _tentativas.pop(ip, None)                     # acertou: zera o histórico
     return {"token": store.novo_token(c["email"]), "nome": c["nome"], "marca": c["marca"],
             "credits": c["credits"], "credits_total": c["credits_total"], "email": c["email"],
-            "admin": c["email"].lower() in ADMINS}
+            "admin": c["email"].lower() in ADMINS,
+            "empresa": bool(c.get("empresa")), "perfil": _perfil(c)}
 
 @app.post("/conta/logo")
 async def conta_logo(file: UploadFile = File(...), authorization: str = Header(None)):
@@ -402,7 +411,8 @@ def me(authorization: str = Header(None)):
     if not c: raise HTTPException(401, "sessão expirada")
     evs = store.eventos_de(c["email"])
     return {"nome": c["nome"], "marca": c["marca"], "email": c["email"],
-            "empresa": bool(c.get("empresa")), "admin": c["email"].lower() in ADMINS,
+            "empresa": bool(c.get("empresa")), "perfil": _perfil(c),
+            "admin": c["email"].lower() in ADMINS,
             "credits": c["credits"], "credits_total": c["credits_total"],
             "total_fotos": sum(e["fotos"] for e in evs),
             "total_convidados": sum(e["convidados"] for e in evs),

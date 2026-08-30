@@ -90,8 +90,8 @@ app/web/
   manifest.webmanifest   share_target (campo "fotos")
   assets/        fotos de demonstração
 tests/
-  test_autorizacao.py   193 checagens — contrato de todas as rotas, LGPD, admin
-  test_front.py         24 checagens — o front como TEXTO: sintaxe JS de verdade
+  test_autorizacao.py   210 checagens — contrato de todas as rotas, LGPD, admin, perfil
+  test_front.py         31 checagens — o front como TEXTO: sintaxe JS de verdade
                          (node --check), ids duplicados, funções essenciais presentes,
                          fila grava em disco ANTES da rede. Nasceu de estragos reais.
   test_ftp_camera.py    23 checagens — servidor FTP
@@ -243,6 +243,14 @@ teto de tamanho em `vh` além do de `vw` — sem isso a marca em 300px empurrava
 terceira porta ("Sou empresa") para fora da primeira tela do celular. O fundo por trás
 dela (`.stage-bg`/`.stage-fade`) é `position:fixed` — não se move mesmo se a página
 rolar um pouco (ver armadilha em §7).
+
+**Perfil de conta (2026-08-30, ADR-0030):** o painel tem **três peles** — `pro`
+(Patrícia, dourado), `empresa` (GLAMON, platinado) e `social` (Ana, reservado; ainda
+sem fluxo próprio — PRODUTO §2). O servidor declara `perfil` em `/signup`, `/login` e
+`/me`; o front aplica vocabulário (evento/álbum/rolê), blocos visíveis (câmera/FTP só
+para `pro`; marca d'água para `pro` e `empresa`) e tokens de cor via
+`aplicarPerfil()`. É só apresentação — poder continua sendo `empresa` +
+`FOTON_ADMINS` no servidor.
 
 **Vocabulário (2026-08-30):** o produto deixou de falar só de "festa". A tela inicial
 diz **"no seu evento, na sua trilha, na sua festa"** — decisão do dono, para não parecer

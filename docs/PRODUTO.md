@@ -20,6 +20,11 @@ O motor (foto → rosto → entrega certa) é o mesmo. O que muda é a casca e o
 | **GLAMON** — empresa, álbum interno | acervo permanente, mesmas pessoas toda semana | álbum, equipe | **no ar** (ADR-0021) |
 | **Ana** — a pessoa comum no próprio rolê | é fotógrafa **e** convidada ao mesmo tempo | festa | **§2, não feito** |
 
+**Virou código em 2026-08-30 (ADR-0030):** a "casca e o vocabulário" agora são um
+**perfil de conta** (`pro` | `empresa` | `social`) declarado pelo servidor — vocabulário,
+blocos do painel e tokens de cor por perfil. `social` está reservado esperando o fluxo
+da Ana (§2); o motor e o poder não mudaram.
+
 **Por que importa:** a porta da Ana é a única que ninguém no Brasil atende. Face Album,
 Fotix, Mirino, 4.events e TIME&SPACE são todos ferramenta de fotógrafo ou módulo de
 plataforma de evento. Ninguém serve quem fotografa o próprio rolê. É consumo, é viral, e

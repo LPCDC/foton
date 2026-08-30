@@ -34,6 +34,12 @@
   --sans:"Instrument Sans",system-ui,sans-serif;
   --mono:"Geist Mono",ui-monospace,monospace;
 }
+/* Perfis de conta (ADR-0030): mesmo app, tres peles. So TOKENS mudam — nunca layout,
+   nunca fluxo, nunca poder. pro = dourado (o padrao do :root, sem classe nenhuma). */
+body.perfil-empresa{--accent:#d9e2ea;--accent-2:#a7b6c6;--accent-soft:rgba(217,226,234,.12);
+  --grad:linear-gradient(135deg,#e3ebf2,#a7b6c6)}
+body.perfil-social{--accent:#f4c1a4;--accent-2:#dd9a72;--accent-soft:rgba(244,193,164,.12);
+  --grad:linear-gradient(135deg,#f8d2b8,#dd9a72)}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overscroll-behavior:none}
 /* Segurar o dedo em cima de texto (titulo, legenda, botao) selecionava a palavra e o
@@ -706,7 +712,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
   <section class="screen" id="s-dash">
     <div class="head">
       <div class="mark" role="img" aria-label="Fóton"></div>
-      <div class="word">Patrícia<small>meu painel</small></div>
+      <div class="word">Patrícia<small data-voc="painel">meu painel</small></div>
       <div class="grow"></div>
       <span class="srv" id="srv-status"><i></i><span>servidor</span></span>
       <button class="tag-btn" id="btn-admin" style="display:none;margin-left:6px" onclick="abrirAdmin()">admin</button>
@@ -718,7 +724,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
          Honestidade importa aqui: com a R8/T6s NAO existe FTP, entao nao da para
          dizer "conectada". O que da para dizer com verdade e por onde as fotos
          entram e se ja entrou alguma. E isso que o cartao mostra. -->
-    <button class="camcard" id="dash-cam" onclick="go('guia')">
+    <button class="camcard" id="dash-cam" data-so="pro" onclick="go('guia')">
       <span class="cc-luz" id="cc-luz"></span>
       <span class="cc-txt">
         <em>Câmera</em>
@@ -729,14 +735,14 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
     </button>
 
     <div class="stats">
-      <div class="stat"><div class="n" id="st-photos">0</div><div class="l">Fotos entregues</div></div>
-      <div class="stat"><div class="n" id="st-guests">0</div><div class="l">Convidados alcançados</div></div>
+      <div class="stat"><div class="n" id="st-photos">0</div><div class="l" data-voc="statFotos">Fotos entregues</div></div>
+      <div class="stat"><div class="n" id="st-guests">0</div><div class="l" data-voc="statPessoas">Convidados alcançados</div></div>
     </div>
 
-    <div class="eyebrow-sm">Seus eventos</div>
+    <div class="eyebrow-sm" data-voc="lista">Seus eventos</div>
     <div id="evt-list"></div>
-    <div class="sticky"><button class="btn primary block" onclick="abrirCriarEvento()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>&nbsp; Criar evento</button></div>
-    <p class="note" style="margin-top:14px">
+    <div class="sticky"><button class="btn primary block" onclick="abrirCriarEvento()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>&nbsp;<span data-voc="criar">Criar evento</span></button></div>
+    <p class="note" style="margin-top:14px" data-so="pro">
       <button class="link" onclick="go('guia')"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v10.5H3z"/><circle cx="12" cy="13.2" r="3.6"/></svg> Conectar câmera</button>
     </p>
     <p class="note" style="margin-top:6px">
@@ -862,12 +868,12 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
   <!-- ================= CREATE ================= -->
   <section class="screen" id="s-create">
     <button class="back" onclick="go('dash')">←&nbsp; voltar</button>
-    <h1 class="title">Novo evento</h1>
-    <p class="subtitle">Você recebe um QR para os convidados. Sem custo nesta fase.</p>
+    <h1 class="title" data-voc="novoTitulo">Novo evento</h1>
+    <p class="subtitle" data-voc="novoSub">Você recebe um QR para os convidados. Sem custo nesta fase.</p>
     <div class="card">
-      <div class="field"><label>Nome do evento</label><input id="ev-name" placeholder="Ex.: Casamento Ana &amp; Léo"></div>
+      <div class="field"><label data-voc="nomeLabel">Nome do evento</label><input id="ev-name" data-voc-ph="nomePh" placeholder="Ex.: Casamento Ana &amp; Léo"></div>
       <div class="field"><label>Data</label><input id="ev-date" type="date"></div>
-      <div class="field"><label>Sua marca nas fotos</label>
+      <div class="field" data-so="pro,empresa"><label>Sua marca nas fotos</label>
         <input id="ev-brand" placeholder="Ex.: Patrícia Vargas Fotografia" maxlength="40">
         <p class="small" style="color:var(--dim);font-size:15px;margin-top:7px">Aparece como marca d'água nas fotos. Em branco, usamos “FÓTON”.</p>
         <div id="logo-box" style="margin-top:14px;display:flex;align-items:center;gap:14px">
@@ -888,7 +894,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
         Pedir nome e WhatsApp do convidado (opcional para ele)</label></div>
       <button class="btn primary block" onclick="criarEvento()">Criar e abrir o QR</button>
     </div>
-    <p class="note" style="margin-top:20px">O convidado escaneia o QR, tira 1 selfie e recebe automaticamente as fotos em que aparecer.</p>
+    <p class="note" style="margin-top:20px" data-voc="qrNota">O convidado escaneia o QR, tira 1 selfie e recebe automaticamente as fotos em que aparecer.</p>
   </section>
 
   <!-- ================= EVENT LIVE ================= -->
@@ -1561,7 +1567,7 @@ function sessaoFotografoExpirou(){
   if(modoCadastro) alternarCadastro();
   go('login');
 }
-function logout(){ stopEvent(); lembrarEvento(''); salvarToken(null); SESSAO=null; state.events=[]; saveEvents(); go('landing'); }
+function logout(){ stopEvent(); lembrarEvento(''); salvarToken(null); SESSAO=null; state.events=[]; saveEvents(); aplicarPerfil(); go('landing'); }
 /* Terceira porta. A conta de empresa e a MESMA maquina do fotografo — o que muda e o
    vocabulario (album, nao evento) e a trava: quem entra ve e baixa tudo, mas criar e
    apagar pedem a senha de administrador. A trava de verdade esta no servidor
@@ -1579,7 +1585,7 @@ async function entrarComoEmpresa(){
 Sair dela e entrar com o login da empresa?`)){
       go('dash'); return;
     }
-    salvarToken(null); SESSAO=null; state.events=[]; saveEvents(); lembrarEvento('');
+    salvarToken(null); SESSAO=null; state.events=[]; saveEvents(); lembrarEvento(''); aplicarPerfil();
   }
   if(modoCadastro) alternarCadastro();
   document.getElementById('in-pass').value='';
@@ -1591,6 +1597,51 @@ Sair dela e entrar com o login da empresa?`)){
 let MODO_EMPRESA_PEDIDO=false;
 function ehEmpresa(){ return !!(SESSAO && SESSAO.empresa); }
 function ehAdmin(){ return !!(SESSAO && SESSAO.admin); }
+/* Perfil de conta (ADR-0030): uma estrutura, tres peles. O SERVIDOR declara o perfil
+   em /signup, /login e /me (regra da ADR-0025 — o cliente obedece, nao adivinha); o
+   fallback por `empresa` cobre sessao em cache de antes do campo existir. O perfil
+   controla APRESENTACAO (vocabulario, blocos visiveis, tokens de cor) — nunca poder:
+   quem abre e fecha porta continua sendo o servidor (_exige_elevacao, FOTON_ADMINS). */
+function PERFIL(){
+  if(SESSAO && VOCAB[SESSAO.perfil]) return SESSAO.perfil;
+  return ehEmpresa() ? 'empresa' : 'pro';
+}
+const VOCAB={
+  pro:{ painel:'meu painel', lista:'Seus eventos', criar:'Criar evento',
+    novoTitulo:'Novo evento', novoSub:'Você recebe um QR para os convidados. Sem custo nesta fase.',
+    nomeLabel:'Nome do evento', nomePh:'Ex.: Casamento Ana & Léo',
+    statFotos:'Fotos entregues', statPessoas:'Convidados alcançados',
+    vazio:'Nenhum evento ainda.<br>Toque em <b>Criar evento</b> para começar.',
+    qrNota:'O convidado escaneia o QR, tira 1 selfie e recebe automaticamente as fotos em que aparecer.' },
+  empresa:{ painel:'galeria da empresa', lista:'Seus álbuns', criar:'Criar álbum',
+    novoTitulo:'Novo álbum', novoSub:'Você recebe um QR para quem participa. Sem custo nesta fase.',
+    nomeLabel:'Nome do álbum', nomePh:'Ex.: Equipe — agosto',
+    statFotos:'Fotos no acervo', statPessoas:'Pessoas alcançadas',
+    vazio:'Nenhum álbum ainda.<br>Toque em <b>Criar álbum</b> para começar.',
+    qrNota:'Quem participa escaneia o QR, tira 1 selfie e recebe automaticamente as fotos em que aparecer.' },
+  social:{ painel:'meu rolê', lista:'Seus rolês', criar:'Criar rolê',
+    novoTitulo:'Novo rolê', novoSub:'Você recebe um QR para a galera. Sem custo nesta fase.',
+    nomeLabel:'Nome do rolê', nomePh:'Ex.: Churrasco na laje',
+    statFotos:'Fotos entregues', statPessoas:'Pessoas alcançadas',
+    vazio:'Nenhum rolê ainda.<br>Toque em <b>Criar rolê</b> para começar.',
+    qrNota:'A galera escaneia o QR, tira 1 selfie e recebe automaticamente as fotos em que aparecer.' }
+};
+function aplicarPerfil(){
+  const p=PERFIL(), v=VOCAB[p];
+  document.body.classList.remove('perfil-empresa','perfil-social');
+  if(p!=='pro') document.body.classList.add('perfil-'+p);
+  document.querySelectorAll('[data-voc]').forEach(el=>{
+    const t=v[el.dataset.voc]; if(t!==undefined) el.textContent=t;
+  });
+  document.querySelectorAll('[data-voc-ph]').forEach(el=>{
+    const t=v[el.dataset.vocPh]; if(t!==undefined) el.placeholder=t;
+  });
+  // Blocos por perfil: camera/FTP e ferramenta de fotografa profissional; marca
+  // d'agua vale para pro E empresa. `display:''` devolve o que a folha de estilo diz.
+  document.querySelectorAll('[data-so]').forEach(el=>{
+    el.style.display = el.dataset.so.split(',').includes(p) ? '' : 'none';
+  });
+}
 /* Pede a senha de admin so quando ela e mesmo necessaria. Conta comum nunca ve isso. */
 function senhaAdminSeNecessario(acao){
   if(!ehEmpresa() || ehAdmin()) return '';
@@ -1612,6 +1663,7 @@ async function entrarComoFotografo(){
 async function estadoDaCamera(){
   const card=document.getElementById('dash-cam');
   if(!card) return;
+  if(PERFIL()!=='pro') return;          // o cartao nem aparece (ADR-0030); poupa a chamada
   const luz=(cls)=>{card.className='camcard'+(cls?' '+cls:'');};
   const t=document.getElementById('cc-t'), sub=document.getElementById('cc-s');
   if(!LIVE){ luz(''); t.textContent='Conectar câmera'; sub.textContent='veja como ligar a sua'; return; }
@@ -1642,6 +1694,7 @@ async function estadoDaCamera(){
   }catch(e){ luz(''); t.textContent='Conectar câmera'; sub.textContent='toque para ver como'; }
 }
 function renderDash(){
+  aplicarPerfil();                      // vocabulario/blocos/tokens da conta (ADR-0030)
   // numeros REAIS da conta (quando ao vivo); no modo demo, os do mock
   estadoDaCamera();                     // credito saiu daqui; agora o destaque e a camera
   document.getElementById('st-photos').textContent=SESSAO?(SESSAO.total_fotos||0):state.totPhotos;
@@ -1651,7 +1704,7 @@ function renderDash(){
   const ba=document.getElementById('btn-admin'); if(ba) ba.style.display=EH_ADMIN()?'':'none';
   const box=document.getElementById('evt-list');box.innerHTML='';
   if(!state.events.length){
-    box.innerHTML='<div class="empty">Nenhum evento ainda.<br>Toque em <b>Criar evento</b> para começar.</div>';return;
+    box.innerHTML='<div class="empty">'+VOCAB[PERFIL()].vazio+'</div>';return;
   }
   state.events.forEach((ev,i)=>{
     const live=ev.status==='live';

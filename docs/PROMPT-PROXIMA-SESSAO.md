@@ -31,7 +31,7 @@ reais. O diferencial não é reconhecimento facial (commodity) — é **na hora*
   GLAMON (salão, álbum permanente).
 - **Deploy é `git push`** — a VM se atualiza sozinha em ~2 min. Infra (systemd,
   nginx, porta) exige Cloud Shell da Oracle.
-- **4 suítes, 266 checagens**, `bash tests/todos.sh`. Verde antes de todo push,
+- **4 suítes, 280 checagens**, `bash tests/todos.sh`. Verde antes de todo push,
   sem exceção.
 - **Crédito cortado** (ADR-0024): criar evento é grátis, com login.
 - **Look por conta** recém-entregue (ADR-0028).
@@ -162,7 +162,7 @@ as fotos de um cliente.
 ## Comandos
 
 ```bash
-bash tests/todos.sh                                    # 4 suítes, 266 checagens
+bash tests/todos.sh                                    # 4 suítes, 280 checagens
 git add -A && git commit -m "..." && git push origin main   # deploy (~2 min)
 curl -s https://app.foton.app.br/health                # validar depois
 ```

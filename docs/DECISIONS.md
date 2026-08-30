@@ -688,3 +688,51 @@ cadastra — **continua não existindo**. É documento, não código, e segue pe
 **Público de menores de idade está fora do escopo por decisão do dono (2026-08-30)**:
 seria LGPD **Art. 14** (consentimento específico de um dos pais) somado ao Art. 11
 (dado sensível) — regime jurídico diferente, que exige decisão antes de qualquer tela.
+
+---
+
+## ADR-0030 — Perfil de conta: uma estrutura, três peles (não são três apps)
+
+**Data:** 2026-08-30 · **Estado:** aceita — decisão de direção do dono
+
+**Contexto.** `docs/PRODUTO.md` §1: não são três produtos — é um motor com três portas
+(Patrícia/pro · GLAMON/empresa · Ana/social). O dono confirmou a tese em 2026-08-30 e
+pediu identidade própria para cada frente. O front é um HTML de ~205 KB sem framework;
+desenhar três painéis à mão triplicaria a superfície de bug num código que já pagou
+caro por armadilhas repetidas (BLUEPRINT §7).
+
+**Decisão.** Cada conta tem um **perfil de apresentação** — `pro` | `empresa` |
+`social` — **declarado pelo servidor** em `/signup`, `/login` e `/me` (regra da
+ADR-0025: o cliente obedece, não adivinha). O perfil controla exatamente **três
+coisas**, todas de apresentação:
+
+1. **Vocabulário** — evento / álbum / rolê, numa tabela única (`VOCAB`) aplicada por
+   `aplicarPerfil()` sobre elementos marcados com `data-voc`/`data-voc-ph`. Mata as
+   trocas improvisadas que existiam espalhadas.
+2. **Quais blocos aparecem** — elementos com `data-so="pro,..."`: o cartão de câmera
+   /FTP e o link "Conectar câmera" são ferramenta de fotógrafa profissional; a conta
+   de empresa (fotografa de celular) e a social não os veem. Marca d'água fica para
+   pro **e** empresa (uma empresa tem logo), some para social.
+3. **Tokens de cor** — uma classe `perfil-*` no `body` troca `--accent`/`--accent-2`/
+   `--accent-soft`. Nenhum CSS de layout novo.
+
+**O que o perfil NÃO controla: fluxo e poder.** Autorização continua sendo `empresa`
+no servidor (`_exige_elevacao`) e `admin` na lista `FOTON_ADMINS`. Perfil errado
+mostra a palavra errada — nunca abre nem fecha porta.
+
+**Derivação, sem migração.** Nesta fase o servidor **deriva** o perfil:
+`empresa=1 → 'empresa'`, senão `'pro'`. `'social'` é valor reservado — só passa a ser
+atribuível quando a frente da Ana (PRODUTO §2) existir; criar coluna/rota agora seria
+construir à frente da demanda (mesmo raciocínio da ADR-0026). O front tem fallback
+(`SESSAO.perfil` ausente → deriva de `empresa`) para sessão em cache de antes do deploy.
+
+**Por que não as alternativas.** *Três HTMLs/painéis*: triplica bug e manutenção num
+arquivo que é um só de propósito. *Detectar no cliente* (ex.: pelo nome da conta):
+viola ADR-0025. *Coluna `perfil` no banco já*: não há quem a use — YAGNI medido.
+
+**Reversível.** Sem a classe no body e sem `data-voc` preenchido, o app fica idêntico
+ao de hoje; `social` inexistente cai em `pro`.
+
+**Consequências.** `/signup` e `/login` passam a devolver também `empresa` (antes só o
+`/me` devolvia) e `perfil`; testes novos nas seções [25] de `test_autorizacao.py` e
+`test_front.py` guardam o contrato.
