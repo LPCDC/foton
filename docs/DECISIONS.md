@@ -319,3 +319,58 @@ Preço final (aguarda EXP-10, custo por evento real) · gateway de pagamento (p�
   - `docs/TESTES.md` seção [17]: a biometria da conta isenta sobrevive à limpeza e a das
     outras não — as duas metades testadas.
   - Padrão de créditos subiu de 20 para **100** (`FOTON_CREDITOS_INICIAIS`).
+
+## ADR-0022 — Miniatura como COLUNA, não como arquivo
+- **Status:** PROPOSED — decisão do dono
+- **Data:** 2026-08-30
+- **Problema observado:** o álbum GLAMON com 89 fotos rola pesado no celular. A causa é
+  medida, não suposta: a grade mostra miniaturas de ~110 px, mas baixa a **foto inteira**
+  (`/img/...`, 2048 px, ~400 KB). São **~35 MB e 89 decodificações de 2048 px** para
+  desenhar quadradinhos. `loading="lazy"` já existe — ele adia, não emagrece.
+- **Decisão proposta:** uma coluna `photo.thumb` (BLOB) com a mesma imagem a **320 px,
+  q70 (~15 KB)**, gerada **na mesma passada que já decodifica a foto** no `process_image`,
+  e servida por `/img/{event}/{id}.jpg?t=1`.
+- **Por que não as alternativas:**
+  - *Arquivo separado por foto*: dobra o número de objetos, cria um estágio novo no
+    pipeline, e é exatamente o que se quer evitar antes do R2.
+  - *Redimensionar a cada requisição*: gasta o único núcleo justamente quando 30
+    convidados estão rolando a galeria — competindo com o reconhecimento.
+  - *Deixar o navegador encolher*: é o que acontece hoje, e é o problema.
+- **Por que a coluna resolve sem custo de pipeline:**
+  - **Não é arquivo novo.** É a mesma linha, no mesmo banco, no mesmo backup.
+  - **Não é estágio novo.** O `process_image` já tem a imagem decodificada em memória;
+    é um `resize` a mais (~10 ms), não uma segunda decodificação.
+  - **Custo de disco desprezível:** 15 KB × 8 (as 7 cópias de backup) = 120 KB por foto,
+    contra 3,2 MB da foto tratada. Menos de 4% a mais.
+  - **Ganho:** a grade de 89 fotos cai de ~35 MB para **~1,3 MB** — 26× menos.
+- **Fotos que já existem:** gerar a miniatura **na primeira vez que for pedida** e
+  guardar. Espalha o custo em vez de exigir uma migração que trava a VM.
+- **Consequências:** `store.salva_foto` ganha um parâmetro; `/img` ganha um modo; o
+  front pede `?t=1` na grade e a foto inteira só no visualizador. Reversível: sem a
+  coluna preenchida, cai na foto inteira, como hoje.
+
+## ADR-0023 — Vídeo de até 15 s (plano; depende do R2)
+- **Status:** PROPOSED — **bloqueado por object storage**
+- **Data:** 2026-08-30
+- **Decisão proposta:** aceitar clipes de até 15 s, entregues ao convidado pelo mesmo
+  reconhecimento facial das fotos. **Só depois do R2** — e essa ordem não é preferência,
+  é aritmética.
+- **Por que vídeo EXIGE o R2 antes:**
+  - Um clipe de 15 s a 1080p pesa **20–40 MB**. Hoje as fotos moram no SQLite e o backup
+    guarda **7 cópias do banco inteiro**: cada byte conta **8×**.
+  - **Um clipe custaria 160–320 MB de disco.** Com 40 GB livres, ~150 clipes enchem tudo
+    — e derrubam a produção da fotógrafa junto, porque é o mesmo disco e o mesmo banco.
+  - Com o R2, o banco guarda só a **chave** e os vetores; o arquivo nunca entra no backup.
+- **Como o reconhecimento funciona em vídeo:** extrair **1 quadro por segundo** (≈15
+  quadros), rodar neles o SCRFD+ArcFace que já existe, e indexar o clipe para todo mundo
+  que aparecer em qualquer quadro. Não é motor novo — é o mesmo, aplicado a alguns
+  quadros.
+- **O custo de CPU é o segundo bloqueio, e é medido:** hoje uma foto leva ~400 ms de
+  processamento. 15 quadros ≈ **6 s de CPU por clipe**, num núcleo só que já é o gargalo
+  da avalanche de selfie (P95 de 8,2 s). Vídeo **sem mais CPU** transformaria cada clipe
+  numa parada de 6 s para todo mundo.
+- **Ordem obrigatória:** (1) R2 · (2) mais CPU · (3) fila com prioridade (selfie na
+  frente do vídeo) · (4) só então o vídeo.
+- **A decidir quando chegar a hora:** 1 quadro/s é suficiente ou perde quem aparece de
+  relance? Guardar o clipe original ou uma versão reduzida? Áudio entra na retenção
+  LGPD como dado novo? `UNKNOWN — REQUIRES EXPERIMENT`.
