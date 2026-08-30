@@ -41,6 +41,30 @@ plataforma de evento. Ninguém serve quem fotografa o próprio rolê. É consumo
 > **NOME DECIDIDO PELO DONO (2026-08-31): "Foto'n Fiesta!"** — é o que vai no botão e
 > no branding da terceira porta (era "Fóton Festa" nos documentos antigos).
 >
+> ### REGRAS DECIDIDAS PELO DONO (2026-08-30) — as três perguntas abertas, respondidas
+>
+> **1. Quanto cada participante pode mandar: 50 fotos**, "inicialmente" (palavra dele —
+> é ponto de partida a calibrar com uso real, não número sagrado). Limite **por
+> participante**, contado pela sessão de convidado — **nunca por IP**: numa festa o
+> wi-fi é um só, e contar por IP puniria a mesa inteira pelo primeiro que postou.
+>
+> **2. O participante pode apagar a própria foto — SIM, com uma trava.**
+> *"mas não onde ele esteja com mais rostos."* Ou seja: apaga a foto em que **só ele**
+> aparece; **não apaga foto onde há outras pessoas**. A razão é boa e não é técnica: a
+> foto com mais gente não é só dele — apagá-la tiraria dos outros uma lembrança que
+> também é deles. Implementação: `n_faces > 1` na foto ⇒ botão de apagar não aparece;
+> oferece "denunciar/pedir remoção" ao dono do evento no lugar.
+>
+> **3. Conteúdo impróprio — linha explícita do dono:** *"dificilmente rolará, mas mamilos,
+> pênis e vagina não. Bunda pode, porque todo vestido hoje em dia já sabe."*
+> Tradução operacional: o corte é **genitália e mamilo**, não "nudez" em abstrato —
+> decote e traje de festa (inclusive vestido cavado) **passam**, porque é exatamente a
+> roupa que as pessoas usam na festa que estamos fotografando. Um filtro treinado em
+> "nudez" genérica reprovaria metade de um casamento, e esse é o erro a evitar.
+> `UNKNOWN — REQUIRES EXPERIMENT`: qual mecanismo aplica isso (classificador local vs
+> revisão do dono do evento) e a que custo de latência — ver a tensão com o "na hora"
+> registrada em IDEIAS-V2 §A.1. **Nada disto está construído.**
+>
 > **DECIDIDO PELO DONO (2026-08-30): esta é a versão da Ana.** Ela E os convidados
 > mandam fotos — não a versão "só ela envia". Consequências que ele mesmo apontou:
 > login/persistência do convidado ficam centrais, e o lag da câmera do app precisa

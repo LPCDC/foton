@@ -454,3 +454,21 @@ número de negócio; latências exige admin.
   contra `rostos_de(evento)`. Travado por dois testes (o convidado tardio casa, e a foto
   chega no feed dele) para ninguém "otimizar" isso por engano. Sem essa garantia a
   idempotência seria uma troca ruim: economizaria CPU e perderia entrega.
+
+### Preview da câmera: 4K → 2560×1440 (2026-08-30)
+
+`applyConstraints({width:{ideal:3840},height:{ideal:2160}})` forçava o preview a 4K. Mas
+a captura usa a resolução do **preview** (`cv.width=v.videoWidth`) e o servidor reduz toda
+foto para `LONG_EDGE=2048`: o celular empurrava **8,3 MP por quadro** para o servidor
+descartar tudo acima de 2048 — **a foto entregue ficava idêntica**.
+
+| | antes | depois |
+|---|---|---|
+| preview pedido | 3840×2160 (8,3 MP) | 2560×1440 (3,7 MP) |
+| pixels por quadro | — | **2,25× menos** |
+| foto entregue (após servidor) | 2048 | 2048 — **idêntica** |
+
+- **Confirmado pelo dono no aparelho real (2026-08-30):** *"camera ta melhor. fps"*. O
+  lado que só o celular dele mediria.
+- Ainda `UNKNOWN — REQUIRES EXPERIMENT`: o número do FPS (antes/depois). A confirmação é
+  qualitativa, do usuário; não foi instrumentada.

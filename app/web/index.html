@@ -3143,27 +3143,54 @@ async function admContatos(revelar){
    'social' e a pele do Foton Festa — existia no app e era inalcancavel ate o
    servidor passar a devolve-la. Vazio = automatica (empresa -> empresa, senao pro). */
 async function admPerfil(email, atual){
-  const op=prompt(`Pele da tela para ${email}
-
-`
-    +`  pro      — "meu painel", "Seus eventos"
-`
-    +`  empresa  — "galeria da empresa", "Seus álbuns"
-`
-    +`  social   — "meu rolê", "Seus rolês"  (Fóton Festa)
-
-`
-    +`Deixe VAZIO para automática. Isto muda só as palavras da tela, não dá poderes.`,
-    atual||'');
-  if(op===null) return;
+  /* prompt() NAO serve aqui: em PWA instalado no Android ele aparece sem a caixa de
+     digitar — foi exatamente o que aconteceu. Escolha precisa ser BOTAO. */
+  const opcoes=[
+    ['',        'Automática', 'empresa vira "empresa", o resto vira "pro"'],
+    ['pro',     'Pro',        '"meu painel" · "Seus eventos"'],
+    ['empresa', 'Empresa',    '"galeria da empresa" · "Seus álbuns"'],
+    ['social',  'Social',     '"meu rolê" · "Seus rolês" — Fóton Festa'],
+  ];
+  const esc=document.createElement('div');
+  esc.style.cssText='position:fixed;inset:0;z-index:220;background:rgba(0,0,0,.62);'
+    +'display:flex;align-items:flex-end;justify-content:center';
+  const cx=document.createElement('div');
+  cx.style.cssText='background:var(--ink-2,#151019);width:100%;max-width:520px;'
+    +'border-radius:20px 20px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));'
+    +'max-height:86vh;overflow:auto';
+  cx.innerHTML='<div style="font-weight:600;font-size:18px;margin-bottom:4px">Pele da tela</div>'
+    +'<p class="note" style="text-align:left;margin:0 0 14px">'+String(email).replace(/[<>]/g,'')
+    +' — muda só as palavras da tela. <b>Não dá poderes.</b></p>';
+  opcoes.forEach(([val,rot,desc])=>{
+    const b=document.createElement('button');
+    const atualn=(atual||'');
+    const marcada = atualn===val;
+    b.className='btn '+(marcada?'primary':'ghost')+' block';
+    b.style.cssText='text-align:left;margin-bottom:8px';
+    b.innerHTML=`<b>${rot}</b>${marcada?' ✓':''}<br><span class="sub" style="opacity:.75">${desc}</span>`;
+    b.onclick=()=>{ esc.remove(); admSalvarPerfil(email,val); };
+    cx.appendChild(b);
+  });
+  const c=document.createElement('button');
+  c.className='btn ghost block'; c.textContent='Cancelar';
+  c.onclick=()=>esc.remove();
+  cx.appendChild(c);
+  esc.appendChild(cx);
+  esc.onclick=e=>{ if(e.target===esc) esc.remove(); };
+  document.body.appendChild(esc);
+}
+/* nome com prefixo adm: `aplicarPerfil()` (sem argumentos) ja existe e e outra
+   coisa — e quem pinta a pele na tela do proprio usuario. */
+async function admSalvarPerfil(email, perfil){
   try{
     const r=await fetch(API+'/admin/perfil',{method:'POST',headers:auth(),
-      body:new URLSearchParams({email,perfil:(op||'').trim().toLowerCase()})});
+      body:new URLSearchParams({email,perfil})});
     if(!r.ok){ toast((await r.json().catch(()=>({}))).detail||'Não consegui.'); return; }
     toast('Pele: '+(await r.json()).perfil+' ✓');
     abrirAdmin();
   }catch(e){ toast('Erro de conexão.'); }
 }
+
 /* Dar/tirar o cracha de admin. O peso disto esta no aviso: admin le nome e telefone
    de convidados REAIS de todos os eventos, apaga contas e troca senhas. */
 async function admPromover(email,ligado){
