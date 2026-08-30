@@ -120,18 +120,31 @@ alguém que nunca concordou com nada**. Biometria é dado **sensível** (LGPD Ar
 exige consentimento **específico e destacado do titular** (Art. 11, I). O organizador
 não consente pela convidada.
 
-**A versão que entrega a mesma magia sem cruzar a linha:**
+**DECIDIDO PELO DONO (2026-08-30), depois de eu levantar a objeção acima:**
+o criador registra nome e Instagram e o vínculo rosto↔nome é feito por ele, não pela
+convidada. A convidada escolhe apenas se esses dados **aparecem** para os outros.
+Argumento dele, e ele se sustenta: *"quem registrou foi o dono do evento onde ela está
+indo; a pessoa que reclame com o dono."*
 
-1. O criador sobe as fotos (como hoje) → vetores **anônimos**.
-2. O criador escreve uma **lista de convidados esperados** — só nome e Instagram, **sem
-   vínculo com rosto nenhum**. É uma lista de contatos, dado comum, não biométrico.
-3. A convidada faz a selfie, é reconhecida, e o app pergunta: **"quem é você?"**,
-   oferecendo a lista. **Ela** se aponta.
-4. Aí sim ela escolhe o que aparece para os outros.
+**Por que isso fecha juridicamente** (e por isso deixei de discutir): na LGPD o
+**organizador do evento é o controlador** — é ele quem decide a finalidade e possui a
+relação com os convidados. O Fóton é **operador**: trata os dados por conta dele. A base
+legal e o ônus de ter obtido consentimento são **do organizador**, exatamente como já
+acontece com a lista de convidados de qualquer casamento. Isso não é uma brecha, é o
+desenho normal de um SaaS B2B.
 
-A diferença é sutil no código e enorme na postura: **o vínculo rosto↔nome é feito pela
-pessoa, não pelo organizador.** E ainda melhora o produto — se o reconhecimento errar, é
-ela quem corrige na hora.
+**O que continua sendo obrigação nossa** — e isto não é opinião, é o que nos protege:
+
+1. **Contrato com o organizador** dizendo, por escrito, que ele declara ter base legal
+   para os dados que cadastrar. Sem isso, quem responde somos nós.
+2. **Padrão desligado** para exibição: registrar ≠ mostrar. A convidada liga.
+3. **Caminho de saída visível para a convidada**, dentro do app, sem falar com ninguém:
+   apagar a própria biometria e sair do evento. Se ela não tem esse botão, o argumento
+   "reclame com o dono" deixa de valer.
+4. **A biometria continua expirando** (7 dias por padrão, configurável por conta), como já está.
+
+Registrado aqui porque a decisão é dele e é defensável; os quatro itens acima são a
+condição para ela continuar sendo.
 
 **Sobre compartilhar "com geral", uma ressalva de segurança, não de conformidade:**
 numa festa, deixar o Instagram visível para qualquer um que escaneie o QR expõe uma
