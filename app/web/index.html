@@ -36,6 +36,13 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overscroll-behavior:none}
+/* Segurar o dedo em cima de texto (titulo, legenda, botao) selecionava a palavra e o
+   Chrome do Android abria o popup "Pesquisar no Google"/"Compartilhar" por cima do
+   app — texto de app nao e texto de pagina, ninguem quer selecionar "Vou fotografar".
+   Desliga a selecao no app inteiro e devolve so onde faz sentido: campo de digitar
+   (input/textarea) e o que for marcado de proposito com .selecionavel. */
+html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,.selecionavel{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 body{
   font-family:var(--sans);color:var(--text);
   background:
