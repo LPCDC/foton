@@ -35,7 +35,7 @@
   --mono:"Geist Mono",ui-monospace,monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
+html,body{height:100%;overscroll-behavior:none}
 body{
   font-family:var(--sans);color:var(--text);
   background:
@@ -66,8 +66,12 @@ input{font-family:inherit}
    da primeira tela. Medido em producao a 375x812: com 300px a porta "Sou empresa"
    acabava 117px abaixo da dobra. Por isso a largura tem um teto em VH tambem — grande
    no celular alto, menor no baixo, e as tres portas sempre visiveis. */
-.brand-badge{width:min(300px,62vw,23vh);aspect-ratio:220/218;background:none;border:none;padding:0;
-  cursor:pointer;display:block;margin:0 auto 16px;transition:transform .16s}
+/* O teto em vh caiu de 23 para 17 depois de medir: a home tinha 146px de conteudo
+   ALEM da tela (os dois links de rodape abaixo das portas ficavam fora), e era
+   ISSO que fazia a pagina arrastar/deslizar ao toque — nao um bug de touch-action,
+   um overflow real. 17vh + os outros ajustes desta rodada fecham a conta. */
+.brand-badge{width:min(300px,62vw,17vh);aspect-ratio:220/218;background:none;border:none;padding:0;
+  cursor:pointer;display:block;margin:0 auto 10px;transition:transform .16s}
 .brand-badge svg{width:100%;height:100%;display:block}
 .brand-badge:active{transform:scale(.97)}
 .brand-badge:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:50%}
@@ -85,15 +89,22 @@ input{font-family:inherit}
 /* ---------- landing (palco cinematografico) ---------- */
 .stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;
   margin:-26px -22px calc(-30px - env(safe-area-inset-bottom));padding:26px 22px calc(30px + env(safe-area-inset-bottom))}
-.stage-bg{position:absolute;inset:0;background-size:cover;background-position:center 32%;
+/* position:fixed, nao absolute: o fundo "deslizava" quando a pessoa arrastava o dedo
+   na home. Causa real, medida: a pagina tinha mais altura de conteudo do que a tela
+   (o rodape com os links de "conectar camera"/"privacidade" ficava fora), entao um
+   toque de arraste rolava a pagina uns 20-40px de verdade — e o fundo, por ser
+   absolute (preso ao .stage, que rola junto com tudo), parecia deslizar com ela.
+   Encolhido o excesso abaixo, mas o fundo agora fica fixo na tela de qualquer jeito:
+   mesmo que sobre 1px de rolagem, ele nunca mais se move visualmente. */
+.stage-bg{position:fixed;inset:0;background-size:cover;background-position:center 32%;
   filter:saturate(.85) contrast(1.05);transform:scale(1.04);animation:drift 22s ease-in-out infinite alternate}
 @keyframes drift{from{transform:scale(1.04) translateY(0)}to{transform:scale(1.12) translateY(-10px)}}
-.stage-fade{position:absolute;inset:0;background:
+.stage-fade{position:fixed;inset:0;background:
   linear-gradient(180deg, rgba(11,10,13,.55) 0%, rgba(11,10,13,.72) 42%, rgba(11,10,13,.95) 78%, var(--ink) 100%)}
-.stage-body{position:relative;z-index:2;padding-top:1.5vh}
-.entry{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+.stage-body{position:relative;z-index:2;padding-top:1vh}
+.entry{display:flex;flex-direction:column;gap:8px;margin-top:16px}
 .entry-card{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;text-align:left;
-  padding:16px 18px;border-radius:16px;background:var(--grad);color:#1a1608;border:1px solid transparent;
+  padding:13px 18px;border-radius:16px;background:var(--grad);color:#1a1608;border:1px solid transparent;
   box-shadow:0 14px 34px -14px rgba(203,181,131,.55);transition:transform .14s,filter .2s}
 .entry-card .ec-t{grid-column:1;font-family:var(--serif);font-weight:600;font-size:18px;letter-spacing:-.01em}
 .entry-card .ec-s{grid-column:1;font-size:16px;opacity:.72;font-weight:500}
@@ -118,13 +129,13 @@ input{font-family:inherit}
 @keyframes float{0%,100%{translate:0 0}50%{translate:0 -10px}}
 .hero-body{position:relative;margin-top:auto}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--accent-2);margin-bottom:20px}
+  text-transform:uppercase;color:var(--accent-2);margin-bottom:12px}
 .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
 .display{font-family:var(--serif);font-weight:500;font-size:42px;line-height:1.02;letter-spacing:-.025em;
   text-wrap:balance;font-optical-sizing:auto}
 .display em{font-style:italic;font-weight:400;background:var(--grad);-webkit-background-clip:text;
   background-clip:text;color:transparent}
-.lede{color:var(--muted);font-size:17px;line-height:1.6;max-width:33ch;margin-top:16px}
+.lede{color:var(--muted);font-size:17px;line-height:1.6;max-width:33ch;margin-top:10px}
 .actions{display:flex;flex-direction:column;gap:11px;margin-top:30px}
 
 /* ---------- buttons ---------- */
@@ -572,10 +583,13 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
             <span class="ec-go">→</span>
           </button>
         </div>
-        <p class="note" style="margin-top:18px">
-          <button class="link" onclick="go('guia')"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v10.5H3z"/><circle cx="12" cy="13.2" r="3.6"/></svg> Como conectar minha câmera ao Fóton</button>
+        <!-- Texto encurtado: "Como conectar minha câmera ao Fóton" quebrava em 2
+             linhas e sozinho respondia por boa parte dos 146px que sobravam da
+             tela na home (medido) — era isso que fazia a pagina arrastar ao toque. -->
+        <p class="note" style="margin-top:12px">
+          <button class="link" onclick="go('guia')"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v10.5H3z"/><circle cx="12" cy="13.2" r="3.6"/></svg> Conectar câmera</button>
         </p>
-        <p class="note" style="margin-top:8px">
+        <p class="note" style="margin-top:5px">
           <button class="link" style="color:var(--dim);font-weight:500" onclick="abrirPrivacidade()">Privacidade e seus dados</button>
         </p>
       </div>
@@ -1846,6 +1860,13 @@ let _compartilhadas=[];
 
 function ultimoEvento(){ try{ return localStorage.getItem('foton_ultimo_ev')||''; }catch(e){ return ''; } }
 function lembrarEvento(code){ try{ code?localStorage.setItem('foton_ultimo_ev',code):localStorage.removeItem('foton_ultimo_ev'); }catch(e){} }
+/* Mesma ideia, para o CONVIDADO: "uma vez logado, sempre" (pedido do dono, 2026-08-30).
+   A sessao do convidado ja sobrevivia a fechar a tela (saveGuestSession/loadGuestSession,
+   24h) — mas so era restaurada se o app soubesse o CODIGO do evento, e o codigo so
+   chegava por link direto (?evento=) ou digitado de novo. Fechar o app pelo icone da
+   tela inicial e reabrir (sem parametro nenhum na URL) sempre caia na home. */
+function ultimoEventoConvidado(){ try{ return localStorage.getItem('foton_guest_ultimo_ev')||''; }catch(e){ return ''; } }
+function lembrarEventoConvidado(code){ try{ code?localStorage.setItem('foton_guest_ultimo_ev',code):localStorage.removeItem('foton_guest_ultimo_ev'); }catch(e){} }
 
 async function lerCompartilhadas(id){
   if(!('caches' in window)) return [];
@@ -2345,7 +2366,7 @@ function entrarNoEvento(){
 }
 /* ---- sessao do convidado: sobrevive a sair da tela / bloquear o celular ---- */
 function saveGuestSession(){ try{ localStorage.setItem('foton_guest_'+guestState.event,
-  JSON.stringify({id:guestState.id, ts:Date.now()})); }catch(e){} }
+  JSON.stringify({id:guestState.id, ts:Date.now()})); lembrarEventoConvidado(guestState.event); }catch(e){} }
 function loadGuestSession(code){ try{ const s=localStorage.getItem('foton_guest_'+code); if(!s)return null;
   const j=JSON.parse(s); if(!j.id) return null;
   if(Date.now()-(j.ts||0) > 24*3600*1000){ localStorage.removeItem('foton_guest_'+code); return null; } // 24h
@@ -2364,12 +2385,15 @@ async function openGuest(code){
     const r=await fetch(`${API}/stats?event=${encodeURIComponent(code)}`,{cache:'no-store'});
     if(r.status===404){
       toast(`O código ${code} não existe. Confira com quem está fotografando.`);
+      if(ultimoEventoConvidado()===code) lembrarEventoConvidado('');   // nao insistir num codigo morto
       go('g-code'); return;
     }
   }catch(e){ /* sem rede: segue e tenta — melhor que travar a convidada na porta */ }
   const sess=loadGuestSession(code);
   if(sess){                                   // JA REGISTRADO: volta direto pra galeria
     guestState.id=sess.id; guestState.active=true;
+    lembrarEventoConvidado(code);             // "uma vez logado, sempre" — a proxima
+                                               // vez que o app abrir, volta direto aqui
     go('g-gallery'); renderGuestGrid(); startPolling(); recarregarFeed();
     toast('Bem-vindo de volta ✓');
     return;
@@ -2389,6 +2413,7 @@ async function recarregarFeed(){
 /* sessao perdida no servidor -> explica e pede a selfie de novo (nao deixa tela vazia) */
 function sessaoExpirou(){
   clearInterval(state._poll); clearGuestSession(guestState.event);
+  if(ultimoEventoConvidado()===guestState.event) lembrarEventoConvidado('');
   guestState.id=null; guestState.photos=[]; guestState.todas=[];
   toast('Precisamos da sua selfie de novo — o evento foi reiniciado');
   const lb=document.getElementById('lead-box'); if(lb) lb.style.display=LIVE?'':'none';
@@ -2697,6 +2722,7 @@ async function excluirMeusDados(){
     const r=await fetch(API+'/convidado/excluir',{method:'POST',body:fd});
     if(!r.ok){ toast('Não consegui excluir. Tente de novo.'); return; }
     clearGuestSession(guestState.event); clearInterval(state._poll);
+    if(ultimoEventoConvidado()===guestState.event) lembrarEventoConvidado('');
     guestState.id=null; guestState.photos=[]; guestState.todas=[];
     toast('Seus dados foram excluídos ✓');
     go('landing');
@@ -3383,9 +3409,21 @@ armarVoltar();
 /* deep-link ?evento=CODE abre como convidado (o que o QR faz) */
 if(_params.get('evento')) openGuest(_params.get('evento'));
 /* veio do QR de uma foto: abre so aquela foto, com Salvar e Compartilhar */
-if(_params.get('foto') && _params.get('ev')) abrirFotoAvulsa(_params.get('ev'), _params.get('foto'));
+else if(_params.get('foto') && _params.get('ev')) abrirFotoAvulsa(_params.get('ev'), _params.get('foto'));
 /* voltou do menu "Compartilhar" do Android: o service worker deixou o lote no cache */
-if(_params.get('compartilhado')) receberDoCompartilhamento(_params.get('compartilhado'));
+else if(_params.get('compartilhado')) receberDoCompartilhamento(_params.get('compartilhado'));
+/* CONVIDADO, sem link nenhum na URL (ex.: abriu pelo icone da tela inicial).
+   "Uma vez logado, sempre" (pedido do dono, 2026-08-30): sem isto, fechar o app e
+   reabrir sempre caia na home pedindo o codigo de novo, mesmo com a selfie ja
+   registrada — o mesmo bug que ja tinha sido corrigido para a FOTOGRAFA (ver a
+   IIFE acima, "recarregar a pagina jogava de volta pra tela inicial"). So dispara
+   quando NAO ha sessao de fotografa para restaurar — uma conta nao pisa na tela
+   da outra no mesmo aparelho. openGuest() confere sozinha se a sessao (24h) ainda
+   vale; se o evento tiver sido apagado, ela avisa e limpa o marcador. */
+else if(!tokenSalvo()){
+  const evConvidado = ultimoEventoConvidado();
+  if(evConvidado) openGuest(evConvidado);
+}
 </script>
 </body>
 </html>
