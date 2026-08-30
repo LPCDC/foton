@@ -193,6 +193,10 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/foton.key ubuntu@152.67.46.113 \
 | **Segurar a miniatura abria o menu do navegador** | Não havia gesto de toque longo — só um botão "Escolher algumas" — e o alvo do toque era o `<img>`, por isso o Android oferecia ações de IMAGEM ("salvar", "abrir em nova aba") em vez de selecionar. Corrigido: a miniatura não recebe toque (`pointer-events:none`), o `contextmenu` é barrado, e segurar 450 ms entra no modo seleção. |
 | **Página com mais conteúdo do que a tela = "fundo desliza" ao arrastar** | A home tinha até 146px de conteúdo além da viewport (dois links de rodapé ficavam fora da dobra) — arrastar o dedo rolava a página de verdade uns 20-40px, e o fundo (`position:absolute`, preso ao `.stage` que rolava junto) parecia "deslizar". Não era ilusão nem bug de touch: era overflow real, medido com `document.scrollingElement.scrollHeight`. Corrigido por dois lados — espaçamentos apertados até o overflow zerar em telas comuns, e `.stage-bg`/`.stage-fade` viraram `position:fixed` (nunca mais se movem, mesmo que sobre 1px de rolagem numa tela bem baixa). **Ao investigar "elemento X parece causar Y", meça removendo/escondendo X de verdade antes de reescrever CSS em cima dele** — a suspeita inicial (a barra de progresso `.prog`, fixed com `transform` pra ficar fora da tela) foi **descartada por teste direto** (escondê-la não mudou o `scrollHeight` nem 1px); só a medição salvou de uma correção no lugar errado. |
 | **Sessão persistente só restaurava com o código já em mãos** | O convidado já tinha sessão de 24h salva (`saveGuestSession`), mas só era restaurada se o app já soubesse o código do evento (link direto ou digitado) — fechar pelo ícone da tela inicial (sem parâmetro na URL) sempre caía na home pedindo o código de novo. É o **mesmo bug, do outro lado**: já tinha sido corrigido para a fotógrafa (a IIFE de boot que restaura `go('dash')` com o token salvo). Corrigido com o mesmo padrão: um marcador `foton_guest_ultimo_ev` (paralelo a `ultimoEvento`/`lembrarEvento`), checado no boot quando não há link direto na URL nem sessão de fotógrafa para restaurar. **Um bug corrigido de um lado do app é motivo para checar o espelho dele do outro lado.** |
+| **Documento desatualizado enganou uma sessão inteira** | `site/README.md` dizia "`netlify.toml` continua apontando para `app/web`". Era **falso desde o commit `ffc5b1b`** (já publica `site/`). Uma sessão inteira raciocinou e escreveu em cima dessa frase antes de alguém rodar `cat netlify.toml`. Pior: o site NO AR continua sendo a demo velha (medido: 42 KB, `placeholder` 4×, zero marcador do site atual) — ou seja, **o `publish` mudou no repo e o build do Netlify nunca rodou**. Duas mentiras diferentes empilhadas. **Doc que afirma estado de deploy tem que ser verificado com `curl`/`cat`, não relido.** |
+| **Biblioteca de smooth-scroll quebrou a rolagem do mouse** | O site de marca usava **Lenis**; a rolagem da roda do mouse simplesmente não respondia no navegador do dono. Removido (ADR-0027) — GSAP/ScrollTrigger não dependiam dele. Duas lições coladas: (1) **efeito de rolagem não pode custar a rolagem**; (2) ao arrancar a lib, foi junto uma linha que **não era dela** — `gsap.ticker.lagSmoothing(0)` morava dentro do `if (window.Lenis)` — e sem ela a animação de abertura ficou **presa no meio**. **Ao remover uma dependência, conferir linha a linha o que estava no bloco dela por acaso.** |
+| **`scroll-behavior:smooth` ignora `prefers-reduced-motion`** | Ao trocar o Lenis por rolagem nativa, entrou `scroll-behavior:smooth` — que **não** respeita a preferência de movimento reduzido sozinha, ao contrário do resto do arquivo, que era cuidadoso. Corrigido com `@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}`. **Nem toda propriedade CSS de movimento se auto-desliga.** |
+| **Overlay de tela cheia sem rede de segurança** | A animação de abertura do site acende um `#intro` que cobre a tela **no primeiro passo** da timeline. Se ela quebrasse no meio, o site ficaria **preto** — falha pior que não ter animação. O véu de saída para o app, escrito antes, já tinha proteção idêntica (`setTimeout` de 1200 ms) e o padrão não foi copiado. Corrigido com `setTimeout` de 4 s que força o overlay a sumir. **Todo overlay que cobre a tela precisa de um jeito de sair que não dependa da animação terminar.** |
 | **Segurar em texto abria "Pesquisar no Google" do Chrome** | Sem `user-select:none` global, segurar o dedo num título ou texto de botão selecionava a palavra e o Android oferecia buscar/compartilhar por cima do app — texto de app não é texto de página. Já existia a proteção nas miniaturas de foto (armadilha acima); faltava no resto. Corrigido: `user-select:none` em `html,body`, com exceção explícita para `input`, `textarea` e uma classe `.selecionavel` para o que precisar no futuro. |
 
 ## 8. Estado atual (o que funciona hoje)
@@ -239,6 +243,12 @@ teto de tamanho em `vh` além do de `vw` — sem isso a marca em 300px empurrava
 terceira porta ("Sou empresa") para fora da primeira tela do celular. O fundo por trás
 dela (`.stage-bg`/`.stage-fade`) é `position:fixed` — não se move mesmo se a página
 rolar um pouco (ver armadilha em §7).
+
+**Vocabulário (2026-08-30):** o produto deixou de falar só de "festa". A tela inicial
+diz **"no seu evento, na sua trilha, na sua festa"** — decisão do dono, para não parecer
+que só serve balada (casamento, corporativo, trilha, passeio são o mesmo motor). O
+`.eyebrow` alinha o ponto dourado pelo **topo**, não pelo centro: com o texto quebrando
+em 2 linhas no celular, centralizado ele boiava entre as duas.
 
 **Toque no app (2026-08-30):** texto do app não é mais selecionável (título, legenda,
 botão) — segurar o dedo não seleciona palavra nem abre o popup "Pesquisar no Google"
@@ -289,6 +299,18 @@ WhatsApp chegar.
    recuperação de senha, ou domínio com reputação suficiente para não disparar o aviso
    "app não verificado" do Google.
 5. **Site de marca no Netlify** — vitrine, planos, links úteis, botão "Entrar".
+   `site/index.html` **existe e está pronto** (marca nova: diafragma no nav, abertura
+   com flash de câmera; GSAP sem Lenis, ADR-0027). `netlify.toml` já aponta para
+   `site/`. **O que falta não é código:** o build do Netlify não roda —
+   `getfoton.netlify.app` ainda serve a demo velha (medido). Confirmar no painel do
+   Netlify se o site está ligado a `github.com/LPCDC/foton` e em qual branch.
+   `UNKNOWN — REQUIRES EXPERIMENT` até alguém ver um build sair.
+   **Isso vem antes de qualquer conversa de DNS** — apontar `foton.app.br` para o
+   Netlify hoje levaria o domínio raiz para uma página desatualizada. Cuidado extra
+   com o certificado: hoje `foton.app.br`, `www` e `app.foton.app.br` estão no
+   **mesmo certificado** da VM (`dominio.sh --expand`); tirar os dois primeiros do
+   DNS sem separar o certificado antes pode derrubar o HTTPS do **app** numa
+   renovação futura.
 6. **Cloudflare R2** para as fotos — tira o peso da VM (1 núcleo entrega tudo hoje);
    conta já criada, falta configurar. Egress zero (ADR-0011). Bloqueia vídeo (ADR-0023)
    e miniaturas maiores.

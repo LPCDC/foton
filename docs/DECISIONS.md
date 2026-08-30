@@ -555,3 +555,40 @@ Revisitar quando **qualquer um** destes acontecer:
   continua funcionando idêntica), as 4 suítes de `tests/todos.sh` passando, e teste
   manual em produção confirmando que o login antigo não regrediu — os mesmos critérios
   já deixados em `docs/PROMPT-PROXIMA-SESSAO.md`.
+
+---
+
+## ADR-0027 — Site de marca sem biblioteca de smooth-scroll (Lenis removido)
+
+**Data:** 2026-08-30 · **Estado:** aceita
+
+**Decisão.** O site de marca (`site/index.html`) deixa de usar **Lenis**. A rolagem
+passa a ser a **nativa do navegador**, com `scroll-behavior:smooth` só para os links
+âncora. GSAP + ScrollTrigger continuam — a animação não dependia do Lenis.
+
+**Contexto.** O dono relatou, testando no navegador dele: *"a rolagem do botão do mouse
+não funciona"*. O Lenis sequestra o evento de roda para interpolar a rolagem; quando essa
+interpolação briga com o ambiente (roda de mouse com passo grande, aceleração do SO,
+janela sem foco), o resultado é rolagem travada ou que não responde. É o modo de falha
+clássico dessa classe de biblioteca.
+
+**Alternativas.** Ajustar parâmetros do Lenis (`duration`, `smoothWheel`) — tentaria
+adivinhar o hardware do usuário, e o benefício é puramente estético · trocar por
+Locomotive Scroll — mesma classe de problema, outra dependência · **remover** e usar
+rolagem nativa.
+
+**Justificativa.** A rolagem funcionar é requisito; rolagem *interpolada* é enfeite. Uma
+dependência que quebra a interação mais básica da página não paga o próprio custo
+(CLAUDE.md §4.3: menor stack que cumpre o objetivo). ScrollTrigger funciona igual sem
+engine de smooth-scroll nenhuma — nada de animação foi perdido.
+
+**Consequências.**
+- Uma dependência a menos vendorizada no HTML (~10 KB de JS removidos).
+- `gsap.ticker.lagSmoothing(0)` **precisou ser mantida**: ela morava dentro do bloco do
+  Lenis, mas não é dele. Sem ela o GSAP "absorve" travadas do navegador em vez de tocar
+  a timeline, e a animação de abertura ficou presa no meio. Achado ao remover o Lenis —
+  ver armadilha em `BLUEPRINT.md` §7.
+- `scroll-behavior:smooth` **não respeita `prefers-reduced-motion` sozinho**; foi preciso
+  desligá-lo explicitamente por media query. O resto do arquivo já respeitava.
+- Regra que fica: **efeito de rolagem não pode custar a rolagem.** Antes de adicionar
+  qualquer biblioteca que intercepte roda/toque, testar com mouse de verdade.

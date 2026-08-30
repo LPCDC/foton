@@ -135,9 +135,13 @@ input{font-family:inherit}
 .collage .c3{width:96px;height:120px;left:44%;top:118px;transform:rotate(-3deg);animation-delay:-6s;opacity:.8}
 @keyframes float{0%,100%{translate:0 0}50%{translate:0 -10px}}
 .hero-body{position:relative;margin-top:auto}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;letter-spacing:.14em;
+/* align-items:flex-start (nao center): o texto quebra em 2 linhas no celular e,
+   centralizado, o ponto dourado ficava boiando no MEIO das duas. O margin-top do
+   ponto o centra opticamente na PRIMEIRA linha (linha de 19px, ponto de 6px). */
+.eyebrow{display:inline-flex;align-items:flex-start;gap:8px;font-size:15px;font-weight:600;letter-spacing:.14em;
   text-transform:uppercase;color:var(--accent-2);margin-bottom:12px}
-.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);
+  flex:none;margin-top:6px}
 .display{font-family:var(--serif);font-weight:500;font-size:42px;line-height:1.02;letter-spacing:-.025em;
   text-wrap:balance;font-optical-sizing:auto}
 .display em{font-style:italic;font-weight:400;background:var(--grad);-webkit-background-clip:text;
@@ -572,9 +576,9 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
       <div class="stage-fade" aria-hidden="true"></div>
       <div class="stage-body">
         <button class="brand-badge" onclick="home()" aria-label="Fóton — início"></button>
-        <div class="eyebrow"><span class="dot"></span>entrega durante a festa</div>
+        <div class="eyebrow"><span class="dot"></span>no seu evento, na sua trilha, na sua festa</div>
         <h1 class="display">A foto no celular do convidado, <em>na hora.</em></h1>
-        <p class="lede">Você fotografa. Quem aparece na foto recebe, sozinho, durante a festa.</p>
+        <p class="lede">Você fotografa. Quem aparece na foto recebe, sozinho, durante o evento.</p>
         <div class="entry">
           <button class="entry-card" onclick="entrarComoFotografo()">
             <span class="ec-t">Vou fotografar</span>
