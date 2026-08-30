@@ -49,7 +49,7 @@ ssh ubuntu@152.67.46.113 'bash -s' < infra/restaurar-teste.sh
 
 ## O que o backup atual NÃO protege — em ordem de gravidade
 
-### 1. Perder a máquina (o buraco grande) — `ABERTO`
+### 1. Perder a máquina (o buraco grande) — `SCRIPT PRONTO, FALTA RODAR`
 
 As cópias moram em `/var/lib/foton/backup`, **no mesmo disco da mesma VM** que o banco.
 Isso protege contra apagar por engano e contra corrupção do arquivo. **Não protege contra
@@ -58,10 +58,15 @@ recuperada por inatividade), conta suspensa. Nesse cenário o banco e as 7 cópi
 juntos, e o acervo do GLAMON vai junto.
 
 > **É o único risco irreversível do sistema hoje.** Tudo o mais tem conserto.
-> Correção: mandar uma cópia diária para fora da VM (o R2 já está na conta Cloudflare —
-> `rclone`/`aws s3 cp` de um arquivo de dezenas de MB por dia custa ~nada). Vira ADR.
+> **Correção escrita:** `infra/backup-externo.sh` instala uma cópia diária no
+> Cloudflare R2 via rclone. Só envia backup que passa no `integrity_check` (mandar
+> para fora um arquivo corrompido é trocar um backup ruim por dois), nomeia por
+> **data** e não por dia-da-semana (isso também resolve o item 2 lá fora), guarda
+> 30 dias, e prova o funcionamento enviando na hora e listando o bucket.
+> **Falta rodar** — exige Cloud Shell e as chaves do R2, que não ficam no repositório.
+> Vira ADR quando rodar.
 
-### 2. Corrupção silenciosa vence a rotação — `ABERTO`
+### 2. Corrupção silenciosa vence a rotação — `RESOLVIDO FORA, ABERTO DENTRO`
 
 A rotação é por dia da semana: 7 dias. Se o banco corromper e ninguém notar em uma
 semana, **todas as cópias já foram sobrescritas pela versão corrompida**. Correção

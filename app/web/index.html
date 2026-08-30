@@ -2462,7 +2462,16 @@ async function abrirVisor(){
     usarCameraDoCelular(); return;
   }
   const tr=_camStream.getVideoTracks()[0];
-  try{ await tr.applyConstraints({width:{ideal:3840},height:{ideal:2160}}); }catch(e){}
+  /* 2560x1440 e nao 4K — e aritmetica, nao gosto.
+     A captura usa a resolucao do PREVIEW (cv.width=v.videoWidth, mais abaixo), e o
+     servidor reduz TODA foto para LONG_EDGE=2048. Entao pedir 3840 de largura era
+     mandar o celular empurrar 8,3 MP por quadro para o servidor jogar fora tudo que
+     passa de 2048: a foto entregue fica IDENTICA. 2560 continua folgado acima dos
+     2048 finais (zero perda de qualidade) e custa 3,7 MP por quadro — 2,25x menos
+     pixel no preview, que e o que derruba o FPS em Android mediano e causava o
+     motion blur relatado.
+     Se o aparelho nao tiver 1440p, ele entrega o que tem e a captura acompanha. */
+  try{ await tr.applyConstraints({width:{ideal:2560},height:{ideal:1440}}); }catch(e){}
   _camCap=null;
   try{ if(typeof ImageCapture==='function') _camCap=new ImageCapture(tr); }catch(e){}
   // flash e foco so aparecem se o APARELHO oferecer — nada de botao que nao faz nada
