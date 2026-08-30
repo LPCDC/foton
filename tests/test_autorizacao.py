@@ -525,5 +525,51 @@ C.post("/admin/empresa", data={"email": "perfil@t.com", "ligado": "0"}, headers=
 checa("desligada, volta a 'pro'",
       C.get("/me", headers=h(_pl["token"])).json().get("perfil"), "pro")
 
+print("\n[24] Confiabilidade: idempotencia de ingestao, health do pipeline e latencia")
+# Cenario real: a camera reenvia por retentativa, ou o celular com internet ruim manda o
+# lote de novo. Antes, a MESMA foto virava duas linhas, dois processamentos e duas copias
+# na galeria do convidado. O convidado via a mesma foto duplicada.
+C.post("/event", data={"code": "IDEM1", "brand": "DONA"}, headers=h(dona))
+_foto = jpeg()
+_r1 = C.post("/ingest", data={"event": "IDEM1"}, files={"file": ("a.jpg", _foto, "image/jpeg")}, headers=h(dona)).json()
+_r2 = C.post("/ingest", data={"event": "IDEM1"}, files={"file": ("a.jpg", _foto, "image/jpeg")}, headers=h(dona)).json()
+checa("foto reenviada devolve a MESMA entrega", _r2["photo_id"], _r1["photo_id"])
+checa("e se declara duplicada", _r2.get("duplicada"), True)
+checa("a primeira NAO e duplicada", _r1.get("duplicada"), False)
+checa("o evento continua com UMA foto", len(C.get("/photos?event=IDEM1").json()["photos"]), 1)
+# foto DIFERENTE no mesmo evento continua entrando (o dedupe nao pode comer foto nova)
+b = io.BytesIO(); Image.new("RGB", (200, 200), (10, 200, 30)).save(b, "JPEG")
+_r3 = C.post("/ingest", data={"event": "IDEM1"}, files={"file": ("b.jpg", b.getvalue(), "image/jpeg")}, headers=h(dona)).json()
+checa("foto diferente entra normalmente", _r3.get("duplicada"), False)
+checa("agora o evento tem duas fotos", len(C.get("/photos?event=IDEM1").json()["photos"]), 2)
+# a MESMA foto em OUTRO evento e outra entrega (marca/dono diferentes), nao duplicata
+C.post("/event", data={"code": "IDEM2", "brand": "DONA"}, headers=h(dona))
+_r4 = C.post("/ingest", data={"event": "IDEM2"}, files={"file": ("a.jpg", _foto, "image/jpeg")}, headers=h(dona)).json()
+checa("mesma foto em OUTRO evento nao e duplicata", _r4.get("duplicada"), False)
+checa("e o outro evento tem a sua propria copia", len(C.get("/photos?event=IDEM2").json()["photos"]), 1)
+# a duplicata devolve os mesmos convidados da entrega original (cliente nao ve diferenca)
+_sf = C.post("/selfie", data={"event": "IDEM1", "consent": "true"},
+             files={"file": ("s.jpg", jpeg(), "image/jpeg")}).json()
+_r5 = C.post("/ingest", data={"event": "IDEM1"}, files={"file": ("a.jpg", _foto, "image/jpeg")}, headers=h(dona)).json()
+checa("duplicata devolve os convidados ja entregues", _sf["guest_id"] in _r5["matched_guests"], True)
+
+# health deixou de ser tres constantes: bate no banco de verdade
+_hj = C.get("/health").json()
+checa("health confere o banco", _hj.get("db_ok"), True)
+checa("health responde ok", _hj.get("ok"), True)
+checa("health nao vaza numero de negocio", any(k in _hj for k in ("photos", "fotos", "contatos", "clientes")), False)
+
+# latencia: numero do SLA atras de admin
+checa("latencias: anonimo nao ve", C.get("/admin/latencias").status_code, 403)
+checa("latencias nega fotografa comum", C.get("/admin/latencias", headers=h(dona)).status_code, 403)
+_lj = C.get("/admin/latencias", headers=h(chefe)).json()
+checa("admin ve amostras de latencia", _lj["amostras"] >= 1, True)
+checa("e o alvo declarado do SLA", _lj["alvo_ms"], 10000)
+# a duplicata nao processa: se entrasse na janela, entraria como ~0ms e maquiaria o P95
+_antes = C.get("/admin/latencias", headers=h(chefe)).json()["amostras"]
+C.post("/ingest", data={"event": "IDEM1"}, files={"file": ("a.jpg", _foto, "image/jpeg")}, headers=h(dona))
+_depois = C.get("/admin/latencias", headers=h(chefe)).json()["amostras"]
+checa("duplicata NAO entra na conta (nao maquia o P95)", _depois, _antes)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

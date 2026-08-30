@@ -373,3 +373,57 @@ no modelo de dados.
 - **Verificação funcional (runtime, mesma sessão):** 2000 fotos → 50 tiles + "Mostrar mais
   50 · faltam 80"; clique → 100 tiles, "faltam 30"; ZIP/seleção enxergam as 2000; foto nova
   ao vivo: 50 → 51 tiles, a nova no topo, nenhuma removida.
+
+---
+
+## Confiabilidade — idempotência, health e latência (2026-08-30)
+
+### Idempotência de ingestão (`photo.sha`)
+
+**Problema:** `pid = uuid.uuid4()` a cada upload. A MESMA foto reenviada (retentativa do
+FTP da câmera, celular com internet ruim reenviando o lote) virava **outra linha, outro
+processamento (~1s de CPU) e outra cópia na galeria do convidado**. Cenário de falha
+previsto no CLAUDE.md §5 ("upload duplicado") e que não tinha defesa.
+
+**Correção:** SHA-256 dos bytes ORIGINAIS (antes do watermark, que carrega hora/marca e
+mudaria o hash). Escopo é o EVENTO — a mesma foto em dois eventos são duas entregas
+legítimas. Duplicata devolve o `photo_id` original + `duplicada:true` + os mesmos
+`matched_guests`, sem reprocessar.
+
+**Migração medida (banco sintético fiel ao de produção: 800 fotos BLOB, 206 MB):**
+
+| operação | tempo |
+|---|---|
+| `ALTER TABLE photo ADD COLUMN sha` | **1,0 ms** (metadata-only, não reescreve a tabela) |
+| `CREATE INDEX ix_photo_sha` | **7,4 ms** |
+| busca de dedupe (`event_code`+`sha`) | **0,04 ms** |
+
+- Linhas antigas ficam `sha NULL` — sem dedupe retroativo, e **verificado** que uma busca
+  com sha real não casa com NULL.
+- **Ganho por duplicata evitada:** ~1 s de CPU + ~250 KB–2 MB de banco + 1 foto repetida a
+  menos na galeria do convidado. `UNKNOWN — REQUIRES EXPERIMENT`: com que frequência a
+  duplicata acontece de verdade em evento real (precisa do piloto com câmera).
+
+### `/health` deixou de mentir
+
+Antes devolvia **três constantes** — dizia `ok:true` com o banco no chão. Agora bate no
+banco (`db_ok`, `db_ms`) e informa se o motor facial já carregou (`engine_carregado`) —
+ele é preguiçoso, e é por isso que a **primeira foto do dia demora mais**. Continua
+público, então **sem número de negócio e sem PII** (§7); o detalhe fica em `/admin/saude`.
+
+### `/admin/latencias` — o número do SLA
+
+Janela em memória das 500 últimas ingestões → **P50/P95/P99/máx** contra o alvo de
+10 000 ms (§2). Zera no restart de propósito: é termômetro do agora, não histórico.
+**Duplicata não entra na conta** (não processa; entraria como ~0 ms e maquiaria o P95) —
+isso está travado por teste.
+
+- **HONESTO — o que este número NÃO é:** ele mede o **servidor** (chegada do byte →
+  foto no banco + match). O end-to-end do CLAUDE.md §2 (disparo → foto no celular)
+  inclui câmera→servidor e servidor→celular, que continuam
+  `UNKNOWN — REQUIRES EXPERIMENT` até o piloto com câmera e 4G real.
+
+**Testes:** 17 checagens novas de contrato (297 no total, todas verdes), incluindo:
+duplicata devolve a mesma entrega; foto diferente continua entrando; mesma foto em outro
+evento não é duplicata; duplicata devolve os convidados já entregues; health não vaza
+número de negócio; latências exige admin.

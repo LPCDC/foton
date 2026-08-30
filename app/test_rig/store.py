@@ -67,6 +67,15 @@ def conn():
         # LOOK da conta (ADR-0028): curva leve aplicada na mesma passada que ja decodifica
         # a foto. NULL = nenhum look, e o pipeline fica identico ao que sempre foi — e o
         # que as contas existentes tem, entao esta migracao nao muda foto de ninguem.
+        # IDEMPOTENCIA DE INGESTAO: impressao digital (SHA-256) dos bytes ORIGINAIS da
+        # foto. A mesma foto reenviada (retentativa do FTP da camera, celular com
+        # internet ruim que reenvia o lote) reaproveita a linha em vez de criar outra.
+        # Linha antiga fica NULL — sem dedupe retroativo, e NULL nunca casa porque a
+        # busca sempre passa um sha real. Nao e biometria: e hash do arquivo.
+        try: _conn.execute("ALTER TABLE photo ADD COLUMN sha TEXT")
+        except sqlite3.OperationalError: pass
+        try: _conn.execute("CREATE INDEX IF NOT EXISTS ix_photo_sha ON photo(event_code, sha)")
+        except sqlite3.OperationalError: pass
         try: _conn.execute("ALTER TABLE photographer ADD COLUMN look TEXT")
         except sqlite3.OperationalError: pass
         _conn.commit()
@@ -430,11 +439,35 @@ def encerra_evento(code):
     q("UPDATE event SET status='done' WHERE code=?", (code,))
 
 # ---------------- fotos / rostos ----------------
-def salva_foto(pid, code, bytes_, embs, thumb=None):
-    q("INSERT INTO photo(id,event_code,bytes,n_faces,criado,thumb) VALUES(?,?,?,?,?,?)",
-      (pid, code, bytes_, len(embs), time.time(), thumb))
+def sha_de(raw):
+    """Impressao digital dos bytes ORIGINAIS (antes do tratamento — o watermark tem
+    hora/marca e mudaria o hash da mesma foto)."""
+    return hashlib.sha256(raw).hexdigest()
+
+def foto_por_sha(code, sha):
+    """Ja existe esta MESMA foto neste evento? Devolve o photo_id, ou None.
+
+    Escopo e o EVENTO de proposito: a mesma foto em dois eventos sao duas entregas
+    diferentes (marcas/donos diferentes), nao uma duplicata."""
+    if not sha: return None
+    r = q("SELECT id FROM photo WHERE event_code=? AND sha=?", (code, sha), "one")
+    return r["id"] if r else None
+
+def salva_foto(pid, code, bytes_, embs, thumb=None, sha=None):
+    q("INSERT INTO photo(id,event_code,bytes,n_faces,criado,thumb,sha) VALUES(?,?,?,?,?,?,?)",
+      (pid, code, bytes_, len(embs), time.time(), thumb, sha))
     for e in embs:
         q("INSERT INTO face(photo_id,event_code,emb) VALUES(?,?,?)", (pid, code, e.tobytes()))
+
+def convidados_da_foto(pid):
+    """Quem ja foi entregue nesta foto — para a resposta da duplicata ser igual a da
+    entrega original (o cliente que reenviou nao percebe diferenca)."""
+    rs = q("SELECT guest_id FROM match WHERE photo_id=?", (pid,), "all")
+    return [r["guest_id"] for r in rs]
+
+def n_faces_de(code, pid):
+    r = q("SELECT n_faces FROM photo WHERE id=? AND event_code=?", (pid, code), "one")
+    return r["n_faces"] if r else 0
 
 def foto_bytes(code, pid):
     r = q("SELECT bytes FROM photo WHERE id=? AND event_code=?", (pid, code), "one")

@@ -295,7 +295,41 @@ def _startup():
 
 @app.get("/health")
 def health():
-    return {"ok": True, "engine": "InsightFace buffalo_s (SCRFD+ArcFace) CPU", "db": "sqlite"}
+    """Saude do PIPELINE, nao so 'o processo respondeu'.
+
+    Antes isto devolvia tres constantes: dizia OK com o banco no chao. Agora bate no
+    banco de verdade e informa se o motor facial ja esta carregado (ele e preguicoso —
+    a PRIMEIRA foto do dia paga o carregamento, e e por isso que ela demora mais).
+
+    Publico de proposito e por isso SEM numero de negocio (quantas fotos, quantos
+    clientes) e sem PII — regra da secao 7. O detalhe fica em /admin/saude."""
+    t0 = time.time()
+    try:
+        store.q("SELECT 1", (), "one")
+        db_ok, db_ms = True, int((time.time() - t0) * 1000)
+    except Exception:
+        db_ok, db_ms = False, None
+    return {"ok": db_ok, "db": "sqlite", "db_ok": db_ok, "db_ms": db_ms,
+            "engine": "InsightFace buffalo_s (SCRFD+ArcFace) CPU",
+            "engine_carregado": _fa is not None}
+
+# ---- latencia do ingest: janela em memoria para provar (ou desmentir) o SLA ----
+# CLAUDE.md §2: o que importa e P95, nao media. Ate aqui cada ingest logava a propria
+# latencia e ninguem somava — para responder "estamos dentro dos 10s?" era preciso ir
+# catar log. Esta janela e de MEMORIA (morre no restart) e sem PII: so numeros.
+# HONESTO: mede o SERVIDOR (chegada do byte -> foto no banco + match), nao o
+# end-to-end do disparo ate o celular. O trecho camera->servidor e celular<-servidor
+# continua `UNKNOWN — REQUIRES EXPERIMENT`.
+_LATS = []
+def _marca_latencia(ms):
+    _LATS.append(ms)
+    if len(_LATS) > 500:                 # janela deslizante: as 500 ultimas
+        del _LATS[:len(_LATS) - 500]
+
+def _pct(vals, p):
+    if not vals: return None
+    o = sorted(vals)
+    return o[min(len(o) - 1, int(round((p / 100.0) * (len(o) - 1))))]
 
 # ============================ CONTAS ============================
 def _perfil(c):
@@ -527,12 +561,16 @@ def photos(event: str):
 def ingerir_bytes(event: str, raw: bytes):
     """Coração do pipeline — usado pelo upload do app E pelo FTP da câmera."""
     e = _ev(event, create=True)
+    sha = store.sha_de(raw)
+    ja = store.foto_por_sha(event, sha)      # retentativa do FTP nao vira foto repetida
+    if ja:
+        return ja, store.n_faces_de(event, ja)
     pid = uuid.uuid4().hex[:12]
     logo = store.pega_logo(e["dono"]) if e.get("dono") else None
     look = store.pega_look(e["dono"]) if e.get("dono") else None
     treated, dims, pms, thumb = process_image(raw, e.get("marca") or "FÓTON", logo, look)
     faces = detect_embed(treated)
-    store.salva_foto(pid, event, treated, faces, thumb)
+    store.salva_foto(pid, event, treated, faces, thumb, sha)
     for gid, gemb in store.convidados_de(event):
         g = _emb(gemb)
         if any(float(g @ f) >= THRESH for f in faces):
@@ -549,22 +587,32 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...),
         store.cria_evento(event, dono=c["email"], nome="Evento", auto=1)
         e = store.evento(event)
     raw = await file.read()
-    pid = uuid.uuid4().hex[:12]
     t0 = time.time()
+    # IDEMPOTENCIA (antes de qualquer processamento — o objetivo e justamente NAO gastar
+    # ~1s de CPU de novo): a mesma foto reenviada devolve a entrega original.
+    sha = store.sha_de(raw)
+    ja = store.foto_por_sha(event, sha)
+    if ja:
+        lat = int((time.time() - t0) * 1000)
+        log.info('{"stage":"ingest","photo_id":"%s","latency_ms":%d,"status":"duplicada"}' % (ja, lat))
+        return {"photo_id": ja, "n_faces": store.n_faces_de(event, ja), "duplicada": True,
+                "latency_ms": lat, "matched_guests": store.convidados_da_foto(ja)}
+    pid = uuid.uuid4().hex[:12]
     logo = store.pega_logo(e["dono"]) if e.get("dono") else None
     look = store.pega_look(e["dono"]) if e.get("dono") else None
     treated, dims, pms, thumb = process_image(raw, e.get("marca") or "FÓTON", logo, look)
     faces = detect_embed(treated)
-    store.salva_foto(pid, event, treated, faces, thumb)
+    store.salva_foto(pid, event, treated, faces, thumb, sha)
     matched = []
     for gid, gemb in store.convidados_de(event):
         g = _emb(gemb)
         if any(float(g @ f) >= THRESH for f in faces):
             store.salva_match(gid, pid); matched.append(gid)
     lat = int((time.time() - t0) * 1000)
+    _marca_latencia(lat)
     log.info('{"stage":"ingest","photo_id":"%s","n_faces":%d,"proc_ms":%.0f,"latency_ms":%d,"status":"ok"}'
              % (pid, len(faces), pms, lat))
-    return {"photo_id": pid, "n_faces": len(faces), "dims": dims,
+    return {"photo_id": pid, "n_faces": len(faces), "dims": dims, "duplicada": False,
             "processing_ms": round(pms, 1), "latency_ms": lat, "matched_guests": matched}
 
 @app.post("/selfie")
@@ -664,6 +712,20 @@ def admin_resumo(authorization: str = Header(None)):
             "disco_livre_gb": round(du.free / 1e9, 1), "disco_total_gb": round(du.total / 1e9, 1),
             "credito": store.uso_de_credito(), "admins": sorted(ADMINS),
             "fotografos_lista": store.todos_fotografos()}
+
+@app.get("/admin/latencias")
+def admin_latencias(authorization: str = Header(None)):
+    """P50/P95/P99 do ingest desde o ultimo restart — o numero do SLA (CLAUDE.md §2).
+
+    Janela em memoria (500 ultimas). Zera no restart de proposito: e um termometro de
+    'como esta AGORA', nao um historico — historico medido vive em docs/BENCHMARKS.md.
+    Duplicata nao entra na conta: ela nao processa, e entraria como latencia falsamente
+    baixa, maquiando o P95."""
+    _admin(authorization)
+    return {"amostras": len(_LATS),
+            "p50_ms": _pct(_LATS, 50), "p95_ms": _pct(_LATS, 95), "p99_ms": _pct(_LATS, 99),
+            "max_ms": max(_LATS) if _LATS else None,
+            "alvo_ms": 10000, "escopo": "servidor (ingest->banco+match), NAO end-to-end"}
 
 @app.get("/admin/contatos")
 def admin_contatos(authorization: str = Header(None)):

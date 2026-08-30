@@ -95,6 +95,51 @@ escala) e do ZIP organizado com originais. Apresentar essas ideias sem dizer "de
 
 ---
 
+## Parte A-bis — A lista do DONO (infra/confiabilidade) — e por que ela vem primeiro
+
+> O dono respondeu à avaliação externa com 12 itens de **confiabilidade**, não de feature.
+> **Concordo, e essa lista tem precedência.** Razão: a lista de features aumenta
+> *superfície*; esta aumenta *confiança*. O critério declarado dele é "não posso passar
+> vergonha" — e vergonha não vem de faltar telão, vem de travar na festa sem saber por quê.
+
+| # | Item do dono | Estado real no código | Veredito |
+|---|---|---|---|
+| 1 | Observabilidade real (erros/rota, latência, fila, CPU, memória) | logs JSON por foto existem; **nada agrega**. `/admin/saude` já lê mem/disco | Parcial → **fazer** |
+| 2 | Métricas de TTFR (provar os <10 s) | latência era logada e **ninguém somava** | ✅ **FEITO** (`/admin/latencias`, P50/P95/P99) |
+| 3 | Health específico do pipeline | `/health` devolvia **3 constantes**; dizia ok com o banco no chão | ✅ **FEITO** (bate no banco + estado do motor) |
+| 4 | Fila explícita (recebido→processando→identificado→entregue) | não existe; o ingest é síncrono | **Adiar** — hoje é síncrono e simples; fila é complexidade que só se paga quando houver concorrência real. Ver crítica abaixo |
+| 5 | Idempotência de ingestão | **ausente** (`uuid` novo a cada upload) — mesma foto virava 2 linhas, 2 processamentos, 2 cópias na galeria | ✅ **FEITO** (`photo.sha`) |
+| 6 | Retentativa inteligente (celular ruim) | o app tem retry? **a idempotência era o pré-requisito** — sem ela, retry duplica | **Próximo** — agora é seguro |
+| 7 | Capacidade por evento (GLAMON gigante não mata os outros) | não existe limite por evento | **Fazer** (depois do R2) |
+| 8 | Storage fora do SQLite (R2) | fotos são `photo.bytes BLOB` | **O gargalo real** — ver A.0 |
+| 9 | Backup restaurável **testado** | backup diário existe (7 cópias); **restauração nunca testada** | **Fazer** — "backup não testado é fé, não backup" |
+| 10 | Rate limiting por rota | existe **só no login** (10 falhas/10 min) | **Fazer** — ingest/selfie estão abertos |
+| 11 | Auditoria administrativa | não existe | **Fazer** — barato e é a rede de proteção do próprio dono |
+| 12 | Feature flags | tabela `config(chave,valor)` **já existe** — a fundação está pronta | **Fazer** — barato, e é o que permite desligar o telão sem deploy |
+
+### Onde eu discordo do dono (sem viés)
+
+- **#4 (fila explícita) eu adiaria.** Estados `recebido→processando→entregue` parecem
+  observabilidade, mas trazem junto worker, estado durável e reprocessamento — e o
+  pipeline hoje é **síncrono e cabe num request**. Enquanto o ingest é síncrono, a fila
+  agrega complexidade sem responder nada que `/admin/latencias` não responda. **Vira
+  obrigatória** no dia em que o Fóton Festa fizer N convidados subirem ao mesmo tempo.
+- **#1 é grande demais para um item.** "CPU/memória" já está em `/admin/saude`; o que
+  falta de verdade é **erro por rota** (hoje um 500 some no log). Faria só essa fatia.
+- **A ordem que eu seguiria:** 5 e 2 e 3 (feitos) → **9 (backup restaurável)** → 10 → 12 →
+  11 → 6 → 8 (R2) → 7 → 4.
+  **#9 é o que eu faria em seguida**, e é o mais desconfortável da lista: backup que nunca
+  foi restaurado é fé. Com o GLAMON dentro de um SQLite, perder o arquivo é perder o
+  cliente.
+
+### O que falta na lista do dono
+
+- **Limite de tamanho/tipo de upload no `/ingest`** — hoje aceita o que vier; é o vizinho
+  do rate limiting (#10) e do custo.
+- **Alerta** — medir sem alertar só serve depois do estrago. Mesmo um "e-mail se P95 > alvo".
+
+---
+
 ## Parte B — Avaliação externa recebida (íntegra, fonte)
 
 > Preservada íntegra como recebida em 2026-08-30. É **dado**, não decisão. As notas de
