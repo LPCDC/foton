@@ -401,8 +401,12 @@ input{font-family:inherit}
 .btn-camera .bc-txt small{font-size:14px;font-weight:500;opacity:.72;line-height:1.3}
 html{touch-action:manipulation}
 body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
-/* a FOTO aberta continua com zoom: ali ele faz falta de verdade */
-.lb img{touch-action:pinch-zoom}
+/* A FOTO aberta tem zoom — mas NAO via `touch-action:pinch-zoom`, que era inerte aqui:
+   o <meta viewport> tem `user-scalable=no, maximum-scale=1` (proposital, senao a
+   interface inteira fica bamba), e isso desliga o pinch do navegador em toda a pagina,
+   inclusive nesta imagem. O zoom real e feito no JS (pinchZoomLightbox), com transform.
+   `touch-action:none` aqui e o que ENTREGA os dois dedos ao nosso handler. */
+.lb img{touch-action:none;will-change:transform}
 .c-row{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;
   border-bottom:1px solid var(--line-soft);font-size:17px}
 .c-row:last-child{border-bottom:none}
@@ -1002,6 +1006,13 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
         <input id="g-code-input" placeholder="ABCD" maxlength="4" autocapitalize="characters" autocomplete="off"
           style="text-transform:uppercase;letter-spacing:.35em;font-family:var(--mono);text-align:center;font-size:24px"></div>
       <button class="btn ghost block" id="btn-entrar-cod" onclick="entrarNoEvento()">Entrar com o código</button>
+      <!-- Convidado que JA se registrou: volta sem refazer nada. Aparece so quando ha
+           sessao viva (24h) — ver montarVoltarConvidado(). -->
+      <div id="g-voltar-bloco" style="display:none">
+        <div class="ou">ou</div>
+        <button class="btn primary block" id="btn-g-voltar" onclick="voltarAoEventoSalvo()"></button>
+        <p class="note" style="margin-top:8px;text-align:center">Você já está registrado neste evento — não precisa tirar outra selfie.</p>
+      </div>
     </div>
     <p class="note" style="margin-top:20px">Sem instalar app. Sem cadastro. Só a sua selfie.</p>
   </section>
@@ -1368,6 +1379,22 @@ function telaAtiva(){
   return el ? el.id.replace(/^s-/,'') : '';
 }
 function armarVoltar(){ try{ history.pushState({foton:1},''); }catch(e){} }
+
+/* =============== CONFIRMAR ANTES DE SAIR DE VEZ ===============
+   A sentinela acima resolve o VOLTAR do Android. Ela nao cobre o outro jeito de sair:
+   fechar a aba, recarregar, ou digitar outro endereco. Nesses casos o convidado perde
+   a galeria no meio da festa sem nada perguntar.
+
+   `beforeunload` e o unico gancho que existe para isso. Limites HONESTOS, ja anotados
+   na secao do Voltar: em PWA instalado o Android costuma ignorar; o texto do aviso e
+   do navegador (nao da para escrever nada nosso); e alguns navegadores so honram o
+   aviso se a pessoa ja tocou na pagina. Por isso ele e uma CAMADA A MAIS, nao a
+   protecao principal — quem segura o Voltar continua sendo a sentinela. */
+window.addEventListener('beforeunload', e=>{
+  e.preventDefault();
+  e.returnValue='';           // exigido por Chrome/Safari para o aviso aparecer
+  return '';
+});
 let _pedidoDeSaida=0;
 /* Sobreposicoes tem que CONSUMIR o Voltar. Sem isto, com uma foto aberta o Voltar
    avisava "toque de novo para sair" — e o segundo toque fechava o APP com a foto
@@ -2493,6 +2520,7 @@ function entrarConvidado(){
   if(code) return openGuest(code);
   const inp=document.getElementById('g-code-input'); if(inp) inp.value='';
   mostrarBotaoScan();
+  montarVoltarConvidado();
   go('g-code');
 }
 /* O botao de escanear so aparece se o navegador souber ler QR E der camera.
@@ -2510,6 +2538,26 @@ function mostrarBotaoScan(){
   if(sub) sub.innerHTML = tem
     ? 'Escaneie o QR do fotógrafo — ou digite o código que aparece na tela dele.'
     : 'Digite o código que aparece na tela do fotógrafo. Se preferir, aponte a <b>câmera do seu celular</b> para o QR: ela abre o Fóton sozinha.';
+}
+/* "Já entrei antes" — sem refazer selfie e SEM biometria nova.
+   Usa a sessao de convidado que ja existia (24h, localStorage). NAO e o reencontro por
+   selfie (P1): aquele compara rosto e so pode existir DENTRO de um evento ja escolhido,
+   porque busca global de rosto esta proibida (PRODUTO §3b) e o limiar ainda depende de
+   experimento. Este botao resolve o caso comum — a mesma pessoa, no mesmo aparelho,
+   voltando durante a festa — que era justamente quem estava refazendo selfie a toa. */
+function montarVoltarConvidado(){
+  const bloco=document.getElementById('g-voltar-bloco'), bt=document.getElementById('btn-g-voltar');
+  if(!bloco||!bt) return;
+  const code=ultimoEventoConvidado();
+  if(code && loadGuestSession(code)){
+    bt.textContent=`Voltar às minhas fotos (${code})`;
+    bloco.style.display='';
+  } else bloco.style.display='none';
+}
+function voltarAoEventoSalvo(){
+  const code=ultimoEventoConvidado();
+  if(!code || !loadGuestSession(code)){ montarVoltarConvidado(); toast('A sessão anterior expirou — entre com o código.'); return; }
+  openGuest(code);
 }
 function entrarNoEvento(){
   const code=(document.getElementById('g-code-input').value||'').trim().toUpperCase();
@@ -3093,9 +3141,11 @@ function abrirFoto(lista, idx){
   atualizarBotaoQR();
   document.getElementById('lb').classList.add('show');
 }
-function fecharFoto(){ fecharQRFoto(); document.getElementById('lb').classList.remove('show'); }
+function fecharFoto(){ fecharQRFoto(); if(window.zerarZoomFoto)zerarZoomFoto();
+  document.getElementById('lb').classList.remove('show'); }
 function navFoto(d){
   if(!lbLista.length)return;
+  if(window.zerarZoomFoto)zerarZoomFoto();   // a proxima foto abre inteira, nunca ampliada
   lbIdx=(lbIdx+d+lbLista.length)%lbLista.length;
   sheetTarget=lbLista[lbIdx];
   document.getElementById('lb-img').src=lbLista[lbIdx].src;
@@ -3107,10 +3157,96 @@ document.addEventListener('keydown',e=>{
   if(!document.getElementById('lb').classList.contains('show'))return;
   if(e.key==='Escape')fecharFoto(); if(e.key==='ArrowLeft')navFoto(-1); if(e.key==='ArrowRight')navFoto(1);
 });
-(()=>{const lb=document.getElementById('lb'); let x0=null;
-  lb.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;},{passive:true});
-  lb.addEventListener('touchend',e=>{ if(x0===null)return;
-    const dx=e.changedTouches[0].clientX-x0; if(Math.abs(dx)>50) navFoto(dx<0?1:-1); x0=null;},{passive:true});})();
+/* ============== ZOOM DA FOTO ABERTA (pinca, arrastar, duplo-toque) ==============
+   Relato real: "quando a foto abre nao ta dando pra dar zoom com dois dedos". A causa
+   nao estava no visualizador: o <meta viewport> tem `user-scalable=no,maximum-scale=1`
+   — de proposito, senao a INTERFACE inteira fica zoomavel e bamba — e isso mata o
+   pinch nativo da pagina toda. O `.lb img{touch-action:pinch-zoom}` que existia era
+   letra morta: nao ha como reativar o zoom do navegador so num elemento.
+
+   Entao o zoom e nosso: escala + deslocamento por transform. Regras de convivencia
+   com o que ja existia:
+   - 2 dedos = zoom. 1 dedo COM zoom = arrastar a foto. 1 dedo SEM zoom = trocar de
+     foto (o swipe que ja existia continua igual).
+   - o arrasto e preso nas bordas, senao a foto foge da tela e nao volta.
+   - duplo-toque alterna 1x/2.5x no ponto tocado (o gesto que todo mundo ja conhece).
+   - trocar de foto ou fechar zera o zoom: a proxima foto abre inteira, sempre. */
+(()=>{
+  const lb=document.getElementById('lb'), img=document.getElementById('lb-img');
+  let esc=1, tx=0, ty=0;                       // escala e deslocamento atuais
+  let x0=null, y0=null;                        // 1 dedo: origem (swipe ou arrasto)
+  let d0=0, esc0=1, cx=0, cy=0;                // 2 dedos: distancia e centro iniciais
+  let tx0=0, ty0=0, movi=false, ultimoToque=0;
+  const MAXESC=4;
+
+  function aplica(){
+    // trava o deslocamento dentro da foto: sem isto ela escapa e nao ha como trazer de volta
+    const r=img.getBoundingClientRect(), lim=(v,max)=>Math.max(-max,Math.min(max,v));
+    const maxX=Math.max(0,(r.width*0+img.clientWidth*esc-img.clientWidth)/2);
+    const maxY=Math.max(0,(img.clientHeight*esc-img.clientHeight)/2);
+    tx=lim(tx,maxX); ty=lim(ty,maxY);
+    img.style.transform=`translate(${tx}px,${ty}px) scale(${esc})`;
+    img.style.cursor=esc>1?'grab':'';
+  }
+  function zerar(){ esc=1; tx=0; ty=0; img.style.transition='transform .18s ease'; aplica();
+    setTimeout(()=>{img.style.transition='';},190); }
+  window.zerarZoomFoto=zerar;                  // navFoto/fecharFoto chamam isto
+
+  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+
+  lb.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){                  // comeca a pinca
+      d0=dist(e.touches); esc0=esc;
+      const r=img.getBoundingClientRect();
+      cx=(e.touches[0].clientX+e.touches[1].clientX)/2-r.left-r.width/2;
+      cy=(e.touches[0].clientY+e.touches[1].clientY)/2-r.top-r.height/2;
+      tx0=tx; ty0=ty; x0=null; movi=true;
+    }else if(e.touches.length===1){
+      x0=e.touches[0].clientX; y0=e.touches[0].clientY; tx0=tx; ty0=ty; movi=false;
+    }
+  },{passive:true});
+
+  lb.addEventListener('touchmove',e=>{
+    if(e.touches.length===2 && d0){
+      e.preventDefault();                      // sem isto o Android tenta rolar a pagina
+      const k=dist(e.touches)/d0;
+      esc=Math.max(1,Math.min(MAXESC,esc0*k));
+      // mantem o ponto entre os dedos ancorado: o zoom vai para ONDE se olha
+      tx=tx0-cx*(esc/esc0-1); ty=ty0-cy*(esc/esc0-1);
+      aplica();
+    }else if(e.touches.length===1 && esc>1 && x0!==null){
+      e.preventDefault();                      // com zoom, 1 dedo ARRASTA (nao troca foto)
+      tx=tx0+(e.touches[0].clientX-x0); ty=ty0+(e.touches[0].clientY-y0);
+      movi=true; aplica();
+    }
+  },{passive:false});
+
+  lb.addEventListener('touchend',e=>{
+    if(d0 && e.touches.length<2){ d0=0; if(esc<=1.02) zerar(); return; }
+    // swipe para trocar de foto SO sem zoom (com zoom o dedo esta arrastando)
+    if(x0!==null && esc<=1 && !movi && e.changedTouches.length){
+      const dx=e.changedTouches[0].clientX-x0;
+      if(Math.abs(dx)>50) navFoto(dx<0?1:-1);
+    }
+    // duplo-toque: alterna 1x / 2.5x no ponto tocado
+    const agora=Date.now();
+    if(e.changedTouches.length===1 && !movi && Math.abs((e.changedTouches[0].clientX-(x0??0)))<12){
+      if(agora-ultimoToque<300){
+        if(esc>1){ zerar(); }
+        else{
+          const r=img.getBoundingClientRect();
+          const px=e.changedTouches[0].clientX-r.left-r.width/2;
+          const py=e.changedTouches[0].clientY-r.top-r.height/2;
+          esc=2.5; tx=-px*(esc-1); ty=-py*(esc-1);
+          img.style.transition='transform .18s ease'; aplica();
+          setTimeout(()=>{img.style.transition='';},190);
+        }
+        ultimoToque=0;
+      } else ultimoToque=agora;
+    }
+    x0=null; movi=false;
+  },{passive:true});
+})();
 
 /* ============== QR DESTA FOTO (a amiga que aparece junto leva a foto) ==============
    Cena real: a convidada abre uma foto e a amiga que está do lado também aparece nela.
