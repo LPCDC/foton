@@ -195,6 +195,8 @@ input{font-family:inherit}
 .camcard.viva .cc-luz{background:#4ad07a;box-shadow:0 0 0 4px rgba(74,208,122,.16);animation:pulsa 2s ease-in-out infinite}
 .camcard.espera .cc-luz{background:#ffcf7a;box-shadow:0 0 0 4px rgba(255,207,122,.14)}
 @keyframes pulsa{0%,100%{opacity:1}50%{opacity:.45}}
+.cc-txt em{display:block;font-style:normal;font-size:13.5px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:3px}
 .cc-txt b{display:block;font-size:17px;font-weight:600;line-height:1.25}
 .cc-txt small{display:block;font-size:15px;color:var(--muted);margin-top:3px;line-height:1.35}
 .cc-go{color:var(--muted);font-size:20px}
@@ -674,7 +676,8 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
     <button class="camcard" id="dash-cam" onclick="go('guia')">
       <span class="cc-luz" id="cc-luz"></span>
       <span class="cc-txt">
-        <b id="cc-t">Verificando a câmera…</b>
+        <em>Câmera</em>
+        <b id="cc-t">Verificando…</b>
         <small id="cc-s">um instante</small>
       </span>
       <span class="cc-go">→</span>
@@ -1510,11 +1513,14 @@ async function estadoDaCamera(){
       sub.textContent = ha<60 ? 'enviou agora mesmo pelo FTP'
                               : 'último envio há '+Math.round(ha/60)+' min · FTP';
     } else if(j.ativo){
+      // ATENCAO: isto fala da CAMERA, nao das fotos. A conta pode ter 30 fotos
+      // enviadas pelo celular e nenhuma camera de FTP jamais conectada — a primeira
+      // versao dizia "nenhuma foto ainda" e mentia na cara de quem tinha fotos.
       luz('espera');
-      t.textContent='Pronta para receber';
+      t.textContent='Nenhuma câmera conectada';
       sub.textContent = j.evento_ao_vivo
-        ? 'FTP ligado, nenhuma foto ainda — evento '+j.evento_ao_vivo
-        : 'FTP ligado. Abra um evento antes de fotografar.';
+        ? 'O Fóton está pronto. R8 e T6s não têm FTP — toque para ver o caminho delas.'
+        : 'Abra um evento antes de fotografar. Toque para conectar a câmera.';
     } else {
       luz('');
       t.textContent='Sua câmera envia pelo celular';
