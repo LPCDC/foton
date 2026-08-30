@@ -399,7 +399,7 @@ def signup(email: str = Form(...), senha: str = Form(...), nome: str = Form(""),
     c = store.autentica(email, senha)
     return {"token": store.novo_token(c["email"]), "nome": c["nome"], "marca": c["marca"],
             "credits": c["credits"], "credits_total": c["credits_total"], "email": c["email"],
-            "admin": c["email"].lower() in ADMINS,
+            "admin": _eh_admin(c),
             "empresa": bool(c.get("empresa")), "perfil": _perfil(c)}
 
 _tentativas = {}          # ip -> [instantes de falha]
@@ -429,7 +429,7 @@ def login(request: Request, email: str = Form(...), senha: str = Form(...)):
     _tentativas.pop(ip, None)                     # acertou: zera o histórico
     return {"token": store.novo_token(c["email"]), "nome": c["nome"], "marca": c["marca"],
             "credits": c["credits"], "credits_total": c["credits_total"], "email": c["email"],
-            "admin": c["email"].lower() in ADMINS,
+            "admin": _eh_admin(c),
             "empresa": bool(c.get("empresa")), "perfil": _perfil(c)}
 
 @app.post("/conta/logo")
@@ -491,7 +491,7 @@ def me(authorization: str = Header(None)):
     evs = store.eventos_de(c["email"])
     return {"nome": c["nome"], "marca": c["marca"], "email": c["email"],
             "empresa": bool(c.get("empresa")), "perfil": _perfil(c),
-            "admin": c["email"].lower() in ADMINS,
+            "admin": _eh_admin(c),
             "credits": c["credits"], "credits_total": c["credits_total"],
             "total_fotos": sum(e["fotos"] for e in evs),
             "total_convidados": sum(e["convidados"] for e in evs),
@@ -747,11 +747,37 @@ def photo_delete(event: str = Form(...), photo_id: str = Form(...), senha_admin:
 # ninguem reivindica um admin que ainda nao tenha conta.
 ADMINS = {e.strip().lower() for e in os.environ.get("FOTON_ADMINS", "admin").split(",")}
 
+def _eh_admin(c):
+    """Admin por VARIAVEL (raiz de confianca, nao rebaixavel pelo app) OU por COLUNA
+    (promovido no painel por outro admin)."""
+    if not c: return False
+    return c["email"].lower() in ADMINS or bool(c.get("admin"))
+
 def _admin(authorization):
     c = _dono(authorization)
-    if not c or c["email"].lower() not in ADMINS:
+    if not _eh_admin(c):
         raise HTTPException(403, "acesso restrito")
     return c
+
+@app.post("/admin/promover")
+def admin_promover(email: str = Form(...), ligado: str = Form(...), authorization: str = Header(None)):
+    """Da ou tira o crachá de administrador. So admin promove admin.
+
+    Quem esta em FOTON_ADMINS nao pode ser rebaixado aqui: e a raiz de confianca, e sem
+    essa trava o ultimo admin conseguiria se remover e ninguem mais entraria no painel.
+
+    Peso do que se esta dando: o admin le o NOME e o TELEFONE de convidados reais de
+    TODOS os eventos, apaga contas e troca senhas. Nao e um cracha de visitante."""
+    _admin(authorization)
+    alvo = (email or "").strip().lower()
+    if not store.conta(alvo):
+        raise HTTPException(404, "conta não encontrada")
+    lig = str(ligado) in ("1", "true", "True")
+    if not lig and alvo in ADMINS:
+        raise HTTPException(400, "esta conta é administradora pela configuração do servidor e não pode ser rebaixada aqui")
+    store.marca_admin(alvo, lig)
+    log.info('{"stage":"admin","acao":"promover","ligado":%s}' % ("true" if lig else "false"))
+    return {"email": alvo, "admin": lig}
 
 @app.get("/admin/resumo")
 def admin_resumo(authorization: str = Header(None)):
@@ -761,7 +787,11 @@ def admin_resumo(authorization: str = Header(None)):
     return {**store.resumo_geral(),
             "disco_livre_gb": round(du.free / 1e9, 1), "disco_total_gb": round(du.total / 1e9, 1),
             "credito": store.uso_de_credito(), "admins": sorted(ADMINS),
-            "fotografos_lista": store.todos_fotografos()}
+            # `admin` = cracha efetivo (variavel OU coluna); `admin_fixo` = veio da
+            # configuracao do servidor, entao o painel nao oferece o botao de rebaixar.
+            "fotografos_lista": [dict(f, admin=(f["email"].lower() in ADMINS or bool(f.get("admin"))),
+                                      admin_fixo=(f["email"].lower() in ADMINS))
+                                 for f in store.todos_fotografos()]}
 
 @app.get("/admin/latencias")
 def admin_latencias(authorization: str = Header(None)):
@@ -782,15 +812,44 @@ def admin_latencias(authorization: str = Header(None)):
             "max_ms": max(_LATS) if _LATS else None,
             "alvo_ms": 10000, "escopo": "servidor (ingest->banco+match), NAO end-to-end"}
 
+def _mascara_nome(n):
+    """"Ana Carolina Souza" -> "Ana C. S." — da para reconhecer o formato, nao a pessoa."""
+    ps = [p for p in str(n or "").split() if p]
+    if not ps: return ""
+    return " ".join([ps[0]] + [p[0].upper() + "." for p in ps[1:]])
+
+def _mascara_contato(v):
+    """Guarda os 2 ultimos digitos (suficiente para conferir "e este mesmo?" no suporte)."""
+    v = str(v or "")
+    if "@" in v:                                  # e-mail: a@b.com -> a***@b.com
+        u, _, d = v.partition("@")
+        return (u[:1] + "***@" + d) if u else ("***@" + d)
+    dig = [ch for ch in v if ch.isdigit()]
+    if not dig: return "•••"
+    return "•" * max(0, len(dig) - 2) + "".join(dig[-2:])
+
 @app.get("/admin/contatos")
-def admin_contatos(authorization: str = Header(None)):
+def admin_contatos(revelar: str = "0", authorization: str = Header(None)):
     """Todo contato deixado por convidado, de todos os eventos.
 
     Dado pessoal (nome + telefone). Fica atras de _admin de proposito: o convidado
     entregou isso para a fotografa dele, nao para o publico. Nunca chega ao app do
-    convidado, e nao entra em log (regra da secao 7 do CLAUDE.md)."""
-    _admin(authorization)
-    return {"contatos": store.contatos_todos()}
+    convidado, e nao entra em log (regra da secao 7 do CLAUDE.md).
+
+    MASCARADO POR PADRAO (`?revelar=1` mostra por inteiro). O caso que motivou isto:
+    dar admin a alguem para ele CONHECER o sistema — ver que guardamos nome e telefone
+    e um requisito legitimo; ler o telefone da convidada de um casamento real nao e.
+    Minimizacao de dado (LGPD): mostra-se o formato, nao o conteudo. Quem precisa do
+    numero de verdade (suporte) pede explicitamente e isso fica no log."""
+    c = _admin(authorization)
+    revelar = str(revelar) in ("1", "true", "True")
+    cs = store.contatos_todos()
+    if revelar:
+        log.info('{"stage":"admin","acao":"contatos_revelados","n":%d}' % len(cs))
+        return {"contatos": cs, "mascarado": False}
+    return {"contatos": [dict(x, nome=_mascara_nome(x.get("nome")),
+                              contato=_mascara_contato(x.get("contato"))) for x in cs],
+            "mascarado": True}
 
 @app.get("/admin/saude")
 def admin_saude(authorization: str = Header(None)):

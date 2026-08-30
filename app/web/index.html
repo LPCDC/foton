@@ -3046,7 +3046,7 @@ async function abrirAdmin(){
       const disco=mb*8;
       return `
       <div class="tips" style="margin-bottom:8px">
-        <b style="color:var(--text);text-transform:none;letter-spacing:0;font-size:17px">${(f.nome||f.email).replace(/[<>]/g,'')}${f.ao_vivo?' <span class="livedot"></span>':''}${(j.admins||[]).includes(f.email)?' <span class="pill" style="font-size:13.5px;vertical-align:middle">admin</span>':''}</b>
+        <b style="color:var(--text);text-transform:none;letter-spacing:0;font-size:17px">${(f.nome||f.email).replace(/[<>]/g,'')}${f.ao_vivo?' <span class="livedot"></span>':''}${f.admin?' <span class="pill" style="font-size:13.5px;vertical-align:middle">admin</span>':''}</b>
         <p class="muted" style="font-size:16px;margin:2px 0 8px">${(f.email||'').replace(/[<>]/g,'')}${f.marca?' · '+f.marca.replace(/[<>]/g,''):''}</p>
         <div class="c-row"><b>Eventos</b><span>${f.eventos}${f.ao_vivo?` · ${f.ao_vivo} ao vivo`:''}</span></div>
         <div class="c-row"><b>Fotos · convidados</b><span>${f.fotos} · ${f.convidados}</span></div>
@@ -3060,6 +3060,10 @@ async function abrirAdmin(){
           <button class="btn ghost sm" onclick="admCreditos('${f.email}',10)">+10 créditos</button>
           <button class="btn ghost sm" onclick="admSenha('${f.email}')">Trocar senha</button>
           <button class="btn ghost sm" onclick="admRetencao('${f.email}',${f.ret_bio_dias===0?'null':'0'})">${f.ret_bio_dias===0?'Voltar a expirar em 7 dias':'Biometria não expira'}</button>
+          ${f.admin_fixo
+            ? '<span class="note" style="align-self:center">admin pelo servidor</span>'
+            : `<button class="btn ghost sm" style="${f.admin?'border-color:var(--warn);color:var(--warn)':''}"
+                 onclick="admPromover('${f.email}',${f.admin?0:1})">${f.admin?'Tirar admin':'Tornar admin'}</button>`}
         </div>
       </div>`;}).join('') || '<div class="empty">Nenhuma conta ainda.</div>';
   }catch(e){ toast('Servidor indisponível.'); }
@@ -3102,21 +3106,44 @@ function desde(ts){
   if(s<86400) return `há ${Math.round(s/3600)} h`;
   return `há ${Math.round(s/86400)} dia(s)`;
 }
-async function admContatos(){
+async function admContatos(revelar){
   const box=document.getElementById('adm-contatos'), b=document.getElementById('adm-btn-contatos');
   b.textContent='Carregando…'; b.disabled=true;
   try{
-    const r=await fetch(API+'/admin/contatos',{headers:auth()});
+    // por padrao o servidor devolve mascarado; revelar=1 e um pedido explicito e fica no log
+    const r=await fetch(API+'/admin/contatos'+(revelar?'?revelar=1':''),{headers:auth()});
     if(!r.ok){ toast('Não consegui carregar os contatos.'); return; }
-    const cs=(await r.json()).contatos||[];
+    const j2=await r.json(); const cs=j2.contatos||[];
     const lp=t=>String(t||'').replace(/[<>]/g,'');
     box.innerHTML = cs.length ? cs.map(c=>`
       <div class="c-row"><b>${lp(c.nome)||'—'}</b><span>${lp(c.contato)}</span></div>
       <p class="muted" style="font-size:13.5px;margin:-4px 0 8px">${lp(c.evento)||c.event_code} · ${lp(c.dono)||'sem dono'} · ${desde(c.ts)}</p>`).join('')
       : '<div class="empty">Nenhum convidado deixou contato ainda.</div>';
+    if(cs.length && j2.mascarado){
+      box.insertAdjacentHTML('afterbegin',
+        '<p class="note" style="text-align:left;margin:0 0 10px">Nome e telefone aparecem <b>encobertos</b>. '
+        +'Dá para ver <i>que</i> guardamos e em que formato, sem expor a pessoa. '
+        +'<button class="btn ghost sm" style="margin-top:6px" onclick="admContatos(true)">Mostrar por inteiro</button></p>');
+    }
     b.style.display='none';
   }catch(e){ toast('Erro de conexão.'); }
   finally{ b.textContent='Ver contatos'; b.disabled=false; }
+}
+/* Dar/tirar o cracha de admin. O peso disto esta no aviso: admin le nome e telefone
+   de convidados REAIS de todos os eventos, apaga contas e troca senhas. */
+async function admPromover(email,ligado){
+  if(ligado && !confirm(`Tornar ${email} administrador?
+
+Ele passa a ver os dados de TODAS as contas, `
+      +`incluindo nome e telefone de convidados reais, e pode apagar contas e trocar senhas.`)) return;
+  if(!ligado && !confirm(`Tirar o acesso de administrador de ${email}?`)) return;
+  try{
+    const r=await fetch(API+'/admin/promover',{method:'POST',headers:auth(),
+      body:new URLSearchParams({email,ligado:ligado?'1':'0'})});
+    if(!r.ok){ toast((await r.json().catch(()=>({}))).detail||'Não consegui.'); return; }
+    toast(ligado?'Agora é administrador ✓':'Acesso de administrador removido ✓');
+    abrirAdmin();
+  }catch(e){ toast('Erro de conexão.'); }
 }
 async function admCreditos(email,n){
   try{ const fd=new FormData(); fd.append('email',email); fd.append('quantidade',n);

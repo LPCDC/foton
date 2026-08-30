@@ -67,6 +67,15 @@ def conn():
         # LOOK da conta (ADR-0028): curva leve aplicada na mesma passada que ja decodifica
         # a foto. NULL = nenhum look, e o pipeline fica identico ao que sempre foi — e o
         # que as contas existentes tem, entao esta migracao nao muda foto de ninguem.
+        try: _conn.execute("ALTER TABLE photographer ADD COLUMN look TEXT")
+        except sqlite3.OperationalError: pass
+        # ADMIN POR CONTA. Antes a lista de admins so vinha de FOTON_ADMINS (variavel de
+        # ambiente da VM): promover alguem exigia editar a VM e reiniciar. Esta coluna
+        # permite promover pelo painel. A variavel CONTINUA valendo e e a RAIZ DE
+        # CONFIANCA: quem esta nela nao pode ser rebaixado pelo app, senao o ultimo admin
+        # se removeria por engano e ninguem mais entraria.
+        try: _conn.execute("ALTER TABLE photographer ADD COLUMN admin INTEGER DEFAULT 0")
+        except sqlite3.OperationalError: pass
         # IDEMPOTENCIA DE INGESTAO: impressao digital (SHA-256) dos bytes ORIGINAIS da
         # foto. A mesma foto reenviada (retentativa do FTP da camera, celular com
         # internet ruim que reenvia o lote) reaproveita a linha em vez de criar outra.
@@ -75,8 +84,6 @@ def conn():
         try: _conn.execute("ALTER TABLE photo ADD COLUMN sha TEXT")
         except sqlite3.OperationalError: pass
         try: _conn.execute("CREATE INDEX IF NOT EXISTS ix_photo_sha ON photo(event_code, sha)")
-        except sqlite3.OperationalError: pass
-        try: _conn.execute("ALTER TABLE photographer ADD COLUMN look TEXT")
         except sqlite3.OperationalError: pass
         _conn.commit()
     return _conn
@@ -116,6 +123,9 @@ def autentica(email, senha):
     r = q("SELECT * FROM photographer WHERE email=?", (email.strip().lower(),), "one")
     if not r or not confere_senha(senha, r["senha"]): return None
     return dict(r)
+
+def marca_admin(email, ligado):
+    q("UPDATE photographer SET admin=? WHERE email=?", (1 if ligado else 0, email.strip().lower()))
 
 def novo_token(email):
     t = secrets.token_urlsafe(24)
@@ -189,7 +199,7 @@ def todos_fotografos():
     `bytes` e o que a conta ocupa DE VERDADE no banco — lembrando que o backup
     guarda 7 copias completas, entao no disco isso conta 8x.
     """
-    rs = q("""SELECT p.email, p.nome, p.marca, p.credits, p.credits_total, p.criado,
+    rs = q("""SELECT p.email, p.nome, p.marca, p.credits, p.credits_total, p.criado, p.admin,
                 (SELECT COUNT(*) FROM event WHERE dono=p.email AND auto=0) eventos,
                 (SELECT COUNT(*) FROM event WHERE dono=p.email AND status='live') ao_vivo,
                 (SELECT COUNT(*) FROM photo WHERE event_code IN

@@ -594,5 +594,42 @@ C.post("/ingest", data={"event": "IDEM1"}, files={"file": ("a.jpg", _foto, "imag
 _depois = C.get("/admin/latencias", headers=h(chefe)).json()["amostras"]
 checa("duplicata NAO entra na conta (nao maquia o P95)", _depois, _antes)
 
+print("\n[27] ADMIN promovido pelo painel + contatos mascarados")
+# Caso real: dar admin a alguem para ele conhecer o sistema. Antes so dava editando a
+# variavel de ambiente da VM e reiniciando.
+C.post("/signup", data={"email": "danilo@t.com", "senha": "senha123", "nome": "Danilo"})
+_dn = C.post("/login", data={"email": "danilo@t.com", "senha": "senha123"}).json()
+checa("conta nova NAO nasce admin", _dn.get("admin"), False)
+checa("e nao entra no painel", C.get("/admin/resumo", headers=h(_dn["token"])).status_code, 403)
+checa("fotografa comum NAO promove ninguem",
+      C.post("/admin/promover", data={"email": "danilo@t.com", "ligado": "1"}, headers=h(dona)).status_code, 403)
+checa("anonimo NAO promove", C.post("/admin/promover", data={"email": "danilo@t.com", "ligado": "1"}).status_code, 403)
+checa("admin promove", C.post("/admin/promover", data={"email": "danilo@t.com", "ligado": "1"},
+                              headers=h(chefe)).status_code, 200)
+checa("promovido, ele ENTRA no painel", C.get("/admin/resumo", headers=h(_dn["token"])).status_code, 200)
+checa("e o /me ja informa o cracha", C.get("/me", headers=h(_dn["token"])).json().get("admin"), True)
+checa("promover conta inexistente da 404",
+      C.post("/admin/promover", data={"email": "ninguem@t.com", "ligado": "1"}, headers=h(chefe)).status_code, 404)
+# trava anti-lockout: quem e admin pela CONFIGURACAO do servidor nao cai pelo app
+checa("admin da configuracao NAO pode ser rebaixado",
+      C.post("/admin/promover", data={"email": "chefe@t.com", "ligado": "0"}, headers=h(chefe)).status_code, 400)
+checa("e ele continua admin", C.get("/admin/resumo", headers=h(chefe)).status_code, 200)
+C.post("/admin/promover", data={"email": "danilo@t.com", "ligado": "0"}, headers=h(chefe))
+checa("rebaixado, perde o painel", C.get("/admin/resumo", headers=h(_dn["token"])).status_code, 403)
+
+# contatos: mascarado por padrao (ver o FORMATO do dado nao exige ver a pessoa)
+C.post("/event", data={"code": "MASC1", "brand": "DONA"}, headers=h(dona))
+C.post("/selfie", data={"event": "MASC1", "consent": "true", "nome": "Ana Carolina Souza",
+                        "contato": "13991234567"}, files={"file": ("s.jpg", jpeg(), "image/jpeg")})
+_mc = C.get("/admin/contatos", headers=h(chefe)).json()
+_a = [x for x in _mc["contatos"] if x["event_code"] == "MASC1"][0]
+checa("vem marcado como mascarado", _mc.get("mascarado"), True)
+checa("nome vira iniciais", _a["nome"], "Ana C. S.")
+checa("telefone esconde tudo menos os 2 ultimos", _a["contato"].endswith("67") and "9123" not in _a["contato"], True)
+_rv = C.get("/admin/contatos?revelar=1", headers=h(chefe)).json()
+_b = [x for x in _rv["contatos"] if x["event_code"] == "MASC1"][0]
+checa("revelar=1 mostra o numero real", _b["contato"], "13991234567")
+checa("e se declara NAO mascarado", _rv.get("mascarado"), False)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)
