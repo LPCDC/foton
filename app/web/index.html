@@ -1380,6 +1380,63 @@ function telaAtiva(){
 }
 function armarVoltar(){ try{ history.pushState({foton:1},''); }catch(e){} }
 
+/* =============== ARRASTAR PARA ATUALIZAR (nosso, nao o do navegador) ===============
+   Relato do dono: arrastar para baixo nao atualiza — "muitas vezes isso soluciona bugs".
+   Causa: `overscroll-behavior:none` no html e no body desliga o puxar-para-atualizar do
+   navegador. Isso e PROPOSITAL — foi o que resolveu o fundo "deslizando" ao arrastar o
+   dedo — entao reativar o nativo traria aquele bug de volta. E no iPhone, em PWA
+   instalado, o gesto nativo nem existe: ficaria diferente em cada aparelho.
+
+   Entao o gesto e nosso: so vale no topo da tela, so com UM dedo, e nunca com uma
+   sobreposicao aberta (foto ampliada, camera, menu) — senao brigaria com o zoom da foto,
+   que tambem usa arrasto. Passou do limiar e soltou: recarrega a pagina inteira.
+   Recarregar de verdade (nao so refazer o feed) e o que a pessoa quer quando diz
+   "atualiza": o service worker busca a navegacao na REDE primeiro, entao o reload
+   traz codigo novo se houve deploy. */
+(()=>{
+  const LIMIAR=70, MAX=110;
+  let y0=null, puxando=false, ind=null;
+  function pino(){
+    if(ind) return ind;
+    ind=document.createElement('div');
+    ind.style.cssText='position:fixed;left:50%;top:0;transform:translate(-50%,-100%);z-index:200;'
+      +'padding:9px 16px;border-radius:999px;background:var(--ink-2,#1a1420);color:var(--text,#fff);'
+      +'font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.4);pointer-events:none;'
+      +'white-space:nowrap;opacity:0';
+    document.body.appendChild(ind); return ind;
+  }
+  const bloqueado=()=>{
+    const lb=document.getElementById('lb');
+    if(lb&&lb.classList.contains('show')) return true;         // foto aberta: ali arrasto e zoom
+    if(document.querySelector('.camf[style*="block"]')) return true;
+    if(SEL) return true;                                        // escolhendo fotos
+    return false;
+  };
+  addEventListener('touchstart',e=>{
+    if(e.touches.length!==1||bloqueado()||(window.scrollY||0)>0){ y0=null; return; }
+    y0=e.touches[0].clientY; puxando=false;
+  },{passive:true});
+  addEventListener('touchmove',e=>{
+    if(y0===null||e.touches.length!==1) return;
+    const d=e.touches[0].clientY-y0;
+    if(d<=0){ if(puxando){ pino().style.opacity='0'; puxando=false; } return; }
+    if((window.scrollY||0)>0){ y0=null; return; }
+    puxando=true;
+    const p=Math.min(d,MAX), i=pino();
+    i.style.opacity='1';
+    i.style.transform=`translate(-50%, ${Math.min(p,MAX)-46}px)`;
+    i.textContent = d>=LIMIAR ? 'Solte para atualizar' : 'Arraste para atualizar';
+  },{passive:true});
+  addEventListener('touchend',e=>{
+    if(y0===null||!puxando){ y0=null; return; }
+    const d=(e.changedTouches[0]?e.changedTouches[0].clientY:y0)-y0;
+    const i=pino();
+    if(d>=LIMIAR){ i.textContent='Atualizando…'; _saidaConfirmada=true; location.reload(); }
+    else{ i.style.opacity='0'; i.style.transform='translate(-50%,-100%)'; }
+    y0=null; puxando=false;
+  },{passive:true});
+})();
+
 /* =============== CONFIRMAR ANTES DE SAIR DE VEZ ===============
    A sentinela acima resolve o VOLTAR do Android. Ela nao cobre o outro jeito de sair:
    fechar a aba, recarregar, ou digitar outro endereco. Nesses casos o convidado perde
@@ -1390,7 +1447,9 @@ function armarVoltar(){ try{ history.pushState({foton:1},''); }catch(e){} }
    do navegador (nao da para escrever nada nosso); e alguns navegadores so honram o
    aviso se a pessoa ja tocou na pagina. Por isso ele e uma CAMADA A MAIS, nao a
    protecao principal — quem segura o Voltar continua sendo a sentinela. */
+let _saidaConfirmada=false;    // saida que o proprio app pediu (atualizar) nao pergunta nada
 window.addEventListener('beforeunload', e=>{
+  if(_saidaConfirmada) return;
   e.preventDefault();
   e.returnValue='';           // exigido por Chrome/Safari para o aviso aparecer
   return '';
