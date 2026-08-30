@@ -1,163 +1,192 @@
 # Fóton — o produto, e o que ainda não foi decidido
 
-> Onde moram as ideias que o dono trouxe e que ainda **não viraram código**.
-> Nada aqui está implementado. Cada item tem: o que é, o que muda, o que custa, e o
-> que precisa ser decidido. Aberto em 2026-08-30.
+> Onde moram as ideias trazidas pelo dono que ainda **não viraram código**.
+> Cada item tem: o que é, o que muda, o que custa, e o que precisa ser decidido.
+> Aberto em 2026-08-30.
 >
-> `BLUEPRINT.md` = o que existe. `docs/DECISIONS.md` = o que já foi decidido.
-> **Este arquivo = o que está na mesa.**
+> `BLUEPRINT.md` = o que existe · `docs/DECISIONS.md` = o que já foi decidido ·
+> **este arquivo = o que está na mesa.**
 
 ---
 
 ## 1. Os três públicos, e as três portas
 
-Descoberta importante desta fase: **não são três produtos — é um motor com três portas.**
+Descoberta desta fase: **não são três produtos — é um motor com três portas.**
 O motor (foto → rosto → entrega certa) é o mesmo. O que muda é a casca e o vocabulário.
 
 | Quem | O que é para ela | Vocabulário | Estado |
 |---|---|---|---|
-| **Patrícia** — fotógrafa profissional | ferramenta de trabalho: evento começa, termina, convidados novos | evento, convidado | **no ar** |
-| **GLAMON** — empresa, álbum interno | acervo permanente, mesmas pessoas toda semana, login compartilhado | álbum, equipe | **no ar** (ADR-0021) |
-| **Ana** — a pessoa comum no próprio rolê | ela é fotógrafa **e** convidada ao mesmo tempo | festa | **§2, não feito** |
+| **Patrícia** — fotógrafa profissional | ferramenta de trabalho: evento começa e termina | evento, convidado | **no ar** |
+| **GLAMON** — empresa, álbum interno | acervo permanente, mesmas pessoas toda semana | álbum, equipe | **no ar** (ADR-0021) |
+| **Ana** — a pessoa comum no próprio rolê | é fotógrafa **e** convidada ao mesmo tempo | festa | **§2, não feito** |
 
-**Por que isso importa:** a porta da Ana é a única que ninguém no Brasil atende. Face
-Album, Fotix, Mirino, 4.events e TIME&SPACE são todos ferramenta de fotógrafo ou módulo
-de plataforma de evento. Ninguém serve quem fotografa o próprio rolê. É consumo, é
-viral, e é o freemium que já estava no BLUEPRINT §9c.
+**Por que importa:** a porta da Ana é a única que ninguém no Brasil atende. Face Album,
+Fotix, Mirino, 4.events e TIME&SPACE são todos ferramenta de fotógrafo ou módulo de
+plataforma de evento. Ninguém serve quem fotografa o próprio rolê. É consumo, é viral, e
+é o freemium que já estava no `BLUEPRINT` §9c.
 
 ---
 
 ## 2. FÓTON FESTA — todo mundo é fotógrafo e convidado
 
-**A ideia:** numa festa, todos estão interligados. Qualquer um fotografa, qualquer um
-recebe as fotos em que aparece. **Só o criador (quem contratou) apaga.** Com limite por
-IP e por festa.
+**A ideia:** numa festa todos estão interligados. Qualquer um fotografa, qualquer um
+recebe as fotos em que aparece. **Só o criador apaga.**
 
 **Por que é forte:** hoje o app tem um lado que manda e outro que recebe. Numa festa de
-amigos essa divisão é artificial — a mesma pessoa faz as duas coisas. E o volume de
-fotos multiplica sem custo de aquisição: cada convidado vira uma câmera.
+amigos essa divisão é artificial — a mesma pessoa faz as duas coisas. E o volume
+multiplica sem custo de aquisição: cada convidado vira uma câmera.
 
-**O que muda de verdade no código:**
+**O que muda no código:**
 - Convidado passa a poder **enviar** (hoje `/ingest` exige conta de fotógrafo).
 - Papéis por evento: `dono` (apaga tudo) · `participante` (envia e recebe, não apaga).
-- Hoje o modelo é *conta → eventos*. Passaria a ser *evento → participantes*.
+- O modelo hoje é *conta → eventos*. Passaria a ser *evento → participantes*.
 
-**O limite por IP: razoável, com uma ressalva séria.** Limite por IP protege contra
-alguém despejar mil fotos. Mas **numa festa todo mundo está no mesmo Wi-Fi, e portanto
-no mesmo IP** — um limite por IP puniria a festa inteira por causa de uma pessoa. O
-limite tem que ser **por participante** (o id que a selfie já cria), com o IP só como
-segunda barreira contra abuso em massa.
+**Sobre o limite por IP — razoável, mas não sozinho.** Numa festa **todo mundo está no
+mesmo Wi-Fi, logo no mesmo IP**: um limite por IP puniria a festa inteira por causa de
+uma pessoa. O limite tem que ser **por participante** (o id que a selfie já cria), com o
+IP como segunda barreira contra abuso em massa.
 
-**Decidir:** quantas fotos por participante? Participante pode apagar a **própria** foto?
-Se alguém sai da festa, as fotos dele ficam? Quem responde por conteúdo impróprio?
+**Decidir:** quantas fotos por participante? Ele apaga a **própria** foto? Se sai da
+festa, as fotos ficam? Quem responde por conteúdo impróprio?
 
 ---
 
-## 3. Login por selfie ("se você já foi fotografado pelo Fóton")
+## 3. Login por selfie
 
-**A ideia:** a pessoa entra com **o rosto** + uma senha que recebe por e-mail, sem
-precisar do código do evento — porque quem criou o evento já mandou fotos das pessoas
-que provavelmente estarão lá.
+**A ideia:** entrar com **o rosto** + uma senha recebida por e-mail, sem o código do
+evento.
 
-**O que é bom:** mata a fricção do código. A pessoa chega, faz a selfie e já está dentro.
+**O que impede:**
 
-**O que impede hoje, e é grave:**
+1. **A biometria é apagada em 7 dias** (ADR-0005). Login por rosto exige guardar o vetor
+   por tempo indeterminado, ligado a uma identidade — **invertendo a promessa central**
+   do produto. *(→ §3b: o dono achou a saída para isso.)*
+2. **Rosto não é senha.** Rosto não se troca quando vaza. Nunca pode ser o único fator —
+   o e-mail + senha não é detalhe, é o que torna a ideia defensável.
+3. **Não temos e-mail.** O app não envia e-mail; entra dependência nova (exige ADR).
+4. **Falso positivo muda de gravidade.** Errar o match hoje entrega uma foto errada.
+   Errando no *login*, a pessoa entra **na conta de outra**. O limiar de 0,25, que serve
+   para agrupar fotos, **não serve** para autenticar.
 
-1. **A biometria é apagada em 7 dias** (ADR-0005, retenção LGPD). Login por rosto exige
-   guardar o vetor facial **por tempo indeterminado**, ligado a uma identidade. Isso
-   **inverte a promessa central** do produto — hoje a selfie é descartada e o vetor é
-   efêmero. É a decisão mais séria desta lista.
-2. **Rosto não é senha.** Rosto não se troca quando vaza. Por isso ele **nunca** pode
-   ser o único fator — o e-mail + senha que você citou não é detalhe, é o que torna a
-   ideia defensável.
-3. **Não temos e-mail.** O app não envia e-mail hoje; entra dependência nova (ADR).
-4. **Falso positivo tem consequência diferente.** Errar o match hoje entrega uma foto
-   errada. Errando no *login*, a pessoa entra **na conta de outra**. O limiar de 0,25
-   que serve para agrupar fotos **não serve** para autenticar.
+**Versão defensável:** o rosto **encontra**, a senha **autoriza**.
 
-**Versão defensável, se você quiser seguir:** a selfie **sugere** os eventos em que a
-pessoa aparece, e o acesso só se confirma com o segundo fator. O rosto encontra; a
-senha autoriza. E com consentimento explícito e separado para guardar a biometria além
-dos 7 dias.
+### 3b. Pré-cadastro — a saída do dono, e ela **funciona hoje**
+
+**A ideia dele:** o criador usa os 7 dias antes do evento para registrar as pessoas,
+subindo fotos delas. A biometria continua sumindo em 7 dias — a retenção não muda.
+
+**Medido em produção (2026-08-30):**
+
+```
+criador sobe 2 fotos ANTES do evento  ->  2 rostos indexados
+pessoa chega e faz a 1a selfie        ->  reconhecida na hora
+```
+
+Nenhum motor novo: o `/selfie` já compara contra **todos os rostos que estiverem no
+evento**, tenham chegado quando tiverem. O que muda é só *quando* o criador sobe.
+
+**O que isso resolve, e é muito:** a convidada deixa de esperar a primeira foto da festa
+para ver alguma coisa. Ela faz a selfie e a galeria **já nasce cheia**. É o momento em
+que o produto se prova — adiantado para o segundo zero.
+
+**A aresta:** a foto usada para registrar aparece no álbum. **Refinamento pequeno:** uma
+coluna `photo.oculta` — o rosto entra no índice, a foto não entra na galeria. "Foto de
+referência".
+
+**O que o pré-cadastro NÃO resolve:** entrar **sem o código**. Para isso o Fóton teria
+que procurar o rosto em *todos* os eventos — e descobrir em que festas alguém aparece é,
+por si só, um vazamento. Pré-cadastro é dentro de **um** evento; busca global é outra
+coisa, e precisa do segundo fator e de base legal própria.
+
+### 3c. Limite de UPLOAD — a métrica que substitui o crédito
+
+**Dá, e é melhor que crédito.** Crédito conta uma coisa que só existe para nós. Limite de
+upload conta **exatamente o que nos custa**: disco e CPU. E é o único número que a
+fotógrafa entende sem explicação — "este pacote dá 500 fotos".
+
+**Forma:** coluna `event.limite_fotos` (NULL = sem limite). O `/ingest` recusa com **409**
+ao bater o teto, e o app avisa antes de a pessoa gastar a viagem. Na Fóton Festa o teto
+vale **por participante** — senão o primeiro a chegar consome a cota de todos.
+
+**É também a barreira de abuso certa:** limite por IP não serve numa festa; por
+participante serve, e ainda vira produto.
+
+**Agora fica tudo em NULL — sem limite.** Atrapalhar teste é pior que gastar disco, e
+ainda não há preço definido.
 
 ---
 
 ## 4. Entrada coletiva — o botão da festa
 
-**O pedido:** uma terceira forma de entrar, com botão **maior e diferente**, com um GIF
-animado de ~10 s de uma festa entre jovens ao fundo.
+**O pedido:** terceira forma de entrar, botão **maior e diferente**, com um GIF animado
+de ~10 s de festa entre jovens ao fundo.
 
-**A ideia de dar peso visual diferente à porta da festa está certa** — é a porta do
-produto de consumo, e ela não deveria parecer irmã das outras duas.
+**Dar peso visual diferente à porta da festa está certo** — é a porta do produto de
+consumo e não deveria parecer irmã das outras duas.
 
-**Sobre o GIF, com honestidade técnica:**
-- **GIF de 10 s pesa 3 a 8 MB** e não tem compressão de vídeo. Na landing, num hotspot
-  4G de festa, isso é a primeira coisa que a pessoa baixa — e o produto inteiro depende
-  daquele 4G. Um **MP4/WebM mudo em loop** faz a mesma coisa com **~300 KB**.
-- **Procedência importa.** Não vou pegar um GIF de banco de imagem sem licença clara nem
-  gerar gente que não existe e apresentar como festa real. As fotos que já estão no app
-  são Openverse/CC-BY, creditadas em `assets/CREDITS.txt` — o mesmo padrão vale aqui.
-- **O melhor material seria seu.** Você tem 89 fotos do GLAMON e vai ter as da festa de
-  hoje. Um loop curto feito com material próprio é mais verdadeiro que qualquer banco de
-  imagem — e resolve a licença.
-
-**Decidir:** MP4 curto em vez de GIF? Material próprio ou licenciado?
+**Sobre o GIF:**
+- **GIF de 10 s pesa 3 a 8 MB** e não tem compressão de vídeo. Na landing, num hotspot 4G
+  de festa, é a primeira coisa que a pessoa baixa — e o produto inteiro depende daquele
+  4G. Um **MP4/WebM mudo em loop** faz o mesmo com **~300 KB**.
+- **Procedência importa.** Nada de banco de imagem sem licença clara, nem gente gerada
+  apresentada como festa real. O padrão do projeto é `assets/CREDITS.txt`.
+- **O melhor material é o seu.** 89 fotos do GLAMON e as da festa de hoje. Loop curto com
+  material próprio é mais verdadeiro que qualquer banco — e resolve a licença.
 
 ---
 
-## 5. Créditos — o modelo que não te agrada
+## 5. Créditos — o modelo que não agrada
 
-Concordo que incomoda, e dá para nomear o porquê: **crédito é uma unidade que só existe
-para nós.** A cliente não pensa "vou gastar um crédito", pensa "vou cobrir um casamento".
-E hoje o crédito sai por **evento criado** — então criar um evento por engano custa
-dinheiro, e um álbum permanente (GLAMON) consome um crédito para durar um ano.
+O incômodo tem nome: **crédito é uma unidade que só existe para nós.** A cliente não
+pensa "vou gastar um crédito", pensa "vou cobrir um casamento". E o crédito sai por
+*evento criado* — então criar por engano custa, e um álbum permanente consome um crédito
+para durar um ano.
 
-**A evidência de mercado:** a Face Album usa exatamente créditos sem mensalidade. Isso
-valida o ADR-0012. Mas a Patrícia pediu o oposto — aluguel, recorrência — e isso está em
-aberto desde o áudio dela.
-
-**Alternativas, com o que cada uma quebra:**
+**Evidência de mercado:** a Face Album usa exatamente créditos sem mensalidade — valida o
+ADR-0012. Mas a Patrícia pediu o oposto (aluguel, recorrência), e isso segue em aberto.
 
 | Modelo | A favor | Contra |
 |---|---|---|
-| **Por evento** (hoje) | simples, sem mensalidade — é o que a cliente disse querer | crédito por engano custa; álbum permanente não encaixa |
-| **Por convidado alcançado** | cobra pelo valor entregue, não pelo esforço | imprevisível para ela; ela quer saber o preço antes |
-| **Assinatura mensal** | receita recorrente — o que a Patrícia pediu | contradiz o ADR-0012; fotógrafo de evento tem mês parado |
-| **Por foto entregue** | escala com o uso real | pune quem fotografa muito; é o oposto do produto |
-| **Grátis com nossa marca / pago com a dela** | a marca é o gatilho de conversão já identificado | precisa de limite de armazenamento definido |
+| Por evento (hoje) | simples, sem mensalidade | engano custa; álbum permanente não encaixa |
+| Por convidado alcançado | cobra pelo valor entregue | imprevisível; ela quer o preço antes |
+| Assinatura mensal | recorrência — o que ela pediu | contradiz o ADR-0012; há mês parado |
+| Por foto entregue | escala com o uso | pune quem fotografa muito |
+| **Limite de upload por pacote** (§3c) | conta o que custa; ela entende sem explicação | precisa de preço |
+| **Grátis com nossa marca / pago com a dela** | a marca já é o gatilho de conversão | precisa de limite definido |
 
-**Minha leitura:** o último é o mais forte, porque a marca d'água já é o gatilho real —
-nenhum profissional aceita marca de terceiro no trabalho dele. Mas isso é **decisão de
-negócio, não de engenharia**, e depende do preço, que continua sem medição (EXP-10).
+**Leitura:** os dois últimos combinam — o pacote é medido em fotos enviadas, e a marca
+própria é o que faz virar pago. Nenhum profissional aceita marca de terceiro no trabalho
+dele.
 
 ---
 
-## 6. Branding — o que está e o que falta
+## 6. Branding
 
-**O que já tem:** selo circular do Fóton (Fóton + pontos de luz), preto e dourado
-champagne, tipografia Jost + Instrument Sans, e agora uma **escala tipográfica de 17
-degraus** com corpo em 17 px (a disciplina Bauhaus que você pediu: poucos passos,
-decisivos).
+**O que já existe:** selo circular (Fóton + pontos de luz), preto e dourado champagne,
+Jost + Instrument Sans, e uma escala tipográfica de 17 degraus com corpo em 17 px.
 
-**O que falta, e por que não fiz sozinho:**
-- **Sistema de cor com função.** Bauhaus não é só tamanho — é cor que **significa**.
-  Hoje o dourado é decoração; poderia ser o estado "ao vivo", "chegando", "seu".
-- **O logo.** Mudar a marca do seu ganha-pão sem referência sua seria chute.
-- **As três portas com personalidade própria** — hoje são três cartões iguais.
+**A tensão real, e é ela que trava a decisão:** a Patrícia quer **discrição e elegância**
+(casamento); a festa da Ana quer **energia**. Um sistema visual não grita as duas coisas.
 
-**O que eu preciso de você:** 2 ou 3 referências de apps que você acha que têm a cara
-certa. Com isso eu trabalho com precisão; sem isso eu adivinho.
+**Direção que eu defendo:** a base é a da Patrícia — sóbria, escura, dourada, porque é
+ela que paga hoje e é a que exige seriedade. A porta da festa **não muda o sistema**:
+ganha movimento (o loop de vídeo) e escala maior. Energia por **movimento e tamanho**,
+não por cor nova. Assim o produto não se parte em dois.
+
+**O que falta:** cor com função (hoje o dourado é decoração; poderia significar "ao
+vivo", "chegando", "sua"), e o logo.
 
 ---
 
 ## Ordem que eu defenderia
 
 1. **Fila que sobrevive** — `filaFalhas` vive em memória: foto que não subiu **some se
-   recarregar**. Viola o critério #2 do piloto ("zero foto perdida"). É o único item
-   desta lista que pode fazer você passar vergonha amanhã.
+   recarregar**. Viola o critério #2 do piloto. É o único item aqui que pode custar as
+   fotos de um cliente.
 2. **Miniatura como coluna** (ADR-0022) — 26× menos peso na rolagem, sem arquivo novo.
-3. **Fóton Festa** (§2) — o produto que ninguém atende.
-4. **Modelo comercial** (§5) — decisão sua; a engenharia é pequena.
-5. **Branding e a porta da festa** (§4, §6) — depende das suas referências.
-6. **Login por selfie** (§3) — o de maior risco de privacidade. Por último, e só com a
-   base legal resolvida.
+3. **Pré-cadastro com foto de referência** (§3b) — barato e muda o primeiro minuto do
+   convidado.
+4. **Fóton Festa** (§2) — o produto que ninguém atende.
+5. **Modelo comercial** (§5/§3c) — decisão do dono; a engenharia é pequena.
+6. **Branding e a porta da festa** (§4/§6).
+7. **Login por selfie global** (§3) — maior risco de privacidade. Por último.
