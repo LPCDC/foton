@@ -18,7 +18,7 @@ O motor (foto → rosto → entrega certa) é o mesmo. O que muda é a casca e o
 |---|---|---|---|
 | **Patrícia** — fotógrafa profissional | ferramenta de trabalho: evento começa e termina | evento, convidado | **no ar** |
 | **GLAMON** — empresa, álbum interno | acervo permanente, mesmas pessoas toda semana | álbum, equipe | **no ar** (ADR-0021) |
-| **Ana** — a pessoa comum no próprio rolê | é fotógrafa **e** convidada ao mesmo tempo | festa | **§2, não feito** |
+| **Ana** — cliente que fotografa **só com celular** | contrata também, mas sem câmera: é fotógrafa **e** convidada ao mesmo tempo (clarificado pelo dono em 2026-08-30) | festa, rolê | **§2, não feito** |
 
 **Virou código em 2026-08-30 (ADR-0030):** a "casca e o vocabulário" agora são um
 **perfil de conta** (`pro` | `empresa` | `social`) declarado pelo servidor — vocabulário,

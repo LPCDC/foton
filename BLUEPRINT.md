@@ -33,7 +33,7 @@ aparece caem na galeria dele ao vivo.
 | Máquina | `VM.Standard.E2.1.Micro` — 1 vCPU, 1 GB RAM + 2 GB swap |
 | Código | https://github.com/LPCDC/foton (público — ver §7) |
 | Repo local | `C:\Users\Pichau\Menir ClickPal` |
-| Netlify | `getfoton.netlify.app` — só demo antiga; **virará o site de marca** |
+| Netlify | `getfoton.netlify.app` — **site de marca NO AR** (repo ligado pelo dono em 2026-08-30; verificado: 150 KB, site novo) |
 
 **Credenciais:** ficam **fora do repo** (ele é público), em
 `C:\Users\Pichau\foton-acessos.md`. Esse arquivo tem a lista completa e o porquê o
@@ -306,19 +306,14 @@ WhatsApp chegar.
    reversão escrito na ADR: canal público de aquisição com volume real, pedido de
    recuperação de senha, ou domínio com reputação suficiente para não disparar o aviso
    "app não verificado" do Google.
-5. **Site de marca no Netlify** — vitrine, planos, links úteis, botão "Entrar".
-   `site/index.html` **existe e está pronto** (marca nova: diafragma no nav, abertura
-   com flash de câmera; GSAP sem Lenis, ADR-0027). `netlify.toml` já aponta para
-   `site/`. **O que falta não é código:** o build do Netlify não roda —
-   `getfoton.netlify.app` ainda serve a demo velha (medido). Confirmar no painel do
-   Netlify se o site está ligado a `github.com/LPCDC/foton` e em qual branch.
-   `UNKNOWN — REQUIRES EXPERIMENT` até alguém ver um build sair.
-   **Isso vem antes de qualquer conversa de DNS** — apontar `foton.app.br` para o
-   Netlify hoje levaria o domínio raiz para uma página desatualizada. Cuidado extra
-   com o certificado: hoje `foton.app.br`, `www` e `app.foton.app.br` estão no
-   **mesmo certificado** da VM (`dominio.sh --expand`); tirar os dois primeiros do
-   DNS sem separar o certificado antes pode derrubar o HTTPS do **app** numa
-   renovação futura.
+5. **Site de marca no Netlify — RESOLVIDO em 2026-08-30**: o dono ligou o repo no
+   painel e `getfoton.netlify.app` serve o site novo (verificado com curl: 150 KB,
+   zero `placeholder`). Agora `git push` publica o site também. Próximo passo é o
+   **DNS da raiz**, com plano escrito em `docs/PROMPT-PROXIMA-SESSAO.md` item 5 —
+   ordem obrigatória: separar o certificado da VM (hoje raiz, `www` e `app` dividem
+   um só — `dominio.sh --expand`), provar a renovação com `certbot renew --dry-run`,
+   mover a zona do registro.br para a Cloudflare (necessária para domínio próprio no
+   R2 depois), e só então apontar raiz/`www` para o Netlify.
 6. **Cloudflare R2** para as fotos — tira o peso da VM (1 núcleo entrega tudo hoje);
    conta já criada, falta configurar. Egress zero (ADR-0011). Bloqueia vídeo (ADR-0023)
    e miniaturas maiores.
