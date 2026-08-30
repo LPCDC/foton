@@ -417,3 +417,141 @@ painel invisível por causa de um regex no cliente.
 **Decisão.** Quem sabe quem é admin é o servidor — a lista `FOTON_ADMINS`. `/me` já
 informava; `/login` e `/signup` passam a informar também. O cliente **obedece**, não
 adivinha. Regra geral: **autorização nunca se infere do formato de um dado no cliente.**
+
+---
+
+## ADR-0026 — Login com Google para fotógrafas: não agora
+
+**Data:** 2026-08-30 · **Estado:** aceita — rejeição fundamentada, não ausência de decisão
+
+**Decisão.** O Fóton **não** oferece "Continuar com Google" nesta fase. Login continua
+sendo só e-mail/senha (ADR-0019), com o autosserviço de troca já existente
+(`/conta/credenciais`). A rejeição é condicionada a um gatilho explícito (fim desta ADR),
+não é "nunca".
+
+### 1. Que problema resolveria hoje — nenhum medido, e o canal que "ajudaria" já existe
+
+Hoje há 3 contas em produção (Patrícia, Carol, GLAMON), todas provisionadas à mão pelo
+dono. Ninguém jamais pediu recuperação de senha. Google login não reduziria o trabalho do
+dono — ele continuaria criando a conta e vinculando o evento.
+
+A premissa de que Google "ajudaria um canal de auto-cadastro futuro" (BLUEPRINT §9,
+antes desta ADR) é parcialmente falsa: **o canal de auto-cadastro já existe e está no
+ar** — `POST /signup` (`app/test_rig/rig.py:229`) é uma rota aberta, sem convite, que só
+bloqueia quem tenta se registrar com um login da lista `FOTON_ADMINS`. Qualquer pessoa já
+pode criar a própria conta com e-mail/senha hoje, sem uma linha de código nova. O que o
+Google acrescentaria a isso não é *abrir* um canal — é reduzir o atrito de preencher dois
+campos num formulário que já é aberto. É um ganho real, mas pequeno, e sem ninguém hoje
+esbarrando nesse atrito.
+
+Contra esse ganho pequeno pesa um negativo concreto e específico deste público: a
+fotógrafa às vezes fotografa com **celular emprestado** (registrado no contexto desta
+sessão). Numa tela de "Continuar com Google", o Android tende a sugerir a conta Google
+**de quem é o dono do aparelho**, não da fotógrafa — mais confuso que digitar login e
+senha, não menos. É o tipo de fricção que o desenho Bauhaus das telas existe para evitar.
+
+### 2. Custo de implementação — não é trivial, e esbarra na ADR-0019
+
+- **Biblioteca:** nenhuma dependência OAuth existe no projeto hoje (`requirements.txt`
+  não tem `authlib`, `httpx` nem `requests`). A opção natural para Starlette/FastAPI é
+  **Authlib** (`authlib.integrations.starlette_client.OAuth`) — mas é uma dependência
+  nova, e o CLAUDE.md §4.3 exige justificativa para cada uma ("menor stack que cumpra o
+  SLA"). Ainda não há justificativa medida (ver item 1).
+- **Rotas novas:** no mínimo duas — `GET /auth/google/login` (redireciona para o Google)
+  e `GET /auth/google/callback` (troca o código, busca o e-mail verificado, cria ou casa
+  a conta, emite token de sessão pelo mesmo `store.novo_token` de hoje). O front, que é
+  uma página só (`app/web/index.html`), precisaria tratar o retorno do redirect como já
+  trata outros estados via querystring (padrão existente em `/?ev=&foto=` da ADR-0020).
+- **Schema — o ponto que a investigação revelou e o prompt não previa:** `photographer`
+  tem `email TEXT PRIMARY KEY, senha TEXT NOT NULL` (`store.py:17-19`). A ideia óbvia —
+  "casar a conta pelo e-mail que o Google devolve" — **esbarra na ADR-0019**: aquela
+  decisão tirou a exigência de formato de e-mail do campo de login exatamente para não
+  prender a fotógrafa a um endereço real. Isso significa que **o login de uma conta em
+  produção pode não ser um e-mail válido**, e casar automaticamente por igualdade de
+  string com o e-mail do Google seria voltar a assumir algo que a própria ADR-0019
+  removeu. Pior: casar uma conta existente pelo e-mail só porque bateu string abre uma
+  superfície de sequestro de conta — nada hoje verifica que o dono do login "sabe" aquele
+  e-mail, então um Google account com e-mail igual a um login por coincidência **não
+  prova** ser a mesma pessoa.
+  A forma correta exigiria uma coluna nova e estável — `google_id` (o `sub` do token,
+  imutável, nunca o e-mail) — casando **só** por esse id, nunca por igualdade de texto
+  com o login existente. Contas criadas via Google e sem senha escolhida receberiam um
+  hash de senha aleatório e inutilizável (não uma coluna `senha` opcional — mantém o
+  `NOT NULL` de hoje sem migração de nulidade). Isso é código novo real, não uma
+  configuração.
+- Nada disso é "não dá para fazer" — é "não é barato", e o custo cai justamente na área
+  (identidade da conta) que a ADR-0019 acabou de deixar mais flexível.
+
+### 3. Onde vive o client secret — mesmo rigor da semente do FTP, mas não o mesmo mecanismo
+
+A semente do FTP (`ftp_camera.py:124`) é **autogerada** e vive no banco
+(`store.segredo`, com fallback a env var) — não serve de modelo direto aqui, porque o
+client secret do Google **não é gerado por nós**, é emitido pelo Console do Google e
+tem que ser guardado tal como veio.
+
+A única opção correta, com o repositório público: variável de ambiente na VM, nunca no
+git — o mesmo princípio do CLAUDE.md §7 ("credenciais nunca no código").
+
+Achado operacional relevante: `infra/instalar-foton.sh` **reescreve o arquivo do
+systemd** inteiro (`/etc/systemd/system/foton.service`, linhas 47-61) toda vez que roda.
+O auto-update de 2 min (`foton-update.timer`) **não** toca nesse arquivo — só faz
+`git reset --hard` + `systemctl restart` — mas um reinstall completo (o script inteiro,
+rodado via Cloud Shell para mudança de infra, ex.: migração para ARM cogitada na
+ADR-0014) apagaria qualquer `Environment=` adicionado à mão para o secret, porque o
+heredoc é fixo e commitado. Se um dia isto for implementado, o secret **não pode** ser um
+`Environment=` colado à mão no unit — tem que ser `EnvironmentFile=/etc/foton.env`
+referenciado (por **caminho**, não por valor) dentro do heredoc committed, apontando para
+um arquivo que existe só na VM, criado uma vez à mão e nunca versionado. Sem isso, a
+primeira reinstalação de infra depois de configurar o Google quebraria o login Google em
+produção silenciosamente — a mesma classe de armadilha já paga com `FOTON_ADMINS`.
+
+### 4. O que o dono precisaria fazer fora do código (não inventado aqui)
+
+Sem credencial real, o máximo responsável é listar os passos, não fabricar valores:
+1. Criar um projeto no **Google Cloud Console**.
+2. Configurar a **tela de consentimento OAuth** (nome do app, e-mail de suporte, logo).
+3. Registrar o **URI de redirecionamento** exato (`https://app.foton.app.br/auth/google/callback`
+   — e provavelmente também o domínio antigo `getfoton.duckdns.org`, no mesmo espírito de
+   "não quebrar o que já está impresso/instalado" da ADR-0017).
+4. Gerar **Client ID + Client Secret**, e colocar o secret na VM como descrito no item 3
+   — nunca no repo, nunca colado numa mensagem que vire commit.
+5. **Ponto que pesa contra, e ecoa a ADR-0017:** enquanto o app OAuth não passa pela
+   verificação do Google (exige política de privacidade publicada, prova de propriedade
+   do domínio, e para "External" pode levar dias), a tela de login mostra o aviso
+   **"O Google não verificou este app"** — para o mesmo público não-técnico que a
+   ADR-0017 protegeu do aviso "Site perigoso" do Chrome. Trocar um aviso assustador por
+   outro não é o ganho que se está buscando.
+
+### 5. Convivência com "login por selfie" (`docs/PRODUTO.md` §3)
+
+Não competem — são mecanismos diferentes e resolvem problemas diferentes. O bloqueio
+central do login por selfie é a falta de e-mail para o segundo fator ("Rosto não é
+senha… Não temos e-mail", PRODUTO.md §3, itens 2-3) mais a severidade de um falso
+positivo virando login em conta errada. O Google **entrega um e-mail verificado**, o que
+tecnicamente atenua o item 3 daquela lista — mas não entrega capacidade de **enviar**
+e-mail (recuperação de senha continua sem infra própria) nem muda o limiar de 0,25 usado
+para casar fotos, que a própria PRODUTO.md já registra como impróprio para autenticação.
+Se um dia o login por selfie avançar, o Google pode virar a fonte do "e-mail" que falta
+no fator 2 — mas isso é otimização de uma ideia hoje parada por decisão do dono, não uma
+razão para adiantar o Google agora.
+
+### Gatilho de reversão (escrito por extenso)
+
+Revisitar quando **qualquer um** destes acontecer:
+- existir um **canal de aquisição público de verdade** direcionando estranhos para
+  `/signup` (ex.: o "site de marca" do BLUEPRINT §9 item 5 rodando com tráfego pago ou
+  orgânico) — aí o atrito de dois campos passa a ter volume que justifica o custo do
+  item 2 e o aviso do item 4;
+- alguém pedir **recuperação de senha** de verdade (ainda não aconteceu);
+- o domínio `foton.app.br` tiver reputação/verificação suficiente para não disparar o
+  aviso "app não verificado" do item 4 (paralelo direto à condição que resolveu a
+  ADR-0017).
+
+### Consequências
+- Nenhuma mudança de código nesta sessão. `/signup`, `/login`, `/conta/credenciais`
+  seguem exatamente como estão.
+- Se o gatilho disparar no futuro: exige plano escrito antes de código (biblioteca,
+  coluna `google_id`, onde mora o secret via `EnvironmentFile`, como a conta com senha
+  continua funcionando idêntica), as 4 suítes de `tests/todos.sh` passando, e teste
+  manual em produção confirmando que o login antigo não regrediu — os mesmos critérios
+  já deixados em `docs/PROMPT-PROXIMA-SESSAO.md`.

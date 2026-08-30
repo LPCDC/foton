@@ -281,10 +281,13 @@ WhatsApp chegar.
    fotos, é o gargalo real numa festa (todo mundo escaneia o QR nos mesmos 5 minutos).
 
 **Depois**
-4. **Login com Google** para fotógrafas — avaliado e propositalmente **não
-   implementado ainda** em 2026-08-30 (ver `docs/PROMPT-PROXIMA-SESSAO.md`, é o tema da
-   próxima sessão). Ajudaria um canal de auto-cadastro; hoje as contas são todas
-   provisionadas à mão e ninguém pediu recuperação de senha.
+4. **Login com Google** para fotógrafas — investigado e **rejeitado por ora** em
+   2026-08-30 (ADR-0026): o canal de auto-cadastro que o Google "ajudaria" **já existe**
+   (`/signup` é aberto), ninguém pediu recuperação de senha, e o celular emprestado (caso
+   real desta fotógrafa) torna o login Google mais confuso, não menos. Gatilho de
+   reversão escrito na ADR: canal público de aquisição com volume real, pedido de
+   recuperação de senha, ou domínio com reputação suficiente para não disparar o aviso
+   "app não verificado" do Google.
 5. **Site de marca no Netlify** — vitrine, planos, links úteis, botão "Entrar".
 6. **Cloudflare R2** para as fotos — tira o peso da VM (1 núcleo entrega tudo hoje);
    conta já criada, falta configurar. Egress zero (ADR-0011). Bloqueia vídeo (ADR-0023)
