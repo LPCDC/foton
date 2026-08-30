@@ -5,8 +5,13 @@
   publish = "site"
   command = ""
 
-# SPA: tudo cai no index.html (o app roteia por hash/JS)
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# SEM redirect coringa aqui, de proposito.
+#
+# Havia um `/* -> /index.html status=200`, herdado de quando este arquivo publicava
+# `app/web` — o APP e uma SPA de verdade e precisava daquilo. O SITE DE MARCA e UMA
+# pagina estatica so, e o coringa faz mal:
+#   - qualquer endereco errado responde 200 com a home em vez de 404. Para o Google
+#     isso e um numero infinito de URLs distintas servindo conteudo identico
+#     (soft 404), que e exatamente o que se evita numa vitrine feita para ser achada.
+#   - esconde link quebrado nosso: erro de digitacao num href nunca aparece.
+# Sem o coringa, endereco inexistente devolve o 404 do Netlify, que e o certo.
