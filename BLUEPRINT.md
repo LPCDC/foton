@@ -2,7 +2,7 @@
 
 > **Leia isto primeiro em qualquer sessão nova.** Resume o que é, onde está, como mexer
 > e o que vem. Escrito para retomar o trabalho sem reler o histórico.
-> Atualizado: 2026-08-28
+> Atualizado: 2026-08-30
 
 ---
 
@@ -12,47 +12,59 @@
 **durante a festa**. O convidado escaneia um QR, tira 1 selfie, e as fotos em que ele
 aparece caem na galeria dele ao vivo.
 
-- **Cliente pagante:** fotógrafo de eventos (primeira: **Patrícia Vargas**, Santos/Baixada).
+- **Cliente pagante:** fotógrafo de eventos (primeira: **Patrícia Vargas**,
+  Santos/Baixada; segunda: **GLAMON**, salão em Santos, usando o Fóton como álbum
+  permanente de clientes).
 - **Usuário final:** o convidado (usa 2 minutos na vida, sem instalar nada).
 - **Diferencial:** entrega **ao vivo**, em português, para um mercado que os
   concorrentes internacionais não atendem no preço.
 - **Concorrentes:** FotoOwl, SpotMyPhotos (~US$142/mês), EventHex, SnapSeek.
   Todos entregam "link para depois"; nosso wedge é o **tempo real**.
+- **Três portas de entrada na home:** Vou fotografar · Sou convidado · **Sou empresa**
+  (conta com galeria permanente, ex.: GLAMON — ver §8).
 
 ## 2. Onde está (produção)
 
 | | |
 |---|---|
-| **App (tudo)** | **https://app.foton.app.br** (dominio proprio, desde 2026-08-29) |
-| App (endereco antigo) | https://getfoton.duckdns.org — continua funcionando, mesmo certificado |
+| **App (tudo)** | **https://app.foton.app.br** (domínio próprio, desde 2026-08-29) |
+| App (endereço antigo) | https://getfoton.duckdns.org — continua funcionando, mesmo certificado |
 | Servidor | Oracle Cloud Always Free, São Paulo · `152.67.46.113` |
 | Máquina | `VM.Standard.E2.1.Micro` — 1 vCPU, 1 GB RAM + 2 GB swap |
 | Código | https://github.com/LPCDC/foton (público — ver §7) |
 | Repo local | `C:\Users\Pichau\Menir ClickPal` |
 | Netlify | `getfoton.netlify.app` — só demo antiga; **virará o site de marca** |
 
-**Contas**
-```
-Fotógrafa (cliente real): patriciavargas       / (senha com o dono — NÃO escrever aqui)
-Admin:                    admin@foton.com     / (senha com o dono — NÃO escrever aqui)
-```
-> ⚠️ **Este repo é público. Nenhuma senha entra neste arquivo.** A senha da Patrícia
-> esteve aqui em texto puro até 2026-08-29 e continua no histórico do git — por isso
-> **login e senha foram trocados em produção** naquele dia. O que está no histórico
-> não abre mais nada. A fotógrafa troca a própria senha em **Painel → Minha conta e
-> senha** (ADR-0019); o admin ainda pode, por `/admin/senha`.
+**Credenciais:** ficam **fora do repo** (ele é público), em
+`C:\Users\Pichau\foton-acessos.md`. Esse arquivo tem a lista completa e o porquê o
+painel não mostra senha nenhuma (PBKDF2, irreversível de propósito).
+
+> ⚠️ A senha da Patrícia esteve no repo em texto puro até 2026-08-29 e continua no
+> histórico do git — por isso **login e senha foram trocados em produção** naquele dia.
+> O que ficou no histórico não abre mais nada. A fotógrafa troca a própria senha em
+> **Painel → Minha conta e senha** (ADR-0019).
+>
+> A conta de administração **não é mais `admin@foton.com`** — foi substituída em
+> 2026-08-28 por um login sem esse endereço, para não deixar rastro de e-mail de
+> administração num repositório público. Quem é admin é decidido pela lista
+> `FOTON_ADMINS` **no servidor**; o cliente só obedece (ADR-0025 — ver a armadilha
+> correspondente em §7).
 
 ## 3. Como funciona (pipeline)
 
 ```
-FOTÓGRAFA cria evento → sai um QR
+FOTÓGRAFA cria evento → sai um QR                       (sem custo — crédito cortado, §10)
 CONVIDADO escaneia → 1 selfie → vira vetor facial (a selfie é DESCARTADA)
-FOTÓGRAFA fotografa → a foto chega ao servidor por 2 caminhos:
-   (a) app: envia do celular (lote, com retry)
-   (b) FTP: a câmera envia SOZINHA (Canon R8 e afins) → porta 2121
+FOTÓGRAFA fotografa → a foto chega ao servidor por 3 caminhos:
+   (a) app: câmera de dentro do app, ou galeria do celular (lote, com retry)
+   (b) app instalado: menu "Compartilhar" do Android entrega o lote direto (ADR-0018)
+   (c) FTP: a câmera envia SOZINHA (câmeras PROFISSIONAIS com FTP — não é o caso da
+       Patrícia: Canon R8 e T6s NÃO têm FTP, verificado presencialmente) → porta 2121
 SERVIDOR: reduz p/ 2048px → marca d'água do fotógrafo → detecta rostos (SCRFD)
           → embedding (ArcFace) → compara com os convidados → publica p/ quem casar
-CONVIDADO: a foto aparece sozinha, com animação; baixa/compartilha
+          → gera MINIATURA (320px, coluna própria — ADR-0022)
+CONVIDADO: a foto aparece sozinha, com animação; baixa/compartilha/dá QR para quem
+           aparece junto (ADR-0020); pode selecionar várias segurando o dedo
 ```
 
 **Reconhecimento:** InsightFace **buffalo_s** (SCRFD + ArcFace), CPU, `det_size=640`,
@@ -63,16 +75,44 @@ limiar cosseno **0.25**. Validado: 99,5% no LFW.
 
 ```
 app/test_rig/
-  rig.py         FastAPI: rotas, pipeline, admin, LGPD, FTP
-  store.py       SQLite: contas, eventos, fotos, rostos, convidados, contatos
-  ftp_camera.py  servidor FTP (câmera envia direto)
+  rig.py         FastAPI: rotas, pipeline, admin, LGPD, FTP, elevação de conta empresa
+  store.py       SQLite: contas, eventos, fotos, rostos, convidados, contatos, thumbs
+  ftp_camera.py  servidor FTP (câmera envia direto — só serve câmera PROFISSIONAL)
   models/buffalo_s/  ONNX empacotado (não baixa em runtime)
 app/web/
-  index.html     TODO o front (uma página, sem framework) — fotógrafa + convidado
-  sw.js          service worker (ver §7 — armadilha conhecida)
+  index.html     TODO o front (uma página, sem framework) — fotógrafa + convidado +
+                 empresa + admin. ~205 mil bytes. Pontos de entrada relevantes:
+                 badgeSVG()/diafragmaSVG() — a marca (§8) · estadoDaCamera() — cartão
+                 do painel · armarToqueLongo() — segurar para selecionar · filaGravar()
+                 e companhia — fila de upload persistente em IndexedDB.
+  sw.js          service worker: cache-first só de estáticos, NUNCA de resposta com
+                 sessão (armadilha paga, §7); atende o Web Share Target (ADR-0018)
+  manifest.webmanifest   share_target (campo "fotos")
   assets/        fotos de demonstração
+tests/
+  test_autorizacao.py   193 checagens — contrato de todas as rotas, LGPD, admin
+  test_front.py         24 checagens — o front como TEXTO: sintaxe JS de verdade
+                         (node --check), ids duplicados, funções essenciais presentes,
+                         fila grava em disco ANTES da rede. Nasceu de estragos reais.
+  test_ftp_camera.py    23 checagens — servidor FTP
+  test_logo.py          16 checagens — marca d'água do FOTÓGRAFO na foto (não é a
+                         marca do Fóton — são duas coisas diferentes com nome parecido)
+  todos.sh       roda as 4 suítes e FALHA (exit ≠ 0) se qualquer uma falhar — existe
+                 porque um `&&` mal escrito já deixou subir com suíte vermelha. Rodar
+                 sempre antes de `git push`.
+  ensaio.py      NÃO é suíte automática — ensaio com fotos REAIS do dono, em
+                 fotos-teste/ (gitignored, o repo é público), cria e apaga um evento
+                 de teste em produção. Rodar com bom senso, não em massa (pedido do
+                 dono em 2026-08-30 — cuidado reafirmado para quando o R2 chegar).
 infra/           scripts de VM, HTTPS, FTP, backup
-docs/DECISIONS.md   ADRs (leia antes de mudar arquitetura)
+docs/
+  DECISIONS.md   25 ADRs — leia antes de mudar arquitetura ou dependência
+  PRODUTO.md     o que NÃO virou código ainda (Fóton Festa, login por selfie, chat em
+                 emoji, pré-cadastro com nome/Instagram, limite de upload) — ler antes
+                 de propor algo novo, provavelmente já está lá
+  BENCHMARKS.md, PILOTO-1.md, TESTES.md, ROTEIRO-CAMERAS.md   medições reais
+  ARCHITECTURE.md, ROADMAP.md, parte antiga de GAUNTLET.md   HISTÓRICO do
+                 planejamento original — cada um avisa no topo o que mudou
 ```
 
 **Dados (nunca apagar):** `/var/lib/foton/foton.db` + `backup/` (7 cópias diárias).
@@ -80,13 +120,24 @@ docs/DECISIONS.md   ADRs (leia antes de mudar arquitetura)
 ## 5. Como fazer deploy
 
 **Basta `git push`.** A VM tem auto-update (systemd timer, 2 min) que puxa `origin/main`,
-reinstala dependências se mudaram e reinicia o serviço.
+reinstala dependências se mudaram e reinicia o serviço (~25 s de 502 no meio).
 
 ```bash
-git add -A && git commit -m "..." && git push origin main
+bash tests/todos.sh && git add -A && git commit -m "..." && git push origin main
 # aguardar ~2 min e validar:
-curl -s https://getfoton.duckdns.org/health
+curl -s https://app.foton.app.br/health
 ```
+
+**Sobre deploy com evento ao vivo:** a regra original era não fazer deploy nessa
+condição. **O dono revisou isso em 2026-08-30**, nesta fase de testes: *"faça deploy
+sim nessa fase de teste quando tem evento ao vivo. você saberá quando terá coisa
+grande."* Ou seja: **deploy liberado por padrão agora**, com bom senso do agente para
+o que é "coisa grande" — mudança na fila de upload, no pipeline de reconhecimento ou
+algo que pode deixar a fotógrafa sem receber foto no meio de um evento pago de verdade
+ainda pede cautela extra (checar `/admin/saude`: última foto, carga da máquina) e, na
+dúvida, perguntar. `/admin/saude` **não serve mais** para detectar "evento ao vivo" por
+si só — GLAMON e Carol ficam marcadas `ao_vivo` permanentemente (álbuns de propósito
+duradouro); o sinal real é última foto + carga.
 
 Mudou algo de **infraestrutura** (systemd, nginx, portas)? Aí sim precisa rodar no
 Cloud Shell da Oracle:
@@ -102,8 +153,18 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/foton.key ubuntu@152.67.46.113 \
 2. **Medir antes de otimizar.** Valor não medido = `UNKNOWN — REQUIRES EXPERIMENT`.
 3. **Mudou arquitetura/dependência → ADR** em `docs/DECISIONS.md`.
 4. **Não quebrar o que funciona.** Testar o caminho inteiro depois de mexer.
-5. **Sem segredo no git.** Senhas e tokens só em env/Secrets.
+5. **Sem segredo no git.** Senhas e tokens só em env/Secrets/`foton-acessos.md` (fora
+   do repo).
 6. **Reportar com honestidade** — falhou é falhou, com a saída.
+7. **Autorização nunca se infere do formato de um dado no cliente** (ADR-0025) — quem
+   decide poder é sempre o servidor.
+8. **Barra invertida não passa por heredoc de shell.** Uma string JS delicada
+   (`\n` dentro de um `confirm()`, por exemplo) que passa por um heredoc bash já virou
+   quebra de linha real e corrompeu o app inteiro, mais de uma vez nesta sessão. Ao
+   escrever JS com barra invertida literal via script Python, montar o caractere com
+   `chr(92)` em vez de escrevê-lo direto na string do shell — e se o heredoc em si
+   falhar (ex.: erro de parsing do shell sem motivo aparente), trocar para a
+   ferramenta de escrita de arquivo direta em vez de insistir.
 
 ## 7. Armadilhas já pagas (não repetir)
 
@@ -122,184 +183,114 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/foton.key ubuntu@152.67.46.113 \
 | **FTP engolia foto sem evento** | Sem evento ao vivo o arquivo ficava parado na pasta e nunca era processado — perda silenciosa. Hoje vai para fila de pendentes e entra ao abrir o evento. |
 | **Usuário de FTP só no boot** | Conta criada depois não conectava a câmera até reiniciar o serviço. Hoje o login é conferido no banco na hora. |
 | **Selfie "invertida"** | O preview mostrava a cena como a lente vê; quem se olha espera espelho. Espelha-se **só o preview** (CSS) — a foto salva fica na orientação real. |
-| **`/signup` podia reivindicar um login de admin** | O cadastro é aberto e **não conferia a lista de admins**, que vive no código de um **repo público**. Se um login de admin não tivesse conta, qualquer um se cadastrava com ele e virava admin: lia todos os contatos, apagava contas, trocava senhas. Fechado em 2026-08-29 (403), com teste. **Rota que concede poder precisa conferir quem pode.** |
-| **Leitura que escreve** | `GET /stats`, `GET /photos` e `GET /feed` usavam `create=True`: **ler criava evento**. Quem digitava um codigo errado via uma galeria vazia para sempre em vez de "esse codigo nao existe". Pior: celular de convidado com a galeria aberta **ressuscitava evento apagado**, e o app da fotografa adotava o orfao de volta — evento apagado reaparecia vazio no painel dela. Visto ao vivo em 2026-08-29. Hoje as tres devolvem 404. **Rota de leitura nunca escreve.** |
-| **SQLite nao devolve espaco** | Apagar evento marcava o espaco como livre **dentro** do arquivo; o arquivo nunca encolhia. Como as fotos moram no banco e o backup guarda **7 copias** dele, cada MB nao recuperado custava **8 MB** de disco. Nunca houve `VACUUM` no projeto — o banco chegou a 136 MB com 10 MB de fotos. Hoje: `/admin/compactar`. E **o checkpoint do WAL nao e opcional**: sem `wal_checkpoint(TRUNCATE)` o VACUUM deixa o resultado no `-wal` e o `.db` continua igual. |
-| **Deploy tem ~25 s de 502** | O auto-update reinicia o serviço. **Não fazer deploy durante evento da cliente.** |
+| **`/signup` podia reivindicar um login de admin** | O cadastro é aberto e **não conferia a lista de admins**, que vive no código de um **repo público**. Fechado em 2026-08-29 (403), com teste. **Rota que concede poder precisa conferir quem pode.** |
+| **Leitura que escreve** | `GET /stats`, `GET /photos` e `GET /feed` usavam `create=True`: **ler criava evento**. Hoje as três devolvem 404. **Rota de leitura nunca escreve.** |
+| **SQLite não devolve espaço** | Apagar evento marcava o espaço como livre **dentro** do arquivo; o arquivo nunca encolhia, e como o backup guarda 7 cópias, cada MB não recuperado custava 8 MB de disco. Hoje: `/admin/compactar` (VACUUM + `wal_checkpoint(TRUNCATE)`, nessa ordem — o checkpoint sozinho não basta). |
+| **Deploy tem ~25 s de 502** | O auto-update reinicia o serviço. Ver §5 sobre a regra de evento ao vivo, revisada em 2026-08-30. |
+| **Autorização de admin inferida do FORMATO de um dado no cliente** | `EH_ADMIN` no front era `/^admin@/.test(email)`. Quando o login de administração deixou de ter arroba (virou `admin`, não mais `admin@foton.com`), o teste passou a dar **falso** silenciosamente: o painel de administração existia, o servidor autorizava, e **o botão nunca aparecia**. Corrigido (ADR-0025): `/login`, `/signup` e `/me` informam `admin: bool`; o cliente obedece o servidor, não adivinha pelo texto do e-mail. |
+| **Barra invertida através de heredoc de shell** | Ao escrever uma string JS com `\n` literal (dentro de um `confirm()`) usando um heredoc de shell para gerar o script Python que edita o arquivo, o `\n` virou **quebra de linha real** dentro da string JavaScript, cortando-a no meio e derrubando `node --check`. Pego antes do deploy — era exatamente para isso que o teste de sintaxe existe. Regra: montar barra invertida literal com `chr(92)`, nunca confiar no shell para preservá-la. |
+| **Texto de estado que mentia** | O cartão de status da câmera dizia "FTP ligado, nenhuma foto ainda" para uma conta (Carol) que tinha **30 fotos** no painel, uma linha acima. O texto falava da CÂMERA (nenhuma câmera de FTP jamais conectou), mas usava vocabulário de FOTOS. Visto na tela, corrigido no mesmo turno. **Todo texto de estado tem que ser lido ao lado do número que ele poderia contradizer.** |
+| **Segurar a miniatura abria o menu do navegador** | Não havia gesto de toque longo — só um botão "Escolher algumas" — e o alvo do toque era o `<img>`, por isso o Android oferecia ações de IMAGEM ("salvar", "abrir em nova aba") em vez de selecionar. Corrigido: a miniatura não recebe toque (`pointer-events:none`), o `contextmenu` é barrado, e segurar 450 ms entra no modo seleção. |
 
 ## 8. Estado atual (o que funciona hoje)
 
-**Fotógrafa:** conta com senha · criar/encerrar/apagar evento · marca d'água própria ·
-QR (tela cheia + imprimível) · upload em lote com barra de progresso e retry ·
-**receber fotos pelo menu "Compartilhar" do Android (PWA instalado)** ·
-apagar foto · convidados ao vivo · contatos · resumo ao encerrar · **FTP da câmera** ·
-créditos · PWA · faixa fixa com código + status "recebendo" ·
-**trocar o próprio login e a própria senha** (Painel → Minha conta e senha).
+**Fotógrafa:** conta com senha, **sem custo** (crédito cortado em 2026-08-30 — ADR-0024,
+ver §10) · criar/encerrar/apagar evento · marca d'água própria (upload de logo,
+`test_logo.py`) · QR (tela cheia + imprimível) · câmera de dentro do app com fallback
+para a câmera nativa · upload em lote com barra de progresso e retry, **fila persistente
+em IndexedDB** que sobrevive a fechar o app no meio de um envio · receber fotos pelo
+menu "Compartilhar" do Android (PWA instalado, ADR-0018) · **cartão de status da
+câmera no painel** — verde (FTP conectou há pouco), âmbar (FTP ligado, sem conexão
+recente) ou cinza (sem FTP — R8/T6s, o caminho é o celular); nunca inventa "conectada"
+quando não dá para saber · **segurar uma miniatura para selecionar várias e apagar em
+lote** · apagar foto individual · convidados ao vivo + contatos · resumo ao encerrar ·
+FTP da câmera (para quem tem câmera PROFISSIONAL com FTP) · trocar o próprio
+login/senha (ADR-0019) · **conta "empresa"** (ex.: GLAMON) com galeria permanente,
+elevação por senha de admin para criar/apagar álbum.
 
 **Convidado:** QR → 1 tela (selfie + consentimento) · galeria ao vivo com abas
-(minhas / todas) · **animação de chegada** + "Chegou uma foto sua!" · espera viva
-("N fotos já na festa") · saídas quando não reconhece · lightbox com navegação ·
-salvar/compartilhar/ZIP · **QR por foto** (a amiga que aparece junto escaneia e leva a
-foto no próprio celular, na hora) · sessão persistente (volta sem refazer selfie) · PWA.
+(minhas / todas) · animação de chegada + "Chegou uma foto sua!" · espera viva ·
+lightbox com navegação · salvar/compartilhar/ZIP · **segurar uma foto para selecionar
+várias** (compartilhar as melhores para o grupo, sem precisar de todas nem de uma só) ·
+QR por foto (ADR-0020 — quem aparece junto escaneia e leva a foto no próprio celular) ·
+sessão persistente (volta sem refazer selfie) · **"Apagar minha selfie e sair deste
+evento"**, visível na própria galeria, sem precisar falar com ninguém — é a condição
+da decisão do dono sobre nome/Instagram no pré-cadastro (`docs/PRODUTO.md` §3b-2) · PWA.
 
-**Admin** (`admin@foton.com`): resumo geral · disco · lista de fotógrafos ·
-+créditos · trocar senha · **testar foto da câmera** (valida o setup em segundos) ·
-adotar eventos órfãos · forçar expiração LGPD.
+**Admin** (login `admin`, não mais `admin@foton.com` — ver §2): resumo geral · disco ·
+lista de fotógrafos + histórico de crédito (não gasto mais, só histórico) · marcar
+conta como empresa · retenção de biometria configurável por conta · zerar dados
+(mantém logins, senhas, marca, logo) · compactar banco · trocar senha de outra conta ·
+testar foto da câmera (valida o setup em segundos) · adotar eventos órfãos · forçar
+expiração LGPD · lista de contatos.
+
+**A marca (2026-08-30):** redesenhada — um **diafragma** construído de verdade (seis
+lâminas tangentes ao hexágono da abertura, coordenadas calculadas) com um único
+**ponto de luz dentro, fora do centro** de propósito. Ideia: Fóton é uma partícula de
+luz; o produto é uma lente que acha *você* no meio de muitos. Funções `badgeSVG()` e
+`diafragmaSVG()` em `app/web/index.html`. Na home ela é grande e centralizada, com um
+teto de tamanho em `vh` além do de `vw` — sem isso a marca em 300px empurrava a
+terceira porta ("Sou empresa") para fora da primeira tela do celular.
 
 **LGPD:** política publicada · consentimento destacado · selfie nunca armazenada ·
-retenção automática (biometria 7d, fotos 90d) · direito de exclusão funcionando.
+retenção automática (biometria 7d por padrão, configurável por conta; fotos 90d) ·
+**direito de exclusão com botão visível na galeria da convidada** (não mais só numa
+tela de privacidade escondida) · **decisão registrada sobre nome/Instagram no
+pré-cadastro** (`docs/PRODUTO.md` §3b-2): o organizador do evento é o **controlador**
+na LGPD e faz o vínculo rosto↔nome; a convidada escolhe apenas se isso **aparece** para
+os outros. Condição para essa decisão continuar válida: contrato com o organizador,
+padrão de exibição desligado, e o botão de saída acima — que já existe.
 
-**Infra:** HTTPS (Let's Encrypt, renovação automática) · backup diário ·
-auto-update · reinício automático · proteção contra recuperação por ociosidade ·
-**monitor externo real (UptimeRobot, desde 2026-08-29)** — 3 monitores, 5 min
-de verdade, alerta por e-mail. Dois são **keyword** em `/health` exigindo `"ok":true`,
-o que pega servidor de pé com pipeline morto. O GitHub Actions (cadência real medida:
-~5 h) fica como rede de segurança. Ver `docs/PILOTO-1.md` B5.
+**Infra:** HTTPS (Let's Encrypt, renovação automática) · backup diário · auto-update ·
+reinício automático · proteção contra recuperação por ociosidade · monitor externo real
+(UptimeRobot, desde 2026-08-29) — 3 monitores, 5 min de verdade, alerta por e-mail;
+dois são **keyword** em `/health` exigindo `"ok":true`. O GitHub Actions (cadência real
+medida: ~5 h) fica como rede de segurança. **O alerta do monitor nunca foi visto
+disparar de verdade** — `UNKNOWN — REQUIRES EXPERIMENT` até alguém ver um e-mail/
+WhatsApp chegar.
 
 ## 9. O que vem (priorizado)
 
-> **`docs/PRODUTO.md` guarda o que ainda NAO virou codigo**: Foton Festa (todo mundo
-> fotografa), login por selfie, a porta coletiva com fundo animado, alternativas ao
-> modelo de creditos e o que falta de branding. Cada item com o que custa e o que
-> precisa ser decidido. Ler antes de propor coisa nova — provavelmente ja esta la.
+> **`docs/PRODUTO.md` guarda o que ainda NÃO virou código**: Fóton Festa (todo mundo
+> fotografa), login por selfie, chat em emoji dentro do evento, limite de upload no
+> lugar do crédito, o que falta de branding. Cada item com o que custa e o que precisa
+> ser decidido. Ler antes de propor coisa nova — provavelmente já está lá.
 
-**Agora**
-1. **Site de marca no Netlify** — vitrine, planos, links úteis, botão "Entrar".
-2. **Cloudflare R2** para as fotos — tira o peso da VM (1 núcleo entrega tudo hoje);
-   conta já criada, falta configurar. Egress zero (ADR-0011).
-3. **Repo privado + deploy key** — com cuidado para não quebrar o auto-update.
+**Maior risco do piloto agora, e não é código:**
+1. `UNKNOWN — REQUIRES EXPERIMENT`: o Fóton aparece no menu Compartilhar do Android da
+   Patrícia? A galeria dela seleciona várias fotos de uma vez, por arrasto? A T6s tem
+   algum jeito de mandar foto sozinha? Nenhuma das três foi testada com o aparelho dela
+   — o dono ainda não a encontrou pessoalmente para isso.
+2. **TTFR (Time to First Relevant Photo) fim a fim nunca foi medido** com relógio nas
+   duas pontas — só as partes (`/ingest` P95 1,9s + poll 2,5s). É o número que prova a
+   promessa do produto.
+3. **30 selfies simultâneas: P95 8,2s** — a entrada de convidados, não o envio de
+   fotos, é o gargalo real numa festa (todo mundo escaneia o QR nos mesmos 5 minutos).
 
 **Depois**
-4. **Segunda VM + failover** — a Oracle dá 2 grátis; DuckDNS troca o IP por API.
-   Sai de ~99% para ~99,7%.
-5. Login com Google · cobrança (créditos hoje são manuais) · domínio próprio.
-
-### Pedidos do dono ainda não feitos (2026-08-28)
-
-**Feito em 2026-08-28 (com teste real, ver `docs/TESTES.md`):** autorização das rotas ·
-fila de pendentes do FTP · login de FTP conferido na hora · espelho da selfie.
-**Caminho FTP validado de ponta a ponta em produção** (login de conta recém-criada,
-envio, foto entrando sozinha no evento em ~7 s) — mas **com cliente FTP de script,
-ainda não com a Canon**.
-
-**Pendências abertas:**
-- ✅ ~~Senha da Patrícia em texto puro num repo público~~ — **RESOLVIDO em 2026-08-29**:
-  login e senha **trocados em produção** (o login virou `patriciavargas`). As credenciais
-  antigas dão 401 — o que ficou no histórico do git não abre mais nada.
-  ⚠ **Ela precisa das credenciais novas**: a sessão do celular dela caiu junto (a troca
-  derruba todas as sessões, de propósito). E a **senha do FTP mudou** com o login.
-  Daqui pra frente ela mesma troca a própria senha em **Painel → Minha conta e senha**
-  (ADR-0019), sem depender do dono.
-- Fotos são BLOB no SQLite × 7 backups completos (disco) — medido, com folga hoje.
-
-**Já corrigido (não é mais pendência):** ~~semente do FTP derivável do repo público~~ — a
-semente é gerada com `secrets.token_urlsafe(24)` na primeira execução e guardada no banco
-(`store.segredo`), não no código; `/camera/config` exige sessão (401 para anônimo e para
-token inválido) e devolve **só a senha da própria conta**. ~~Sem rate limit no `/login`~~ —
-10 falhas/10 min por IP → 429.
-
-**a) ENCONTRO PRESENCIAL FEITO (2026-08-28) — resultado real**
-
-   ✅ **O produto funcionou.** A Patrícia aprovou o protótipo. Tudo que foi enviado
-   pelo celular funcionou: 35 fotos, 4 eventos, 19 convidados registrados em produção.
-   Nada falhou no pipeline.
-
-   ❌ **As câmeras não conectaram.** É a única frustração do dia, e virou a
-   **prioridade nº 1**: o dono prometeu fazer a R8 e a T6s "clicarem e a foto já ir
-   pro Fóton".
-
-   **Inventário definitivo (não perguntar de novo):** ela tem **Canon R8 + Canon T6s
-   (760D)**. Ela **NÃO tem R6** — hipótese levantada e descartada pelo dono.
-   **Nenhuma das duas tem FTP** — verificado no menu das duas, presencialmente.
-   Logo, o servidor FTP do Fóton (que funciona) **não serve para esta cliente**.
-
-   **Causa raiz da frustração no encontro: o tutorial do nosso app estava errado.**
-   Ele mandava procurar `MENU → (rede) → Configurações de Wi-Fi`, que **não existe
-   com esse nome na R8**. O caminho certo (manual oficial Canon, C013) é:
-   `MENU → Funções de comunicação → Conectar a smartphone(tablet)`. Corrigido no app.
-
-   **Descoberta que muda o jogo — a R8 TEM envio automático:**
-   `Funções de comunicação → Conectar a smartphone(tablet) → Enviar para smartphone
-   após o disparo → Envio automático: Ativar`. Com isso **cada foto cai sozinha no
-   celular dela**, sem tocar na câmera. Metade do caminho já está resolvida.
-
-   **O elo que faltava — FEITO em 2026-08-29 (ADR-0018):** com o app instalado, o
-   **Fóton aparece no menu "Compartilhar" do Android**. Ela seleciona o lote na galeria,
-   toca em Compartilhar → Fóton, e **dentro do app não toca em mais nada** — o lote entra
-   sozinho no último evento que ela abriu. Medido em produção: 2 gestos no app → **0**.
-   **Ressalva honesta:** a seleção das fotos na galeria continua sendo humana, e nenhuma
-   API web no Android muda isso. Por 100 fotos: ~106 gestos antes → **~5 se a galeria
-   dela selecionar por arrasto, ~103 se não**. Qual dos dois é
-   `UNKNOWN — REQUIRES EXPERIMENT` (5 minutos no celular dela). As duas alternativas de
-   zero gesto — EOS Utility num notebook, ou app Android nativo — estão orçadas em
-   `docs/PILOTO-1.md`, aguardando decisão do dono.
-
-   T6s (760D, 2015): envio automático após disparo provavelmente **não existe**
-   (recurso de gerações novas) — `UNKNOWN — REQUIRES EXPERIMENT`.
-   - **É o maior risco em aberto.** Fazer um ensaio presencial com as duas câmeras
-     antes de qualquer evento pago. Usar o "testar foto" do admin para validar na hora.
-
-**b) Deixar explícito que serve para os DOIS públicos** (hoje a comunicação só fala
-   de fotógrafo com DSLR):
-   - **Fotógrafo profissional** com DSLR/mirrorless (Canon, Nikon, Sony).
-   - **Quem fotografa com o celular mesmo** — o app já aceita, mas isso não está
-     dito em lugar nenhum. Precisa aparecer na home e no site de marca.
-
-**c) FREEMIUM com nossa marca na foto** (modelo de negócio):
-   - Pessoa comum (ex.: alguém numa balada) cria conta grátis e usa o Fóton no
-     próprio rolê; as fotos saem com a **marca d'água do Fóton** = propaganda nossa
-     circulando nas redes.
-   - O **plano pago troca a marca pela do fotógrafo** — é exatamente o gatilho de
-     conversão já identificado (nenhum profissional aceita marca de terceiro).
-   - Isso transforma cada usuário grátis em canal de aquisição. Definir limites do
-     grátis (nº de eventos/fotos, retenção) junto com o preço.
-
-**Riscos conhecidos**
-- **1 vCPU / 1 GB** é o gargalo real. Migrar para ARM quando houver estoque, ou VM paga.
-- **Always Free não tem SLA.** Expectativa honesta: ~99%.
-- **Fotos servidas pela VM** — R2 resolve.
-
-### Carga MEDIDA em produção (2026-08-28)
-
-| Cenário | Resultado |
-|---|---|
-| 8 selfies simultâneas | **1 s no total** — tranquilo |
-| 1 foto de câmera (24 MP, 13 MB) | **2,9 s** (upload + tratamento + reconhecimento) |
-| 4 fotos de câmera em rajada | **19 s no total** (~4,8 s cada — enfileiram no único núcleo) |
-
-**⚠ SUPERADO — ver a medição de 2026-08-29 em `docs/BENCHMARKS.md`.** A leitura abaixo
-foi feita antes do `reduzir()` no celular e do `Image.draft()` no servidor, e era
-**pessimista**. Medido depois: **50 fotos de 2,1 MB em 55,6 s, P95 de 1,9 s, zero
-perdida**; e **30 selfies simultâneas em 8,2 s** — a selfie virou o gargalo, não a foto.
-
-**Leitura honesta:** foto isolada cumpre o SLA de 10 s. **Em rajada, não.** 20 fotos de
-uma vez levam ~1,5 min; 50 fotos, ~4 min. Selfies de convidados são baratas; **o custo
-está no upload de fotos grandes**. Mitigações, em ordem: reduzir a foto no celular antes
-de subir · mais núcleos (ARM/VM paga) · fila com prioridade para selfies.
+4. **Login com Google** para fotógrafas — avaliado e propositalmente **não
+   implementado ainda** em 2026-08-30 (ver `docs/PROMPT-PROXIMA-SESSAO.md`, é o tema da
+   próxima sessão). Ajudaria um canal de auto-cadastro; hoje as contas são todas
+   provisionadas à mão e ninguém pediu recuperação de senha.
+5. **Site de marca no Netlify** — vitrine, planos, links úteis, botão "Entrar".
+6. **Cloudflare R2** para as fotos — tira o peso da VM (1 núcleo entrega tudo hoje);
+   conta já criada, falta configurar. Egress zero (ADR-0011). Bloqueia vídeo (ADR-0023)
+   e miniaturas maiores.
+7. **Repo privado + deploy key** — com cuidado para não quebrar o auto-update.
+8. **Segunda VM + failover** — a Oracle dá 2 grátis; DuckDNS troca o IP por API.
+9. **Chat em emoji dentro do evento** (`docs/PRODUTO.md` §3d) — desenhado, sem uma
+   linha de código. Barato (o poll de 2,5s já existe), mas depois do piloto.
 
 ## 10. Modelo comercial
 
-### Proposta da Patrícia (áudio de 2026-08-28) — AGUARDA DECISÃO DO DONO
+**Crédito cortado em 2026-08-30 (ADR-0024), decisão do dono.** Nesta fase, criar
+evento é **grátis**, com login obrigatório. As colunas `credits`/`credits_total`
+continuam no banco (histórico, painel do admin), mas nada é gasto e nada bloqueia. O
+substituto planejado é **limite de upload** (`docs/PRODUTO.md` §3c) — mede o que de
+fato custa (disco e CPU) — mas o COGS real ainda **não foi medido**:
+`UNKNOWN — REQUIRES EXPERIMENT`.
 
-No áudio ela propõe, por conta própria, duas coisas que mudam o negócio:
-
-1. **Sociedade / revenda:** ela leva o Fóton nos trabalhos dela e repassa **50% de
-   tudo que vender** com o programa. Deixa de ser só cliente e vira **canal de
-   aquisição** — é a "máquina de aquisição" que o dono quer provar.
-2. **Alugar em vez de vender:** *"em vez de você vender o programa, você alugar…
-   porque aí você vai ganhar mais. Se você vender, ganha o seu na hora e não ganha
-   mais."* — ela está **pedindo recorrência**.
-
-⚠️ Isso **contradiz a premissa do ADR-0012** ("a cliente não quer mensalidade").
-A premissa nasceu de conversa anterior e agora a própria cliente propõe o oposto.
-**Não decidir sozinho:** revisitar o ADR-0012 com o dono antes de fixar preço.
-
-Ela também se ofereceu para levar **as duas câmeras** ao encontro e fazer um teste
-no evento "do dia dois", possivelmente com um ajudante.
-
-### Modelo hoje (registrado)
-
-**Pagamento único / créditos por evento** (ADR-0012 — a cliente não quer mensalidade).
-Custo marginal por evento é ~centavos; o custo relevante é o fixo (hoje ~R$0 na Oracle).
-Preço final aguarda medição real (EXP-10). Marca própria nas fotos é o gatilho do
-plano pago — nenhum profissional aceita marca de terceiro no trabalho dele.
+**Em aberto, não decidido:** a proposta da Patrícia de sociedade/revenda (50% do que
+ela vender com o programa) ou aluguel em vez de venda avulsa — contradiz a premissa
+original do ADR-0012 ("a cliente não quer mensalidade"). Revisitar com o dono antes de
+fixar preço, quando a fase de teste terminar e o modelo comercial voltar à mesa.
