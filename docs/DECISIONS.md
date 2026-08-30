@@ -592,3 +592,99 @@ engine de smooth-scroll nenhuma — nada de animação foi perdido.
   desligá-lo explicitamente por media query. O resto do arquivo já respeitava.
 - Regra que fica: **efeito de rolagem não pode custar a rolagem.** Antes de adicionar
   qualquer biblioteca que intercepte roda/toque, testar com mouse de verdade.
+
+---
+
+## ADR-0028 — Look por conta: curva leve na passada que já existe (não é editor)
+
+**Data:** 2026-08-30 · **Estado:** aceita — em produção
+
+**Decisão.** Cada conta pode escolher **um look** (`quente`, `frio`, `filme`, `vivo`,
+`pb`) aplicado a **toda foto nova** no `process_image`. É uma **curva por canal** via
+`Image.point()` — uma passada em C sobre a imagem que o pipeline **já decodificou**.
+Coluna `photographer.look`; `NULL` = nenhum look, e o pipeline fica **idêntico** ao que
+sempre foi.
+
+**Contexto.** A Patrícia quer "tratar as fotos antes de irem pro Fóton" (presets). Ao
+destrinchar o pedido, havia duas leituras muito diferentes:
+- **Ela trata no Lightroom e depois sobe:** funciona hoje, custo zero de código — mas
+  **mata a promessa do produto**, porque tratar leva minutos e o Fóton se vende como
+  "durante o evento".
+- **O Fóton vira editor:** colide com a **ADR-0008** (tratamento = watermark +
+  otimização, sem edição de cor no MVP) e com a aritmética — 1 vCPU que já é o gargalo
+  medido (P95 de 8,2 s na avalanche de selfies).
+
+**Justificativa.** O que a fotógrafa quer é **a foto sair com a cara dela**, não rodar
+Lightroom na nuvem. Um look fixo por conta entrega isso pelo mesmo truque que a
+ADR-0022 usou na miniatura: aproveitar a decodificação que já aconteceu, em vez de
+criar um estágio novo no pipeline.
+
+**Medido** (máquina de desenvolvimento, imagem sintética 1200×800 com pele, céu e preto):
+
+| look | efeito verificado | custo |
+|---|---|---|
+| (nenhum) | referência | 20,1 ms |
+| quente | pele 222→**240** no vermelho, azul 141→128 | 29,4 ms |
+| frio | vermelho 222→213, azul 141→**156** | 22,0 ms |
+| filme | preto 12→**24** (o cinza de filme) | 21,9 ms |
+| vivo | saturação acima, contraste em S | 22,1 ms |
+| pb | cinzas neutros | 17,4 ms |
+
+**+2 a 9 ms** sobre os ~530 ms do processamento — **menos de 2%**. Número da VM ainda
+não medido: `UNKNOWN — REQUIRES EXPERIMENT`, mas a ordem de grandeza se mantém porque
+`point()` é uma passada linear em C.
+
+**Regra de ouro, verificada por teste.** Look vazio **ou** desconhecido devolve bytes
+**idênticos** aos de hoje. `aplica_look` é envolta em `try/except` pela mesma razão do
+`_thumb`: **foto sem look é melhor que foto nenhuma** — nada aqui pode derrubar o ingest.
+
+**Consequências.**
+- Vale só para foto **nova**. Não reprocessa o passado: mudaria debaixo do pé uma foto
+  que a convidada já pode ter baixado.
+- O look entra **antes** da marca d'água, de propósito — a curva é para a foto, não para
+  a marca. Aplicar depois tingiria o logo da fotógrafa junto.
+- O **cardápio vem do servidor** (`GET /conta/look`), não de uma lista no cliente. É a
+  regra da ADR-0025 aplicada: o cliente obedece, não adivinha.
+- A tela mostra uma **amostra visual** de cada look, não só o nome — "Quente" não
+  significa nada sozinho para quem escolhe com o olho.
+- **Não fecha a porta do editor de verdade.** Se um dia houver CPU sobrando e demanda
+  medida, isto vira o padrão e o editor é outra ADR.
+
+---
+
+## ADR-0029 — Buracos de LGPD tapados: a rota mais crítica não tinha teste
+
+**Data:** 2026-08-30 · **Estado:** aceita — em produção
+
+**Contexto.** Auditoria de conformidade feita lendo o código, não os documentos. O que
+existe e funciona: política publicada (`GET /privacidade`), consentimento no fluxo (24
+pontos no front), **selfie nunca armazenada** (nenhum `INSERT` de selfie existe),
+retenção **automática de verdade** (thread daemon a cada 12 h, `RET_BIO`=7 d,
+`RET_FOTO`=90 d), retenção por conta (ADR-0021), sem PII em log. Dois furos, porém:
+
+**1. `POST /convidado/excluir` não tinha um único teste.** É a rota do **direito de
+exclusão** (LGPD Art. 18) e é a **condição nº 3** da decisão registrada em
+`docs/PRODUTO.md` §3b-2 — é ela que sustenta o argumento *"quem registrou foi o dono do
+evento; reclame com ele"*. Num refactor, ela podia quebrar em silêncio e derrubar junto
+o alicerce jurídico daquela decisão. **A rota mais importante para conformidade era a
+menos protegida do sistema.**
+
+**2. A limpeza engolia os próprios erros.** `except Exception: pass` na thread de
+expiração: se a expiração de **biometria** falhasse, ninguém ficaria sabendo — podia
+estar parada há meses. Conformidade falhando muda.
+
+**Decisão.**
+- Seção `[24]` em `tests/test_autorizacao.py`, com 10 checagens: a saída **não exige
+  login** (a convidada não tem conta), a biometria **some de verdade**, o feed morre
+  junto, apagar duas vezes não quebra, id inexistente não apaga nada, a expiração
+  automática continua devolvendo contagem, e o app **de fato** chama a rota.
+- A thread de limpeza passa a logar **sempre** — inclusive quando não havia nada a
+  expirar, porque sem isso não se distingue "rodou e não tinha nada" de "nunca rodou" —
+  e loga `status:"FALHOU"` com o erro em vez de engolir.
+
+**Consequência / o que fica em aberto.** A condição nº 1 daquela mesma decisão —
+**contrato com o organizador** declarando que ele tem base legal para os dados que
+cadastra — **continua não existindo**. É documento, não código, e segue pendente.
+**Público de menores de idade está fora do escopo por decisão do dono (2026-08-30)**:
+seria LGPD **Art. 14** (consentimento específico de um dos pais) somado ao Art. 11
+(dado sensível) — regime jurídico diferente, que exige decisão antes de qualquer tela.

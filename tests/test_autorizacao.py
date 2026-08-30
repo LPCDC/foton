@@ -471,5 +471,38 @@ checa("foto que nao existe continua 404", C.get("/img/MINI1/naoexiste.jpg?t=1").
 _h2 = open(os.path.join(RAIZ, "app", "web", "index.html"), encoding="utf-8").read()
 checa("a grade usa mini()", _h2.count(chr(36) + "{mini(p.src)}"), 2)
 
+print("[24] DIREITO DE EXCLUSAO da convidada (LGPD Art. 18) — nao tinha teste nenhum")
+# Esta rota e a condicao no.3 da decisao registrada em docs/PRODUTO.md §3b-2: e ela que
+# sustenta o argumento "quem registrou foi o dono do evento; reclame com ele". Se quebrar
+# num refactor, o alicerce juridico daquela decisao cai junto, em silencio. Por isso existe
+# este teste — a rota mais importante para conformidade era a menos protegida do sistema.
+_ld = "lgpd@t.com"
+rig.store.cria_conta(_ld, "senha123", "Dona LGPD")
+_lt = C.post("/login", data={"email": _ld, "senha": "senha123"}).json()["token"]
+C.post("/ingest", data={"event": "LGPD1"}, files={"file": ("f.jpg", jpeg(), "image/jpeg")}, headers=h(_lt))
+_s = C.post("/selfie", data={"event": "LGPD1", "consent": "true", "nome": "Bia", "contato": "11988"},
+            files={"file": ("s.jpg", jpeg(), "image/jpeg")})
+_gid = _s.json()["guest_id"]
+checa("a convidada existe antes de sair", rig.store.convidado_existe("LGPD1", _gid), True)
+checa("e ela aparece nos contatos da dona",
+      len(C.get("/contatos?event=LGPD1", headers=h(_lt)).json()["contatos"]), 1)
+# a saida NAO pode exigir login: a convidada nao tem conta nenhuma
+_x = C.post("/convidado/excluir", data={"event": "LGPD1", "guest_id": _gid})
+checa("sair NAO exige login (a convidada nao tem conta)", _x.status_code, 200)
+checa("o servidor confirma que removeu", _x.json().get("removido"), True)
+checa("a BIOMETRIA dela sumiu de verdade", rig.store.convidado_existe("LGPD1", _gid), False)
+checa("o feed dela morre junto", C.get(f"/feed?event=LGPD1&guest_id={_gid}").json().get("photos", []), [])
+# apagar de novo nao pode explodir — a convidada pode tocar duas vezes no botao
+checa("apagar duas vezes nao quebra",
+      C.post("/convidado/excluir", data={"event": "LGPD1", "guest_id": _gid}).status_code, 200)
+# guest_id de outro evento nao pode apagar dado deste
+checa("id inexistente nao acha nada",
+      C.post("/convidado/excluir", data={"event": "LGPD1", "guest_id": "naoexiste"}).json().get("removido"), False)
+# a EXPIRACAO automatica precisa continuar funcionando (a outra metade da retencao)
+checa("expirar roda e devolve contagem", set(rig.store.expirar(7, 90).keys()) >= {"convidados", "fotos"}, True)
+# o botao de saida tem que estar VISIVEL na galeria dela, nao escondido numa tela de ajuda
+_h3 = open(os.path.join(RAIZ, "app", "web", "index.html"), encoding="utf-8").read()
+checa("o app chama a rota de exclusao", "/convidado/excluir" in _h3, True)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

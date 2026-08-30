@@ -246,6 +246,17 @@ input{font-family:inherit}
 .stat .n{font-family:var(--serif);font-weight:500;font-size:30px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .stat .l{color:var(--muted);font-size:15px;font-weight:500;margin-top:6px}
 
+/* Seletor de LOOK (ADR-0028): cada opcao mostra uma AMOSTRA da propria curva, nao um
+   nome solto. A fotografa escolhe com o olho — "Quente" nao quer dizer nada sozinho. */
+.look-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.look-op{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px;
+  cursor:pointer;text-align:center;transition:border-color .18s,background .18s}
+.look-op:hover{border-color:var(--dim)}
+.look-op.on{border-color:var(--accent);background:var(--accent-soft)}
+.look-am{height:52px;border-radius:8px;margin-bottom:7px;
+  background:linear-gradient(115deg,#e0b48c 0%,#c98f66 34%,#4a6f9e 67%,#14141a 100%)}
+.look-nome{font-size:14px;font-weight:600;color:var(--text)}
+.look-op.on .look-nome{color:var(--accent)}
 .eyebrow-sm{font-size:15px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
   margin:26px 2px 13px;display:flex;align-items:center;gap:10px}
 .eyebrow-sm::after{content:"";flex:1;height:1px;background:var(--line-soft)}
@@ -786,6 +797,17 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
     </div>
 
     <p class="note" style="margin-top:16px;text-align:left" id="cc-aviso-ftp"></p>
+
+    <!-- LOOK da conta (ADR-0028). Vocabulario de FOTOGRAFA, nao de programador:
+         ela pensa "a foto sai com a minha cara", nao "curva por canal". -->
+    <div class="eyebrow-sm" style="margin-top:26px">O jeito das suas fotos</div>
+    <div class="card">
+      <p class="muted" style="font-size:17px;margin:0 0 14px">
+        Um acabamento aplicado em <b>toda foto nova</b>, automaticamente, sem você
+        tocar em nada. Vale só daqui para a frente — <b>as fotos já entregues não mudam</b>.</p>
+      <div id="look-opcoes" class="look-grid"></div>
+      <p class="note" style="margin-top:12px;text-align:left" id="look-aviso"></p>
+    </div>
   </section>
 
   <!-- ================= ADMIN ================= -->
@@ -1436,6 +1458,55 @@ function abrirConta(){
   document.getElementById('cc-login').value = (SESSAO&&SESSAO.email)||'';
   document.getElementById('cc-aviso-ftp').textContent='';
   go('conta');
+  carregarLooks();
+}
+
+/* O CARDAPIO de looks vem do SERVIDOR (/conta/look), nunca de uma lista no cliente:
+   e o servidor que decide o que existe, e o mesmo erro do EH_ADMIN (ADR-0025) nao
+   se repete aqui. Cada amostra e pintada com a MESMA curva do servidor, via filtro
+   CSS equivalente — nao e a foto real, e uma pista visual honesta do efeito. */
+const LOOK_AMOSTRA = {
+  '':        'none',
+  'quente':  'sepia(.28) saturate(1.16) hue-rotate(-8deg) brightness(1.03)',
+  'frio':    'saturate(1.06) hue-rotate(10deg) brightness(1.01) contrast(1.05)',
+  'filme':   'sepia(.16) saturate(.92) contrast(.93) brightness(1.06)',
+  'vivo':    'saturate(1.34) contrast(1.14)',
+  'pb':      'grayscale(1) contrast(1.1)'
+};
+async function carregarLooks(){
+  const box=document.getElementById('look-opcoes');
+  if(!box) return;
+  if(!LIVE){ box.innerHTML='<p class="muted" style="font-size:16px">Disponível na conta de verdade.</p>'; return; }
+  try{
+    const r=await fetch(API+'/conta/look',{headers:auth()});
+    if(!r.ok) throw 0;
+    const j=await r.json();
+    const opcoes=[{id:'',rotulo:'Como saiu da câmera'}].concat(j.opcoes||[]);
+    box.innerHTML=opcoes.map(o=>
+      `<button class="look-op${(j.look||'')===o.id?' on':''}" data-look="${o.id}" onclick="escolherLook('${o.id}')">
+         <div class="look-am" style="filter:${LOOK_AMOSTRA[o.id]||'none'}"></div>
+         <div class="look-nome">${o.rotulo}</div>
+       </button>`).join('');
+  }catch(e){
+    box.innerHTML='<p class="muted" style="font-size:16px">Não consegui carregar agora.</p>';
+  }
+}
+async function escolherLook(id){
+  const box=document.getElementById('look-opcoes');
+  // pinta na hora: a fotografa nao pode ficar olhando para nada esperando a rede
+  [...box.querySelectorAll('.look-op')].forEach(b=>b.classList.toggle('on', b.dataset.look===id));
+  try{
+    const fd=new FormData(); fd.append('look', id);
+    const r=await fetch(API+'/conta/look',{method:'POST',headers:auth(),body:fd});
+    if(!r.ok) throw 0;
+    document.getElementById('look-aviso').innerHTML = id
+      ? 'Pronto. <b>As próximas fotos</b> já saem assim.'
+      : 'Pronto. As fotos voltam a sair como a câmera entregou.';
+    toast('Jeito das fotos salvo ✓');
+  }catch(e){
+    toast('Não consegui salvar — tente de novo.');
+    carregarLooks();                                  // desfaz a pintura otimista
+  }
 }
 async function salvarCredenciais(){
   const atual=document.getElementById('cc-atual').value;

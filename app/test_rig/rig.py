@@ -8,7 +8,7 @@ bytes são descartados. Logs sem PII (só id de rastreio, contagem, latência).
 """
 import io, os, re, time, uuid, logging
 import cv2, numpy as np, qrcode
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header, Request
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -78,7 +78,70 @@ def _aplica_logo(img: Image.Image, logo_bytes: bytes, fw: int, fh: int):
     img.paste(lg, (x, y), lg)
     return True
 
-def process_image(raw: bytes, marca: str = "FÓTON", logo: bytes = None):
+# ---------------- LOOK por conta (ADR-0028) ----------------
+# NAO e editor, nao e "Lightroom na nuvem", nao e IA. E uma curva por canal aplicada
+# com Image.point() — UMA passada em C sobre a imagem que o pipeline JA decodificou,
+# exatamente o mesmo truque da miniatura (ADR-0022). O que a fotografa quer e "a foto
+# sair com a cara dela", nao um editor dentro do Foton.
+#
+# REGRA DE OURO desta funcao: look vazio/desconhecido = pipeline IDENTICO ao de sempre.
+# Nada aqui pode derrubar o ingest — foto sem look e melhor que foto nenhuma.
+#
+# ganho  = multiplica o canal (vies de cor)
+# gamma  = <1 clareia o meio-tom do canal, >1 escurece
+# lift   = levanta o preto (aquele cinza de filme; 0 = preto continua preto)
+# contra = S-curve suave em torno do meio-tom
+# sat    = saturacao (1 = intocada)
+LOOKS = {
+    "quente": {"rotulo": "Quente",       "ganho": (1.06, 1.01, 0.94), "gamma": (0.98, 1.00, 1.02), "lift": 0.010, "contra": 0.10, "sat": 1.06},
+    "frio":   {"rotulo": "Frio",         "ganho": (0.95, 1.00, 1.07), "gamma": (1.02, 1.00, 0.97), "lift": 0.008, "contra": 0.12, "sat": 1.02},
+    "filme":  {"rotulo": "Filme",        "ganho": (1.03, 1.00, 0.99), "gamma": (0.97, 0.99, 1.01), "lift": 0.055, "contra": 0.06, "sat": 0.92},
+    "vivo":   {"rotulo": "Vivo",         "ganho": (1.00, 1.00, 1.00), "gamma": (1.00, 1.00, 1.00), "lift": 0.000, "contra": 0.22, "sat": 1.18},
+    "pb":     {"rotulo": "Preto e branco","ganho": (1.00, 1.00, 1.00), "gamma": (1.00, 1.00, 1.00), "lift": 0.020, "contra": 0.16, "sat": 0.00},
+}
+_TABELAS = {}          # nome -> lista de 768 valores; a curva e a mesma para toda foto
+
+def _tabela(nome):
+    """Monta (uma vez) a tabela de 256 valores por canal que o Image.point() consome."""
+    if nome in _TABELAS:
+        return _TABELAS[nome]
+    p = LOOKS[nome]
+    tab = []
+    for canal in range(3):
+        ganho, gama = p["ganho"][canal], p["gamma"][canal]
+        for i in range(256):
+            v = i / 255.0
+            v = v ** gama                                   # gamma do canal
+            v = p["lift"] + v * (1.0 - p["lift"])           # levanta o preto
+            v = v + p["contra"] * (v - 0.5) * (1.0 - abs(v - 0.5) * 2) * 0.5 * 2  # S-curve suave
+            v = v * ganho
+            tab.append(max(0, min(255, round(v * 255))))
+    _TABELAS[nome] = tab
+    return tab
+
+def aplica_look(img: Image.Image, nome: str):
+    """Aplica o look e devolve a imagem. Look vazio/desconhecido -> devolve a MESMA imagem.
+
+    Envolto em try/except pela mesma razao do _thumb: um look com problema nunca pode
+    impedir a foto de chegar na convidada.
+    """
+    if not nome:
+        return img
+    nome = str(nome).strip().lower()
+    if nome not in LOOKS:
+        return img
+    try:
+        p = LOOKS[nome]
+        img = img.point(_tabela(nome))
+        if p["sat"] == 0.0:
+            img = img.convert("L").convert("RGB")           # preto e branco
+        elif p["sat"] != 1.0:
+            img = ImageEnhance.Color(img).enhance(p["sat"])
+        return img
+    except Exception:
+        return img                                          # nunca derruba o ingest
+
+def process_image(raw: bytes, marca: str = "FÓTON", logo: bytes = None, look: str = None):
     t0 = time.perf_counter()
     img = Image.open(io.BytesIO(raw))
     # draft: manda o decodificador de JPEG ja entregar a imagem reduzida (usa a escala
@@ -96,6 +159,9 @@ def process_image(raw: bytes, marca: str = "FÓTON", logo: bytes = None):
     s = LONG_EDGE / max(w, h)
     if s < 1:
         img = img.resize((round(w * s), round(h * s)), Image.LANCZOS)
+    # LOOK antes da marca d'agua, de proposito: a curva e para a FOTO, nao para a marca.
+    # Aplicar depois tingiria o logo/texto da fotografa junto (ADR-0028).
+    img = aplica_look(img, look)
     fw, fh = img.size
     # logo em PNG substitui o texto quando a fotografa subiu um; senao, marca por texto (como sempre)
     if not (logo and _aplica_logo(img, logo, fw, fh)):
@@ -213,11 +279,17 @@ def _startup():
         while True:
             try:
                 r = store.expirar(RET_BIO, RET_FOTO)
-                if r["convidados"] or r["fotos"]:
-                    log.info('{"stage":"lgpd","acao":"expirou","convidados":%d,"fotos":%d}'
-                             % (r["convidados"], r["fotos"]))
-            except Exception:
-                pass
+                # Loga SEMPRE, inclusive quando nao havia nada a expirar. Sem isto nao ha
+                # como distinguir "rodou e nao tinha nada" de "nunca rodou" — e a segunda
+                # e uma falha de conformidade silenciosa.
+                log.info('{"stage":"lgpd","acao":"expirou","convidados":%d,"fotos":%d}'
+                         % (r["convidados"], r["fotos"]))
+            except Exception as e:
+                # Antes: `except Exception: pass`. A expiracao de BIOMETRIA falhava em
+                # SILENCIO — a retencao da politica de privacidade podia estar parada ha
+                # meses sem ninguem saber. Falha de conformidade nao pode ser muda.
+                log.error('{"stage":"lgpd","acao":"expirou","status":"FALHOU","erro":"%s"}'
+                          % str(e).replace('"', "'")[:200])
             time.sleep(12 * 3600)
     threading.Thread(target=_limpeza, daemon=True).start()
 
@@ -299,6 +371,30 @@ def conta_logo_apagar(authorization: str = Header(None)):
     if not c: raise HTTPException(401, "sessão expirada")
     store.apaga_logo(c["email"])
     return {"ok": True}
+
+@app.get("/conta/look")
+def conta_look_ver(authorization: str = Header(None)):
+    """Look atual + o cardapio. O front nao inventa a lista: ela vem do servidor."""
+    c = _dono(authorization)
+    if not c: raise HTTPException(401, "sessão expirada")
+    return {"look": store.pega_look(c["email"]) or "",
+            "opcoes": [{"id": k, "rotulo": v["rotulo"]} for k, v in LOOKS.items()]}
+
+@app.post("/conta/look")
+def conta_look(look: str = Form(""), authorization: str = Header(None)):
+    """A fotografa escolhe o look da conta. Vazio = nenhum (a foto sai como sempre saiu).
+
+    Vale so para foto NOVA: nao reprocessa o que ja foi entregue. Reprocessar mudaria
+    debaixo do pe uma foto que a convidada ja pode ter baixado.
+    """
+    c = _dono(authorization)
+    if not c: raise HTTPException(401, "sessão expirada")
+    v = (look or "").strip().lower()
+    if v and v not in LOOKS:
+        raise HTTPException(400, "look desconhecido")
+    store.salva_look(c["email"], v)
+    log.info('{"stage":"conta","acao":"look","valor":"%s"}' % (v or "nenhum"))
+    return {"ok": True, "look": v}
 
 @app.get("/me")
 def me(authorization: str = Header(None)):
@@ -423,7 +519,8 @@ def ingerir_bytes(event: str, raw: bytes):
     e = _ev(event, create=True)
     pid = uuid.uuid4().hex[:12]
     logo = store.pega_logo(e["dono"]) if e.get("dono") else None
-    treated, dims, pms, thumb = process_image(raw, e.get("marca") or "FÓTON", logo)
+    look = store.pega_look(e["dono"]) if e.get("dono") else None
+    treated, dims, pms, thumb = process_image(raw, e.get("marca") or "FÓTON", logo, look)
     faces = detect_embed(treated)
     store.salva_foto(pid, event, treated, faces, thumb)
     for gid, gemb in store.convidados_de(event):
@@ -445,7 +542,8 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...),
     pid = uuid.uuid4().hex[:12]
     t0 = time.time()
     logo = store.pega_logo(e["dono"]) if e.get("dono") else None
-    treated, dims, pms, thumb = process_image(raw, e.get("marca") or "FÓTON", logo)
+    look = store.pega_look(e["dono"]) if e.get("dono") else None
+    treated, dims, pms, thumb = process_image(raw, e.get("marca") or "FÓTON", logo, look)
     faces = detect_embed(treated)
     store.salva_foto(pid, event, treated, faces, thumb)
     matched = []

@@ -64,6 +64,11 @@ def conn():
         # A grade mostra quadradinhos de 110px e baixava a foto de 2048px inteira.
         try: _conn.execute("ALTER TABLE photo ADD COLUMN thumb BLOB")
         except sqlite3.OperationalError: pass
+        # LOOK da conta (ADR-0028): curva leve aplicada na mesma passada que ja decodifica
+        # a foto. NULL = nenhum look, e o pipeline fica identico ao que sempre foi — e o
+        # que as contas existentes tem, entao esta migracao nao muda foto de ninguem.
+        try: _conn.execute("ALTER TABLE photographer ADD COLUMN look TEXT")
+        except sqlite3.OperationalError: pass
         _conn.commit()
     return _conn
 
@@ -140,6 +145,14 @@ def apaga_logo(email):
 def pega_logo(email):
     r = q("SELECT logo FROM photographer WHERE email=?", (email,), "one")
     return r["logo"] if r and r["logo"] else None
+
+def salva_look(email, look):
+    """look vazio/None = volta a NENHUM look (a foto sai como sempre saiu)."""
+    q("UPDATE photographer SET look=? WHERE email=?", ((look or None), email))
+
+def pega_look(email):
+    r = q("SELECT look FROM photographer WHERE email=?", (email,), "one")
+    return r["look"] if r and r["look"] else None
 
 def marca_ftp_visto(email):
     """Registra que a câmera CONSEGUIU logar no FTP, agora — sem precisar de foto.
