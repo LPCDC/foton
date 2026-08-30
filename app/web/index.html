@@ -317,6 +317,22 @@ input{font-family:inherit}
 .camf-disparo:disabled{opacity:.5}
 .camf-nativa{font-size:15px;font-weight:600;color:rgba(255,255,255,.72);text-decoration:underline;
   text-underline-offset:3px;padding:6px 10px}
+/* ---------- botao de ABRIR A CAMERA ----------
+   E a acao mais repetida da festa. Nao pode ter o mesmo peso de "enviar da galeria".
+   A lente desenhada existe para a pessoa reconhecer o que o botao faz ANTES de ler. */
+.btn-camera{display:flex;align-items:center;gap:16px;width:100%;text-align:left;
+  padding:18px 20px;margin-bottom:12px;border-radius:20px;background:var(--grad);
+  color:#1a1608;box-shadow:0 16px 38px -14px rgba(203,181,131,.6),inset 0 1px 0 rgba(255,255,255,.5);
+  transition:transform .14s,filter .2s}
+.btn-camera:active{transform:scale(.985)}
+.btn-camera:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.btn-camera .bc-lente{width:52px;height:52px;flex-shrink:0;border-radius:50%;
+  background:rgba(26,22,8,.12);display:grid;place-items:center}
+.btn-camera .bc-lente svg{width:29px;height:29px;fill:none;stroke:#1a1608;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+.btn-camera .bc-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.btn-camera .bc-txt b{font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:-.01em}
+.btn-camera .bc-txt small{font-size:14px;font-weight:500;opacity:.72;line-height:1.3}
 html{touch-action:manipulation}
 body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 /* a FOTO aberta continua com zoom: ali ele faz falta de verdade */
@@ -799,10 +815,22 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
          cheia do aparelho. Um visor dentro do app (getUserMedia) daria so o fluxo de
          video, bem pior com pouca luz — que e a luz de festa. -->
     <input type="file" id="live-camera" accept="image/*" capture="environment" style="display:none" onchange="uploadPhoto(event)">
-    <div class="actions-row" id="ev-envio" style="margin-bottom:12px">
-      <button class="btn primary" id="ev-shoot" onclick="tirarFotoAgora()">Simular disparo</button>
-      <button class="btn ghost" id="ev-galeria" style="display:none" onclick="document.getElementById('live-upload').click()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><circle cx="8.4" cy="10" r="1.7"/><path d="M3.6 17.5l4.9-4.6 3.5 3.2 3.2-3 5.2 4.8"/></svg>&nbsp; Da galeria</button>
-    </div>
+    <!-- A acao principal e LIGAR A CAMERA. Ela era um botao normal, do mesmo tamanho
+         do de galeria, e nao dizia que ligava camera nenhuma. Agora e um alvo unico,
+         largo e centralizado, com o desenho de uma camera de verdade. -->
+    <button class="btn-camera" id="ev-shoot" onclick="tirarFotoAgora()">
+      <span class="bc-lente" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v10.5H3z"/><circle cx="12" cy="13.2" r="3.6"/></svg>
+      </span>
+      <span class="bc-txt">
+        <b id="ev-shoot-t">Abrir câmera</b>
+        <small id="ev-shoot-s">fotografe aqui — cada foto sobe sozinha</small>
+      </span>
+    </button>
+    <button class="btn ghost block" id="ev-galeria" style="display:none;margin-bottom:12px"
+      onclick="document.getElementById('live-upload').click()">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><circle cx="8.4" cy="10" r="1.7"/><path d="M3.6 17.5l4.9-4.6 3.5 3.2 3.2-3 5.2 4.8"/></svg>&nbsp; Enviar foto do celular
+    </button>
     <p class="note" id="ev-semtoque" style="display:none;text-align:left;margin:-4px 0 14px">
       <b>Sem abrir o app:</b> na galeria do celular, selecione as fotos e toque em
       <b>Compartilhar → Fóton</b>. <button class="link" onclick="abrirInstalar('event')">precisa instalar o app</button> ·
@@ -1876,7 +1904,11 @@ function openEvent(ev,opts){
   const sb=document.getElementById('ev-shoot');
   // innerHTML, nao textContent: textContent escapa o SVG e o botao mostrava
   // <svg class="ico" ...> como TEXTO CRU. Visto em producao.
-  if(sb) sb.innerHTML = LIVE ? ico('camera')+'  Tirar foto agora' : 'Simular disparo';
+  if(sb){
+    const t=document.getElementById('ev-shoot-t'), sc=document.getElementById('ev-shoot-s');
+    if(t) t.textContent = LIVE ? 'Abrir câmera' : 'Simular disparo';
+    if(sc) sc.textContent = LIVE ? 'fotografe aqui — cada foto sobe sozinha' : 'modo demonstração';
+  }
   ['ev-galeria','ev-semtoque'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=LIVE?'':'none'; });
   const bp=document.getElementById('btn-preview'); if(bp) bp.style.display=LIVE?'none':'';
   const ac=document.getElementById('ev-actions'); if(ac) ac.style.display=LIVE?'flex':'none';
