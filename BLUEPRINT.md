@@ -158,6 +158,11 @@ o que pega servidor de pé com pipeline morto. O GitHub Actions (cadência real 
 
 ## 9. O que vem (priorizado)
 
+> **`docs/PRODUTO.md` guarda o que ainda NAO virou codigo**: Foton Festa (todo mundo
+> fotografa), login por selfie, a porta coletiva com fundo animado, alternativas ao
+> modelo de creditos e o que falta de branding. Cada item com o que custa e o que
+> precisa ser decidido. Ler antes de propor coisa nova — provavelmente ja esta la.
+
 **Agora**
 1. **Site de marca no Netlify** — vitrine, planos, links úteis, botão "Entrar".
 2. **Cloudflare R2** para as fotos — tira o peso da VM (1 núcleo entrega tudo hoje);
