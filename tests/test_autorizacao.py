@@ -631,5 +631,38 @@ _b = [x for x in _rv["contatos"] if x["event_code"] == "MASC1"][0]
 checa("revelar=1 mostra o numero real", _b["contato"], "13991234567")
 checa("e se declara NAO mascarado", _rv.get("mascarado"), False)
 
+print("\n[28] PELE da conta atribuivel (destrava 'social' / Fóton Festa)")
+_pf = C.post("/signup", data={"email": "pele@t.com", "senha": "senha123"}).json()
+_pt = _pf["token"]
+# o que NAO pode mudar: conta que ja existe (perfil NULL) continua vendo o que via
+checa("conta sem pele definida continua 'pro'", _pf.get("perfil"), "pro")
+checa("anonimo nao muda pele", C.post("/admin/perfil", data={"email": "pele@t.com", "perfil": "social"}).status_code, 403)
+checa("fotografa comum nao muda pele",
+      C.post("/admin/perfil", data={"email": "pele@t.com", "perfil": "social"}, headers=h(dona)).status_code, 403)
+checa("pele invalida e recusada",
+      C.post("/admin/perfil", data={"email": "pele@t.com", "perfil": "banana"}, headers=h(chefe)).status_code, 400)
+checa("conta inexistente da 404",
+      C.post("/admin/perfil", data={"email": "ninguem@t.com", "perfil": "social"}, headers=h(chefe)).status_code, 404)
+# o que o item destrava: 'social' finalmente sai do servidor
+C.post("/admin/perfil", data={"email": "pele@t.com", "perfil": "social"}, headers=h(chefe))
+checa("agora o /me devolve 'social'", C.get("/me", headers=h(_pt)).json().get("perfil"), "social")
+checa("e o /login tambem",
+      C.post("/login", data={"email": "pele@t.com", "senha": "senha123"}).json().get("perfil"), "social")
+# PERFIL NAO ABRE PORTA: pele 'empresa' NAO da os poderes de empresa
+C.post("/admin/perfil", data={"email": "pele@t.com", "perfil": "empresa"}, headers=h(chefe))
+checa("pele 'empresa' aparece no /me", C.get("/me", headers=h(_pt)).json().get("perfil"), "empresa")
+checa("mas a conta NAO virou empresa de verdade", C.get("/me", headers=h(_pt)).json().get("empresa"), False)
+checa("e criar evento NAO passa a exigir senha de admin",
+      C.post("/event", data={"code": "PELE1", "brand": "X"}, headers=h(_pt)).status_code, 200)
+# vazio volta ao padrao
+C.post("/admin/perfil", data={"email": "pele@t.com", "perfil": ""}, headers=h(chefe))
+checa("pele vazia volta a derivar", C.get("/me", headers=h(_pt)).json().get("perfil"), "pro")
+# e a derivacao antiga continua valendo por cima do NULL
+C.post("/admin/empresa", data={"email": "pele@t.com", "ligado": "1"}, headers=h(chefe))
+checa("conta empresa sem pele definida deriva 'empresa'", C.get("/me", headers=h(_pt)).json().get("perfil"), "empresa")
+C.post("/admin/perfil", data={"email": "pele@t.com", "perfil": "social"}, headers=h(chefe))
+checa("e a pele definida VENCE a derivacao", C.get("/me", headers=h(_pt)).json().get("perfil"), "social")
+checa("mesmo assim ela continua sendo empresa de verdade", C.get("/me", headers=h(_pt)).json().get("empresa"), True)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

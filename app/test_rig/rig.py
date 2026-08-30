@@ -377,11 +377,23 @@ def _pct(vals, p):
     return o[min(len(o) - 1, int(round((p / 100.0) * (len(o) - 1))))]
 
 # ============================ CONTAS ============================
+PERFIS = ("pro", "empresa", "social")
+
 def _perfil(c):
     # ADR-0030: o perfil de APRESENTACAO (vocabulario, blocos, tokens) e declarado
-    # pelo servidor — o cliente obedece (regra da ADR-0025). Derivado, sem coluna:
-    # 'social' e valor reservado para a frente da Ana (PRODUTO §2). Poder continua
-    # sendo `empresa` (_exige_elevacao) e a lista FOTON_ADMINS; perfil nao abre porta.
+    # pelo servidor — o cliente obedece (regra da ADR-0025).
+    #
+    # A COLUNA VENCE; sem coluna, deriva como sempre derivou. Toda conta que ja existe
+    # tem perfil NULL, entao continua vendo exatamente a mesma tela de antes.
+    # Isto e o que destrava a pele 'social' (o Foton Festa, PRODUTO §2): ela existia no
+    # app e era inalcancavel, porque o servidor so sabia dizer 'empresa' ou 'pro'.
+    #
+    # PERFIL NAO ABRE PORTA — e so vocabulario. Quem manda continua sendo a coluna
+    # `empresa` (_exige_elevacao) e a lista FOTON_ADMINS. Marcar alguem como
+    # perfil='empresa' NAO da os poderes de empresa; e de proposito.
+    p = (c.get("perfil") or "").strip().lower()
+    if p in PERFIS:
+        return p
     return "empresa" if c.get("empresa") else "pro"
 
 @app.post("/signup")
@@ -758,6 +770,23 @@ def _admin(authorization):
     if not _eh_admin(c):
         raise HTTPException(403, "acesso restrito")
     return c
+
+@app.post("/admin/perfil")
+def admin_perfil(email: str = Form(...), perfil: str = Form(""), authorization: str = Header(None)):
+    """Escolhe a PELE da conta: pro | empresa | social. Vazio volta a derivar (padrao).
+
+    Só apresentação — vocabulário e blocos da tela. Não dá nenhum poder: quem manda
+    continua sendo a coluna `empresa` e FOTON_ADMINS. É o que torna a pele 'social'
+    (Fóton Festa) alcançável; até aqui ela existia no app e o servidor nunca a pedia."""
+    _admin(authorization)
+    alvo = (email or "").strip().lower()
+    if not store.conta(alvo):
+        raise HTTPException(404, "conta não encontrada")
+    p = (perfil or "").strip().lower()
+    if p and p not in PERFIS:
+        raise HTTPException(400, "perfil inválido (use pro, empresa ou social — ou vazio para o padrão)")
+    store.marca_perfil(alvo, p or None)
+    return {"email": alvo, "perfil": _perfil(store.conta(alvo))}
 
 @app.post("/admin/promover")
 def admin_promover(email: str = Form(...), ligado: str = Form(...), authorization: str = Header(None)):

@@ -3069,6 +3069,7 @@ async function abrirAdmin(){
           <button class="btn ghost sm" onclick="admCreditos('${f.email}',10)">+10 créditos</button>
           <button class="btn ghost sm" onclick="admSenha('${f.email}')">Trocar senha</button>
           <button class="btn ghost sm" onclick="admRetencao('${f.email}',${f.ret_bio_dias===0?'null':'0'})">${f.ret_bio_dias===0?'Voltar a expirar em 7 dias':'Biometria não expira'}</button>
+          <button class="btn ghost sm" onclick="admPerfil('${f.email}','${f.perfil||''}')">Pele: ${f.perfil||'automática'}</button>
           ${f.admin_fixo
             ? '<span class="note" style="align-self:center">admin pelo servidor</span>'
             : `<button class="btn ghost sm" style="${f.admin?'border-color:var(--warn);color:var(--warn)':''}"
@@ -3137,6 +3138,31 @@ async function admContatos(revelar){
     b.style.display='none';
   }catch(e){ toast('Erro de conexão.'); }
   finally{ b.textContent='Ver contatos'; b.disabled=false; }
+}
+/* A PELE da conta (ADR-0030): so vocabulario e blocos da tela, nenhum poder.
+   'social' e a pele do Foton Festa — existia no app e era inalcancavel ate o
+   servidor passar a devolve-la. Vazio = automatica (empresa -> empresa, senao pro). */
+async function admPerfil(email, atual){
+  const op=prompt(`Pele da tela para ${email}
+
+`
+    +`  pro      — "meu painel", "Seus eventos"
+`
+    +`  empresa  — "galeria da empresa", "Seus álbuns"
+`
+    +`  social   — "meu rolê", "Seus rolês"  (Fóton Festa)
+
+`
+    +`Deixe VAZIO para automática. Isto muda só as palavras da tela, não dá poderes.`,
+    atual||'');
+  if(op===null) return;
+  try{
+    const r=await fetch(API+'/admin/perfil',{method:'POST',headers:auth(),
+      body:new URLSearchParams({email,perfil:(op||'').trim().toLowerCase()})});
+    if(!r.ok){ toast((await r.json().catch(()=>({}))).detail||'Não consegui.'); return; }
+    toast('Pele: '+(await r.json()).perfil+' ✓');
+    abrirAdmin();
+  }catch(e){ toast('Erro de conexão.'); }
 }
 /* Dar/tirar o cracha de admin. O peso disto esta no aviso: admin le nome e telefone
    de convidados REAIS de todos os eventos, apaga contas e troca senhas. */

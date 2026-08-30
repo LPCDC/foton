@@ -693,6 +693,18 @@ seria LGPD **Art. 14** (consentimento específico de um dos pais) somado ao Art.
 
 ## ADR-0030 — Perfil de conta: uma estrutura, três peles (não são três apps)
 
+> **Atualização 2026-08-30 — a ADR foi completada.** Até aqui `_perfil()` era *derivado*
+> (`empresa` se a coluna empresa, senão `pro`), então a pele **`social` nunca saía do
+> servidor**: ela existia no app e era código inalcançável. Agora existe
+> `photographer.perfil` (ALTER guardado; **NULL = deriva como antes**, então nenhuma
+> conta existente mudou de tela — medido: migração de 15,8 ms num banco antigo com
+> dados, `perfil` NULL e créditos preservados) e `/admin/perfil` com seletor no painel.
+> **A regra "perfil não abre porta" continua valendo e agora está travada por teste:**
+> marcar alguém como pele `empresa` NÃO concede os poderes de empresa — quem manda
+> segue sendo a coluna `empresa` (`_exige_elevacao`) e `FOTON_ADMINS`.
+> Isto é o **pré-requisito do Fóton Festa** (PRODUTO §2): sem pele `social` atribuível,
+> não havia como uma conta ser "rolê" em vez de "evento".
+
 **Data:** 2026-08-30 · **Estado:** aceita — decisão de direção do dono
 
 **Contexto.** `docs/PRODUTO.md` §1: não são três produtos — é um motor com três portas
