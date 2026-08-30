@@ -2686,7 +2686,9 @@ function goGallery(){
 }
 function pushToGuest(p){
   p._nova=true;                       // marca para a animação de chegada
-  guestState.photos.push(p);renderGuestGrid();
+  guestState.photos.push(p);
+  guestState.limite.minhas++;         // a nova entra no topo sem empurrar foto ja vista para fora do teto
+  renderGuestGrid();
   avisarFotoNova();
   if(document.getElementById('s-g-gallery').classList.contains('active')) celebrar();
   setTimeout(()=>{ p._nova=false; },1200);
@@ -2712,8 +2714,13 @@ document.addEventListener('visibilitychange',()=>{
 });
 /* abas da galeria do convidado: minhas fotos | todas da festa */
 guestState.aba='minhas'; guestState.todas=[];
+/* teto de render por aba: pinta so as N fotos mais novas e oferece "Mostrar mais".
+   Sem isto, renderGuestGrid reconstroi a grade INTEIRA a cada foto nova/poll — no album
+   GLAMON (~2000 fotos) isso trava o aparelho. ZIP/selecao/contador seguem na lista cheia. */
+guestState.limite={minhas:50, todas:50};
 function trocarAba(qual){
   guestState.aba=qual;
+  guestState.limite[qual]=50;   // ao entrar na aba, recomeca do teto (nao pinta 2000 de uma vez)
   document.getElementById('tab-minhas').classList.toggle('on',qual==='minhas');
   document.getElementById('tab-todas').classList.toggle('on',qual==='todas');
   document.getElementById('g-hint').textContent = qual==='minhas'
@@ -2748,26 +2755,41 @@ function renderGuestGrid(){
   const empty = todasAba
     ? '<div class="empty" style="grid-column:1/-1">Ainda não há fotos neste evento.<br>Assim que o fotógrafo enviar, elas aparecem aqui.</div>'
     : vazioMinhas;
+  const ordem=lista.slice().reverse();                 // mais novas primeiro
+  const lim=guestState.limite[guestState.aba]||50;
+  const visiveis=ordem.slice(0,lim);                   // so o topo do teto vira DOM
+  const restante=ordem.length-visiveis.length;
   const wrap=id=>{const g=document.getElementById(id);if(!g)return;
     if(!lista.length){g.innerHTML=empty;return;}
     g.innerHTML='';
-    const ordem=lista.slice().reverse();
-    g.innerHTML='';
-    ordem.forEach((p,i)=>{const d=document.createElement('div');
+    visiveis.forEach((p,i)=>{const d=document.createElement('div');
       const marcada=SEL && SEL.has(p.src);
       d.className='ph'+(p._nova?' nova':'')+(marcada?' sel':'');
-      // fora do modo seleção o toque abre a FOTO (não o menu); dentro dele, marca
+      // fora do modo seleção o toque abre a FOTO (não o menu); dentro dele, marca.
+      // abrirFoto recebe a lista CHEIA (ordem): o lightbox navega alem do teto.
       d.onclick=()=> SEL ? alternarSel(p.src) : abrirFoto(ordem,i);
       // segurar entra no modo selecao JA com esta foto marcada
       armarToqueLongo(d, ()=>{ if(!SEL) SEL=new Set(); SEL.add(p.src); renderGuestGrid(); barraSel(); });
       d.innerHTML=`<img src="${mini(p.src)}" alt="Foto ${i+1}" loading="lazy">`
         +(SEL?`<span class="marca-sel">${marcada?'✓':''}</span>`:'');
-      g.appendChild(d);});};
+      g.appendChild(d);});
+    if(restante>0){ const m=document.createElement('button');
+      m.className='btn ghost'; m.style.gridColumn='1/-1'; m.style.margin='6px 0';
+      m.textContent=`Mostrar mais ${Math.min(50,restante)} · faltam ${restante}`;
+      m.onclick=mostrarMais;
+      g.appendChild(m); }
+    };
   wrap('g-grid');wrap('g-grid2');
   const c=guestState.photos.length;document.getElementById('g-count').textContent=c+(c===1?' foto':' fotos');
   const tem=(todasAba?guestState.todas.length:c);
   const dl=document.getElementById('g-download'); if(dl) dl.style.display=tem?'':'none';
   const es=document.getElementById('g-escolher'); if(es) es.style.display=(tem>1&&!SEL)?'':'none';
+}
+/* "Mostrar mais": sobe o teto da aba atual em 50 e repinta. A foto ja vista continua no DOM. */
+function mostrarMais(){
+  const aba=guestState.aba;
+  guestState.limite[aba]=(guestState.limite[aba]||50)+50;
+  renderGuestGrid();
 }
 
 /* ===================== TOQUE LONGO =====================

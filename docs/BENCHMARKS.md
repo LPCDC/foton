@@ -342,3 +342,34 @@ durante tudo. O evento já tinha **64 convidados** na rajada pesada — custo de
 | **50 fotos** | ~4 min (extrapolado) | **55,6 s (medido)** |
 | 8 selfies | 1 s no total | — |
 | **30 selfies** | nunca medido | **8,2 s no total, P95 8,2 s** |
+
+---
+
+## Galeria do convidado — teto de render (item 1, 2026-08-30)
+
+**Problema:** `renderGuestGrid()` reconstruía a grade INTEIRA a cada foto nova (poll de
+2,5 s) e a cada toque de seleção. No álbum GLAMON (~2000 fotos na aba "todas") isso vira
+milhares de nós de DOM recriados a cada 2,5 s — trava o aparelho.
+
+**Correção:** teto de 50 por aba + botão "Mostrar mais 50". ZIP, seleção e contador
+seguem na lista cheia; a nova foto ao vivo sobe o teto em 1 (não empurra foto vista para
+fora); o lightbox recebe a lista cheia (navega além do teto). Puro front-end, sem tocar
+no modelo de dados.
+
+**Medição (álbum sintético de 2000 fotos, mesmo `renderGuestGrid`, na aba "todas"):**
+
+| | antes (sem teto) | depois (teto 50) |
+|---|---|---|
+| nós de DOM por render | 2000 | 50 |
+| tempo do 1º render | 36,7 ms | 1,5 ms |
+| **aceleração** | — | **~24×** |
+
+- **Viés declarado:** medido no navegador da sessão (desktop rápido), numa página `data:`,
+  com `<img loading=lazy>` que NÃO baixa aqui. Os dois lados sobem num Android mediano; a
+  razão (~24×) e a redução de nós (40× menos, × 2 grades) são o que importa e não dependem
+  do aparelho.
+- **`UNKNOWN — REQUIRES EXPERIMENT`:** primeiro render no álbum GLAMON REAL, num celular
+  real sobre 4G — precisa do app no ar + aparelho. Owed ao dono.
+- **Verificação funcional (runtime, mesma sessão):** 2000 fotos → 50 tiles + "Mostrar mais
+  50 · faltam 80"; clique → 100 tiles, "faltam 30"; ZIP/seleção enxergam as 2000; foto nova
+  ao vivo: 50 → 51 tiles, a nova no topo, nenhuma removida.
