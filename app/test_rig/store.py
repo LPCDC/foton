@@ -59,6 +59,11 @@ def conn():
         # senha do salao (que circula entre colaboradoras) apagaria o acervo inteiro.
         try: _conn.execute("ALTER TABLE photographer ADD COLUMN empresa INTEGER DEFAULT 0")
         except sqlite3.OperationalError: pass
+        # Miniatura na MESMA linha da foto (ADR-0022). Nao e arquivo novo nem estagio
+        # novo do pipeline: e um resize a mais na passada que ja decodificou a imagem.
+        # A grade mostra quadradinhos de 110px e baixava a foto de 2048px inteira.
+        try: _conn.execute("ALTER TABLE photo ADD COLUMN thumb BLOB")
+        except sqlite3.OperationalError: pass
         _conn.commit()
     return _conn
 
@@ -412,15 +417,25 @@ def encerra_evento(code):
     q("UPDATE event SET status='done' WHERE code=?", (code,))
 
 # ---------------- fotos / rostos ----------------
-def salva_foto(pid, code, bytes_, embs):
-    q("INSERT INTO photo(id,event_code,bytes,n_faces,criado) VALUES(?,?,?,?,?)",
-      (pid, code, bytes_, len(embs), time.time()))
+def salva_foto(pid, code, bytes_, embs, thumb=None):
+    q("INSERT INTO photo(id,event_code,bytes,n_faces,criado,thumb) VALUES(?,?,?,?,?,?)",
+      (pid, code, bytes_, len(embs), time.time(), thumb))
     for e in embs:
         q("INSERT INTO face(photo_id,event_code,emb) VALUES(?,?,?)", (pid, code, e.tobytes()))
 
 def foto_bytes(code, pid):
     r = q("SELECT bytes FROM photo WHERE id=? AND event_code=?", (pid, code), "one")
     return r["bytes"] if r else None
+
+def thumb_bytes(code, pid):
+    """Miniatura da foto. None quando a foto e ANTERIOR a coluna existir — nesse caso
+    quem chama gera uma vez e guarda (`guarda_thumb`), espalhando o custo em vez de
+    exigir uma migracao que travaria a VM."""
+    r = q("SELECT thumb FROM photo WHERE id=? AND event_code=?", (pid, code), "one")
+    return r["thumb"] if r and r["thumb"] else None
+
+def guarda_thumb(code, pid, dados):
+    q("UPDATE photo SET thumb=? WHERE id=? AND event_code=?", (dados, pid, code))
 
 def fotos_de(code):
     rs = q("SELECT id,n_faces FROM photo WHERE event_code=? ORDER BY criado", (code,), "all")

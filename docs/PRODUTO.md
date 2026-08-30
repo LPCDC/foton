@@ -98,6 +98,51 @@ que procurar o rosto em *todos* os eventos — e descobrir em que festas alguém
 por si só, um vazamento. Pré-cadastro é dentro de **um** evento; busca global é outra
 coisa, e precisa do segundo fator e de base legal própria.
 
+### 3b-2. Nome e Instagram no pré-cadastro — e a linha que não pode ser cruzada
+
+**A ideia do dono:** ao pré-cadastrar, o criador informa **nome e Instagram** da pessoa.
+Quando ela chega e faz a selfie, **ela escolhe** se compartilha esses dados com os outros.
+
+**O que isso ganha, e é muito:** o reconhecimento deixa de ser anônimo. Em vez de
+"achamos você em 8 fotos", vira **"Oi, Carol — achei 8 fotos suas"**. É outro produto
+emocionalmente. E o Instagram cria a camada social: as pessoas se acham depois da festa,
+que é exatamente o laço viral que falta.
+
+**O opt-in que ele propôs está certo** — é a mesma resposta que já tínhamos dado para
+"mostrar o nome na foto": a pessoa decide, e não o organizador.
+
+**A linha, e ela é real:**
+
+Hoje o criador já sobe fotos de pessoas antes de elas consentirem — e tudo bem, porque
+esses vetores são **anônimos**: são "um rosto", não "a Carol". No instante em que se
+escreve *este rosto = Carol, @carol*, cria-se um **perfil biométrico identificado de
+alguém que nunca concordou com nada**. Biometria é dado **sensível** (LGPD Art. 5º, II) e
+exige consentimento **específico e destacado do titular** (Art. 11, I). O organizador
+não consente pela convidada.
+
+**A versão que entrega a mesma magia sem cruzar a linha:**
+
+1. O criador sobe as fotos (como hoje) → vetores **anônimos**.
+2. O criador escreve uma **lista de convidados esperados** — só nome e Instagram, **sem
+   vínculo com rosto nenhum**. É uma lista de contatos, dado comum, não biométrico.
+3. A convidada faz a selfie, é reconhecida, e o app pergunta: **"quem é você?"**,
+   oferecendo a lista. **Ela** se aponta.
+4. Aí sim ela escolhe o que aparece para os outros.
+
+A diferença é sutil no código e enorme na postura: **o vínculo rosto↔nome é feito pela
+pessoa, não pelo organizador.** E ainda melhora o produto — se o reconhecimento errar, é
+ela quem corrige na hora.
+
+**Sobre compartilhar "com geral", uma ressalva de segurança, não de conformidade:**
+numa festa, deixar o Instagram visível para qualquer um que escaneie o QR expõe uma
+convidada a estranhos. O padrão tem que ser **desligado**, e a escolha **separada**:
+mostrar meu nome ≠ mostrar meu Instagram. Uma coisa é ser reconhecida na foto; outra é
+ser encontrada depois.
+
+**Decidir:** a lista de esperados fica visível para os outros convidados antes de cada um
+se apontar? (Eu diria **não** — senão vira uma lista de quem vai à festa, aberta a
+qualquer um com o QR.)
+
 ### 3c. Limite de UPLOAD — a métrica que substitui o crédito
 
 **Dá, e é melhor que crédito.** Crédito conta uma coisa que só existe para nós. Limite de

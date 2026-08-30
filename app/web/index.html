@@ -1213,6 +1213,10 @@ function ico(nome){
   const d=ICONES[nome]; if(!d) return '';
   return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>';
 }
+/* A grade desenha quadradinhos; nao ha por que baixar a foto de 2048px para isso.
+   `?t=1` pede a miniatura (~15 KB em vez de ~400 KB). O visualizador continua
+   usando a foto inteira, que e onde ela faz falta. */
+function mini(u){ return u ? u + (u.indexOf('?')>=0?'&':'?') + 't=1' : u; }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 
 /* =============== BOTAO VOLTAR DO CELULAR ===============
@@ -2016,7 +2020,7 @@ function renderEventGrid(){
     const d=document.createElement('div');d.className='ph';
     const badge=p.faces?`<span class="tag">✓ ${p.faces} rosto${p.faces>1?'s':''}</span>`
                        :`<span class="noface">sem rosto</span>`;
-    d.innerHTML=`<img src="${p.src}" alt="Foto ${i+1}" loading="lazy">${badge}`;
+    d.innerHTML=`<img src="${mini(p.src)}" alt="Foto ${i+1}" loading="lazy">${badge}`;
     if(p.id){ const x=document.createElement('button');x.className='del';x.innerHTML='×';
       x.setAttribute('aria-label','Apagar foto');
       x.onclick=(e)=>{e.stopPropagation();deletarFoto(p.id,ev);}; d.appendChild(x); }
@@ -2461,7 +2465,7 @@ function renderGuestGrid(){
       d.className='ph'+(p._nova?' nova':'')+(marcada?' sel':'');
       // fora do modo seleção o toque abre a FOTO (não o menu); dentro dele, marca
       d.onclick=()=> SEL ? alternarSel(p.src) : abrirFoto(ordem,i);
-      d.innerHTML=`<img src="${p.src}" alt="Foto ${i+1}" loading="lazy">`
+      d.innerHTML=`<img src="${mini(p.src)}" alt="Foto ${i+1}" loading="lazy">`
         +(SEL?`<span class="marca-sel">${marcada?'✓':''}</span>`:'');
       g.appendChild(d);});};
   wrap('g-grid');wrap('g-grid2');

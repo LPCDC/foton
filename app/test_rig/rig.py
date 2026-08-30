@@ -25,6 +25,8 @@ BASE = os.path.dirname(os.path.dirname(HERE))
 THRESH = 0.25           # ArcFace/buffalo_s — validado (iguais ~0.61, diferentes ~0.01)
 LONG_EDGE = 2048
 JPEG_Q = 82
+THUMB_EDGE = 320        # a grade mostra ~110px; 320 cobre tela retina sem exagero
+THUMB_Q = 70
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger("foton")
@@ -105,7 +107,21 @@ def process_image(raw: bytes, marca: str = "FÓTON", logo: bytes = None):
         d.text((x + 2, y + 2), txt, font=font, fill=(0, 0, 0, 120))
         d.text((x, y), txt, font=font, fill=(255, 255, 255, 190))
     out = io.BytesIO(); img.save(out, "JPEG", quality=JPEG_Q, optimize=True, progressive=True)
-    return out.getvalue(), (fw, fh), (time.perf_counter() - t0) * 1000
+    # Miniatura na MESMA passada (ADR-0022): a imagem ja esta decodificada em memoria,
+    # entao e um resize, nao uma segunda decodificacao. ~15 KB contra ~400 KB da foto.
+    thumb = _thumb(img)
+    return out.getvalue(), (fw, fh), (time.perf_counter() - t0) * 1000, thumb
+
+def _thumb(img: Image.Image) -> bytes:
+    """Reduz a imagem JA decodificada. Nunca deixa a falta de miniatura derrubar o
+    ingest: se der errado, a foto entra sem thumb e a grade cai na foto inteira."""
+    try:
+        m = img.copy()
+        m.thumbnail((THUMB_EDGE, THUMB_EDGE), Image.LANCZOS)
+        b = io.BytesIO(); m.save(b, "JPEG", quality=THUMB_Q, optimize=True)
+        return b.getvalue()
+    except Exception:
+        return None
 
 def detect_embed(raw: bytes):
     arr = np.frombuffer(raw, np.uint8)
@@ -403,9 +419,9 @@ def ingerir_bytes(event: str, raw: bytes):
     e = _ev(event, create=True)
     pid = uuid.uuid4().hex[:12]
     logo = store.pega_logo(e["dono"]) if e.get("dono") else None
-    treated, dims, pms = process_image(raw, e.get("marca") or "FÓTON", logo)
+    treated, dims, pms, thumb = process_image(raw, e.get("marca") or "FÓTON", logo)
     faces = detect_embed(treated)
-    store.salva_foto(pid, event, treated, faces)
+    store.salva_foto(pid, event, treated, faces, thumb)
     for gid, gemb in store.convidados_de(event):
         g = _emb(gemb)
         if any(float(g @ f) >= THRESH for f in faces):
@@ -425,9 +441,9 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...),
     pid = uuid.uuid4().hex[:12]
     t0 = time.time()
     logo = store.pega_logo(e["dono"]) if e.get("dono") else None
-    treated, dims, pms = process_image(raw, e.get("marca") or "FÓTON", logo)
+    treated, dims, pms, thumb = process_image(raw, e.get("marca") or "FÓTON", logo)
     faces = detect_embed(treated)
-    store.salva_foto(pid, event, treated, faces)
+    store.salva_foto(pid, event, treated, faces, thumb)
     matched = []
     for gid, gemb in store.convidados_de(event):
         g = _emb(gemb)
@@ -481,7 +497,27 @@ def contatos(event: str, authorization: str = Header(None)):
     return {"event": event, "contatos": store.contatos_de(event)}
 
 @app.get("/img/{event}/{photo_id}.jpg")
-def img(event: str, photo_id: str):
+def img(event: str, photo_id: str, t: str = ""):
+    """`?t=1` devolve a MINIATURA. A grade mostra quadradinhos e baixava a foto de
+    2048px inteira: 89 fotos eram ~35 MB e 89 decodificacoes so para desenhar
+    miniatura (ADR-0022).
+
+    Foto anterior a coluna existir nao tem miniatura: gera UMA vez, guarda, e das
+    proximas vezes ja sai pronta. Espalha o custo em vez de exigir uma migracao que
+    travaria o unico nucleo da VM."""
+    if t:
+        m = store.thumb_bytes(event, photo_id)
+        if not m:
+            cheia = store.foto_bytes(event, photo_id)
+            if not cheia: raise HTTPException(404)
+            try:
+                m = _thumb(Image.open(io.BytesIO(cheia)).convert("RGB"))
+                if m: store.guarda_thumb(event, photo_id, m)
+            except Exception:
+                m = None
+            if not m: m = cheia          # nunca deixa a grade sem imagem
+        return Response(m, media_type="image/jpeg",
+                        headers={"Cache-Control": "public, max-age=86400"})
     b = store.foto_bytes(event, photo_id)
     if not b: raise HTTPException(404)
     return Response(b, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
@@ -739,7 +775,7 @@ def admin_testar_foto(file: UploadFile = File(...), authorization: str = Header(
     import asyncio
     raw = asyncio.run(file.read()) if False else file.file.read()
     t0 = time.time()
-    treated, dims, pms = process_image(raw)
+    treated, dims, pms, thumb = process_image(raw)
     faces = detect_embed(treated)
     dica = ("Perfeito — rosto reconhecido." if len(faces) == 1 else
             f"{len(faces)} rostos reconhecidos." if faces else

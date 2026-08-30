@@ -440,5 +440,28 @@ checa("apagar com a senha do admin funciona", C.post("/event/delete", data={"cod
 checa("conta comum cria sem senha nenhuma", C.post("/event", data={"code": "NORM1"}, headers=h(dona)).status_code, 200)
 checa("conta comum apaga sem senha nenhuma", C.post("/event/delete", data={"code": "NORM1"}, headers=h(dona)).status_code, 200)
 
+
+print("")
+print("[23] Miniatura como COLUNA (ADR-0022)")
+_mt = C.post("/signup", data={"email": "mini@t.com", "senha": "senha123"}).json()["token"]
+C.post("/event", data={"code": "MINI1"}, headers=h(_mt))
+_pid = C.post("/ingest", data={"event": "MINI1"}, files={"file": ("f.jpg", jpeg(), "image/jpeg")},
+                headers=h(_mt)).json()["photo_id"]
+_cheia = C.get("/img/MINI1/" + _pid + ".jpg")
+_mini  = C.get("/img/MINI1/" + _pid + ".jpg?t=1")
+checa("a foto inteira continua servida", _cheia.status_code, 200)
+checa("a miniatura tem rota propria", _mini.status_code, 200)
+checa("miniatura e MENOR que a foto", len(_mini.content) < len(_cheia.content), True)
+checa("as duas sao imagem", _mini.headers["content-type"], "image/jpeg")
+# foto ANTERIOR a coluna existir: gera uma vez e guarda, sem migracao que trave a VM
+rig.store.q("UPDATE photo SET thumb=NULL WHERE id=?", (_pid,))
+checa("foto antiga nasce sem miniatura", rig.store.thumb_bytes("MINI1", _pid), None)
+checa("pedir a miniatura funciona mesmo assim", C.get("/img/MINI1/" + _pid + ".jpg?t=1").status_code, 200)
+checa("e ela fica guardada para a proxima", rig.store.thumb_bytes("MINI1", _pid) is not None, True)
+checa("foto que nao existe continua 404", C.get("/img/MINI1/naoexiste.jpg?t=1").status_code, 404)
+# a grade do app tem que pedir a miniatura, nao a foto inteira
+_h2 = open(os.path.join(RAIZ, "app", "web", "index.html"), encoding="utf-8").read()
+checa("a grade usa mini()", _h2.count(chr(36) + "{mini(p.src)}"), 2)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)
