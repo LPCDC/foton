@@ -191,6 +191,9 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/foton.key ubuntu@152.67.46.113 \
 | **Barra invertida através de heredoc de shell** | Ao escrever uma string JS com `\n` literal (dentro de um `confirm()`) usando um heredoc de shell para gerar o script Python que edita o arquivo, o `\n` virou **quebra de linha real** dentro da string JavaScript, cortando-a no meio e derrubando `node --check`. Pego antes do deploy — era exatamente para isso que o teste de sintaxe existe. Regra: montar barra invertida literal com `chr(92)`, nunca confiar no shell para preservá-la. |
 | **Texto de estado que mentia** | O cartão de status da câmera dizia "FTP ligado, nenhuma foto ainda" para uma conta (Carol) que tinha **30 fotos** no painel, uma linha acima. O texto falava da CÂMERA (nenhuma câmera de FTP jamais conectou), mas usava vocabulário de FOTOS. Visto na tela, corrigido no mesmo turno. **Todo texto de estado tem que ser lido ao lado do número que ele poderia contradizer.** |
 | **Segurar a miniatura abria o menu do navegador** | Não havia gesto de toque longo — só um botão "Escolher algumas" — e o alvo do toque era o `<img>`, por isso o Android oferecia ações de IMAGEM ("salvar", "abrir em nova aba") em vez de selecionar. Corrigido: a miniatura não recebe toque (`pointer-events:none`), o `contextmenu` é barrado, e segurar 450 ms entra no modo seleção. |
+| **Página com mais conteúdo do que a tela = "fundo desliza" ao arrastar** | A home tinha até 146px de conteúdo além da viewport (dois links de rodapé ficavam fora da dobra) — arrastar o dedo rolava a página de verdade uns 20-40px, e o fundo (`position:absolute`, preso ao `.stage` que rolava junto) parecia "deslizar". Não era ilusão nem bug de touch: era overflow real, medido com `document.scrollingElement.scrollHeight`. Corrigido por dois lados — espaçamentos apertados até o overflow zerar em telas comuns, e `.stage-bg`/`.stage-fade` viraram `position:fixed` (nunca mais se movem, mesmo que sobre 1px de rolagem numa tela bem baixa). **Ao investigar "elemento X parece causar Y", meça removendo/escondendo X de verdade antes de reescrever CSS em cima dele** — a suspeita inicial (a barra de progresso `.prog`, fixed com `transform` pra ficar fora da tela) foi **descartada por teste direto** (escondê-la não mudou o `scrollHeight` nem 1px); só a medição salvou de uma correção no lugar errado. |
+| **Sessão persistente só restaurava com o código já em mãos** | O convidado já tinha sessão de 24h salva (`saveGuestSession`), mas só era restaurada se o app já soubesse o código do evento (link direto ou digitado) — fechar pelo ícone da tela inicial (sem parâmetro na URL) sempre caía na home pedindo o código de novo. É o **mesmo bug, do outro lado**: já tinha sido corrigido para a fotógrafa (a IIFE de boot que restaura `go('dash')` com o token salvo). Corrigido com o mesmo padrão: um marcador `foton_guest_ultimo_ev` (paralelo a `ultimoEvento`/`lembrarEvento`), checado no boot quando não há link direto na URL nem sessão de fotógrafa para restaurar. **Um bug corrigido de um lado do app é motivo para checar o espelho dele do outro lado.** |
+| **Segurar em texto abria "Pesquisar no Google" do Chrome** | Sem `user-select:none` global, segurar o dedo num título ou texto de botão selecionava a palavra e o Android oferecia buscar/compartilhar por cima do app — texto de app não é texto de página. Já existia a proteção nas miniaturas de foto (armadilha acima); faltava no resto. Corrigido: `user-select:none` em `html,body`, com exceção explícita para `input`, `textarea` e uma classe `.selecionavel` para o que precisar no futuro. |
 
 ## 8. Estado atual (o que funciona hoje)
 
@@ -213,9 +216,12 @@ elevação por senha de admin para criar/apagar álbum.
 lightbox com navegação · salvar/compartilhar/ZIP · **segurar uma foto para selecionar
 várias** (compartilhar as melhores para o grupo, sem precisar de todas nem de uma só) ·
 QR por foto (ADR-0020 — quem aparece junto escaneia e leva a foto no próprio celular) ·
-sessão persistente (volta sem refazer selfie) · **"Apagar minha selfie e sair deste
-evento"**, visível na própria galeria, sem precisar falar com ninguém — é a condição
-da decisão do dono sobre nome/Instagram no pré-cadastro (`docs/PRODUTO.md` §3b-2) · PWA.
+**sessão persistente de verdade** — "uma vez logado, sempre": mesmo fechando o app pelo
+ícone da tela inicial, sem link nem código na URL, volta direto pra galeria (24h,
+testado ponta a ponta contra produção em 2026-08-30) · **"Apagar minha selfie e sair
+deste evento"**, visível na própria galeria, sem precisar falar com ninguém — é a
+condição da decisão do dono sobre nome/Instagram no pré-cadastro (`docs/PRODUTO.md`
+§3b-2) e também o que limpa a sessão persistente acima · PWA.
 
 **Admin** (login `admin`, não mais `admin@foton.com` — ver §2): resumo geral · disco ·
 lista de fotógrafos + histórico de crédito (não gasto mais, só histórico) · marcar
@@ -230,7 +236,14 @@ lâminas tangentes ao hexágono da abertura, coordenadas calculadas) com um úni
 luz; o produto é uma lente que acha *você* no meio de muitos. Funções `badgeSVG()` e
 `diafragmaSVG()` em `app/web/index.html`. Na home ela é grande e centralizada, com um
 teto de tamanho em `vh` além do de `vw` — sem isso a marca em 300px empurrava a
-terceira porta ("Sou empresa") para fora da primeira tela do celular.
+terceira porta ("Sou empresa") para fora da primeira tela do celular. O fundo por trás
+dela (`.stage-bg`/`.stage-fade`) é `position:fixed` — não se move mesmo se a página
+rolar um pouco (ver armadilha em §7).
+
+**Toque no app (2026-08-30):** texto do app não é mais selecionável (título, legenda,
+botão) — segurar o dedo não seleciona palavra nem abre o popup "Pesquisar no Google"
+do Chrome. Campos de digitar (código do evento, senha, etc.) continuam selecionáveis
+normalmente.
 
 **LGPD:** política publicada · consentimento destacado · selfie nunca armazenada ·
 retenção automática (biometria 7d por padrão, configurável por conta; fotos 90d) ·
