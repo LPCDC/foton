@@ -33,9 +33,13 @@ da tarefa. Nada é "pronto" sem rodar e ler a saída.
   não os noivos) por **clickwrap com trilha de auditoria** (conta + data/hora +
   versão do texto), e **assinatura eletrônica** só para conta empresa/contratos com
   preço. Aguarda o "ok" dele para virar item de código (checkbox + tabela `aceite`).
-- **P5 (volume do despejo GLAMON): SEM RESPOSTA — a mensagem do dono chegou cortada**
-  ("4 e para…"). Perguntar de novo logo no início da sessão, junto com a confirmação
-  da P3.
+- **P5 (despejo GLAMON): FEITO pelo dono** — todas as fotos, ~2000×2000 px, do PC via
+  wi-fi. `/health` medido depois: 80–150 ms, VM saudável. Os números de dentro
+  (contagem, bytes, disco, carga) dependem do comando de admin que o dono roda —
+  saída dele abre o item 0.
+- **Pré-cadastro como roteiro de venda (ideia do dono, registrada):** ver PRODUTO §3b —
+  o que falta de código é `photo.oculta` (foto de referência fora da galeria) + texto
+  de orientação no painel. Entra como item 10.
 
 ## Ordem de trabalho
 
@@ -115,6 +119,11 @@ Toggle no admin. O Fóton Festa (P2) vem em cima disto: papéis `dono`/`particip
 por evento, participante envia via a sessão de convidado que já existe, limite POR
 PARTICIPANTE (PRODUTO §2 — nunca por IP). As perguntas abertas do §2 (quantas fotos,
 apagar a própria, conteúdo impróprio) precisam do dono ANTES do código do Festa.
+
+### 9-b. Pré-cadastro pronto para a porta da festa
+Coluna `photo.oculta` (rosto entra no índice, foto NÃO entra na galeria — a "foto de
+referência" da abordagem) + texto curto no painel do criador ensinando o roteiro de
+15 s (PRODUTO §3b). O motor já funciona; isto é acabamento + material de venda.
 
 ### 9. Contrato — quando o dono confirmar a recomendação da P3
 Checkbox no 1º evento + tabela `aceite` (conta, data/hora, versão) + `/termo` com o

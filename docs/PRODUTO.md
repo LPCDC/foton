@@ -110,6 +110,15 @@ que o produto se prova — adiantado para o segundo zero.
 coluna `photo.oculta` — o rosto entra no índice, a foto não entra na galeria. "Foto de
 referência".
 
+**O roteiro de abordagem (ideia do dono, 2026-08-30 — registrada a pedido):** o jeito
+de usar o pré-cadastro na porta da festa é um script de 15 segundos: *"Oi, posso tirar
+uma foto sua?"* → 1 foto (referência interna, vira vetor) → *"agora abre esse QR e
+tira uma selfie — suas fotos já estão no seu celular."* O efeito-mágica do produto,
+adiantado para o primeiro contato. **Isso é material de treinamento das futuras
+vendedoras do Fóton**, não só feature — o motor já funciona em produção (medido acima);
+o que falta de código é só a `photo.oculta` (a foto da abordagem não pode poluir o
+álbum) e um texto de orientação no painel do criador ensinando o script.
+
 **O que o pré-cadastro NÃO resolve:** entrar **sem o código**. Para isso o Fóton teria
 que procurar o rosto em *todos* os eventos — e descobrir em que festas alguém aparece é,
 por si só, um vazamento. Pré-cadastro é dentro de **um** evento; busca global é outra
