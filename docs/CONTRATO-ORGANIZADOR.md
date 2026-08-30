@@ -113,3 +113,35 @@ assinado em duas vias (ou por assinatura eletrônica qualificada).
 *Versão 1.0-minuta · registrada em `docs/DECISIONS.md` quando aceita pelo dono e
 revisada por advogado. O que o app já cumpre por código está testado em
 `tests/test_autorizacao.py` [24] (saída do titular) e documentado na ADR-0029.*
+
+---
+
+## Anexo — pesquisa sobre a forma de aceite (2026-08-30, a pedido do dono)
+
+**O que o direito brasileiro sustenta:** clickwrap (caixa "li e aceito" com o texto
+disponível antes) é plenamente válido para termos de uso, **desde que haja trilha de
+auditoria** — prova de quem aceitou, quando e qual versão. A base: MP 2.200-2/2001
+(Art. 10, §2º), Lei 14.063/2020 (classes de assinatura eletrônica), Marco Civil e
+CPC/2015; o STJ aceita assinatura eletrônica sem ICP-Brasil quando acompanhada de
+outros elementos de prova (REsp 1.633.182/RS). Browse-wrap ("ao usar você concorda",
+sem clique) é a forma fraca — não usar.
+
+**O que o mercado faz (SpotMyPhotos, referência de privacidade do segmento):** a
+plataforma fornece a infraestrutura de consentimento; a responsabilidade primária
+fica com o fotógrafo/organizador, com **registro digital** de cada consentimento de
+convidado; termos personalizados entram no próprio fluxo de entrega. É o mesmo
+desenho do Fóton (consentimento no app + este termo).
+
+**Recomendação ao dono:**
+1. **Quem assina é quem cria o evento** — a Patrícia, não os noivos. Ela é quem
+   decide finalidade e cadastra dados (= controladora). Os noivos nunca tocam o Fóton.
+2. **Forma padrão: clickwrap** no primeiro evento, com registro de conta + data/hora
+   + versão do texto (tabela `aceite`). Barato, escala, e juridicamente suficiente
+   para termo operacional.
+3. **Conta empresa e contratos com preço: assinatura eletrônica avançada**
+   (D4Sign/Clicksign ou similar) sobre este mesmo texto — o valor maior pede a prova
+   mais forte.
+4. **Bônus para a Patrícia:** oferecer a ela um parágrafo pronto para o contrato DELA
+   com os noivos, espelhando a cláusula 4 (ela declara aos noivos que o evento usa
+   reconhecimento facial para entrega de fotos e que o convidado consente no app).
+   Protege a cadeia inteira e é serviço que nenhum concorrente dá.

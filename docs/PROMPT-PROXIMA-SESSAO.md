@@ -1,157 +1,138 @@
 # Prompt para a próxima sessão
 
 > Cole isto numa sessão nova (ou diga só: **"continua do PROMPT-PROXIMA-SESSAO.md"**).
-> Escrito para carregar contexto sem gastar tokens repetindo documento, e para forçar
-> o rigor do Gauntlet em vez de pedir por ele.
 >
-> **Versão de 2026-08-30, noite.** Substitui o prompt anterior (perfis), que foi
-> cumprido e virou a **ADR-0030** (três peles em produção). Esta versão é um **plano
-> aprovado pelo dono** — a sessão anterior planejou, esta implementa.
+> **Versão de 2026-08-30, madrugada.** O dono respondeu às perguntas do plano anterior
+> na mesma noite; esta versão incorpora as decisões e as ideias novas dele. É um
+> **plano aprovado** — a sessão que o ler implementa, na ordem daqui.
 
 ---
 
-Fóton — continuação. Antes de tocar em qualquer coisa, leia nesta ordem:
-`BLUEPRINT.md` (estado geral e as armadilhas do §7 — cicatrizes reais), `docs/PRODUTO.md`
-§1 e §3 (três públicos; login por selfie e suas linhas vermelhas) e `docs/DECISIONS.md`
-da **ADR-0025 em diante**. Não confie na memória de treino — confie nos documentos e no
-código; onde divergirem, **o código ganha**, e corrigir o documento faz parte da tarefa.
+Fóton — continuação. Antes de tocar em qualquer coisa: `BLUEPRINT.md` (estado e
+armadilhas §7), `docs/PRODUTO.md` §1–§3, `docs/DECISIONS.md` da ADR-0025 em diante.
+Onde documento e código divergirem, **o código ganha** e corrigir o documento é parte
+da tarefa. Nada é "pronto" sem rodar e ler a saída.
 
-## Estado em 2026-08-30, noite (verificado com curl, não lembrado)
+## Decisões do dono (2026-08-30, noite) — não rediscutir
 
-- App em produção (`https://app.foton.app.br`), 3 contas reais. Deploy = `git push`
-  (~2 min). 4 suítes, **280 checagens**, `bash tests/todos.sh` — verde antes de todo push.
-- **ADR-0030 no ar:** perfil de conta (`pro`/`empresa`/`social`) declarado pelo servidor;
-  vocabulário, blocos e tokens por perfil. `social` ainda não é atribuível (sem coluna).
-- **Site de marca NO AR no Netlify** (`getfoton.netlify.app`, 150 KB, site novo — o dono
-  ligou o repo em 2026-08-30). DNS: zona no **registro.br** (`d/e.sec.dns.br`); raiz e
-  `www` apontam para a VM `152.67.46.113`.
-- **Minuta do contrato do organizador existe**: `docs/CONTRATO-ORGANIZADOR.md`
-  (condição nº 1 do PRODUTO §3b-2). Falta advogado + decisão de aceite (pergunta P3).
-- **Perfis, clarificado pelo dono (2026-08-30):** Patrícia = pro (câmera). **Ana =
-  cliente que também contrata, mas fotografa SÓ com celular** — não é "amadora no
-  rolê", é um perfil pagante sem câmera. Empresa = GLAMON.
-- **O dono vai despejar fotos grandes, várias de uma vez, no álbum fixo da GLAMON**
-  antes da próxima sessão. A instrumentação já existe (logs por estágio + `/admin/saude`
-  + miniaturas ADR-0022); o que falta é LER os números depois — item 0 abaixo.
+- **P1 (reencontro por selfie): CONFIRMADO.** GLAMON: selfie nova reencontra todo o
+  histórico (biometria permanente). Patrícia e Ana: dentro da janela de retenção do
+  evento. **Adendo registrado:** a interface da Ana não mostra NADA de câmera
+  profissional (a pele `social` da ADR-0030 já esconde); "conectar DSLR" vira, no
+  futuro, **bônus de um plano plus** — anotado como diferencial de upsell, não fazer agora.
+- **P2 (Ana): versão FÓTON FESTA** — ela E os convidados mandam fotos (PRODUTO §2).
+  Consequências que o dono apontou: login/persistência do convidado ficam centrais
+  (a sessão persistente de 24h já existe — validar se basta) e o **lag da câmera**
+  importa (item 6 abaixo). Branding do Fóton Festa: pensar como expert **quando formos
+  fazer**, não agora (pedido dele).
+- **P4 (DNS): AUTORIZADO** — mover a zona para a Cloudflare. Runbook no item 7.
+- **P3 (contrato):** pesquisa feita (ver `docs/CONTRATO-ORGANIZADOR.md`, nota de
+  aceite): mercado (SpotMyPhotos) põe a responsabilidade primária no
+  fotógrafo/organizador com registro digital de consentimento — igual ao nosso
+  desenho. Recomendação entregue ao dono: **quem cria o evento assina** (Patrícia,
+  não os noivos) por **clickwrap com trilha de auditoria** (conta + data/hora +
+  versão do texto), e **assinatura eletrônica** só para conta empresa/contratos com
+  preço. Aguarda o "ok" dele para virar item de código (checkbox + tabela `aceite`).
+- **P5 (volume do despejo GLAMON): SEM RESPOSTA — a mensagem do dono chegou cortada**
+  ("4 e para…"). Perguntar de novo logo no início da sessão, junto com a confirmação
+  da P3.
 
-## Ordem de trabalho (aprovada; implementar nesta ordem)
+## Ordem de trabalho
 
-### 0. Relatório do despejo GLAMON — ANTES de mexer em qualquer código
-O dono despejou fotos no álbum GLAMON. Primeiro ato da sessão, com o token de admin
-(o dono fornece — `foton-acessos.md` fora do repo):
-- `/admin/saude`: última foto, carga, disco.
-- Contagem e bytes do álbum GLAMON (foto cheia + thumb); crescimento do banco e do backup.
-- Se o dono der acesso ao Cloud Shell: P95 do `/ingest` no período do despejo, pelos
-  logs JSON. Sem acesso: registrar `UNKNOWN — REQUIRES EXPERIMENT` e seguir.
-- Colar os números em `docs/BENCHMARKS.md`. **Este relatório decide a urgência do R2.**
+### 0. Relatório do despejo GLAMON — antes de qualquer código
+Com o token de admin (dono fornece; `foton-acessos.md` fora do repo): `/admin/saude`,
+contagem/bytes do álbum GLAMON, crescimento de banco+backup; P95 do `/ingest` no
+período se houver Cloud Shell. Números em `docs/BENCHMARKS.md`. **Decide a urgência do R2.**
 
-### 1. Galeria do convidado: teto de 50 + "Mostrar mais" (pedido do dono)
-`renderGuestGrid()` (`app/web/index.html:~2732`) reconstrói a grade INTEIRA a cada foto
-nova — 89 fotos = 89 nós + 89 decodificações por render, e o despejo GLAMON vai piorar.
-- `guestState.limite = 50` por aba (minhas/todas); render corta em `ordem.slice(0, limite)`;
-  botão "Mostrar mais 50" (`grid-column:1/-1`) na base soma 50 e re-renderiza.
-- Foto nova continua entrando no topo (não conta contra o limite mostrado — ajustar o
-  slice para não EMPURRAR uma foto já vista para fora, senão "sumiu uma foto" vira bug).
-- **Cuidado:** ZIP, seleção por toque longo e contagem usam a LISTA CHEIA, não a
-  mostrada — conferir cada consumidor de `guestState.photos/todas` antes de cortar.
-- Benchmark de aceite: com o álbum GLAMON real, bytes e tempo do primeiro render antes
-  vs depois (esperado ~750 KB vs ~1,3 MB em 89; mais após o despejo). Colar números.
+### 1. Galeria do convidado: teto de 50 + "Mostrar mais"
+`renderGuestGrid()` reconstrói a grade inteira a cada foto nova. `guestState.limite=50`
+por aba; slice + botão "Mostrar mais 50"; foto nova não empurra foto vista para fora;
+ZIP/seleção/contadores usam a LISTA CHEIA. Benchmark: bytes e tempo do primeiro render
+no álbum GLAMON, antes vs depois.
 
-### 2. Perfil `social` atribuível + coluna (completa a ADR-0030)
-- `store.py`: `ALTER TABLE photographer ADD COLUMN perfil TEXT` (guardado por try, como
-  as outras). `rig.py _perfil()`: coluna explícita vence; senão deriva como hoje.
-- Admin: no painel de contas, seletor pro/social/empresa (reusar o fluxo de "marcar
-  empresa"). `social` NÃO mexe em poder — só apresentação (regra da ADR-0030).
-- Signup: adiar oferta pública de escolha de perfil até a resposta da pergunta P2.
-- Testes: estender [25] (social atribuível e revogável; front cai em pro se valor
-  desconhecido — já testado no navegador em 2026-08-30).
+### 2. Ordenação da galeria: data | pessoas (ideia do dono, avaliada VIÁVEL)
+`photo.n_faces` **já existe** no banco — ordenar "todas" por quantidade de gente é
+expor um campo que já está lá. Para quem ligou nome (§3b-2): "pessoas" também pode
+agrupar por identificado (a tabela `match` já liga foto↔convidado). Fazer como um
+seletor simples (Data · Pessoas) na aba "todas"; client-side sobre a lista carregada,
+`n_faces` incluído na resposta de `/photos` (mudança de 1 campo).
 
-### 3. Reencontro por selfie (o "login com selfie" do dono, na versão defensável)
-O que o dono pediu: *"se o rosto se registrou, você pode tentar logar com sua selfie"*,
-com interface blindada pela LGPD. O desenho que cabe nas linhas do PRODUTO §3:
-- **Dentro de UM evento, sempre.** Busca global de rosto continua proibida (§3b: é
-  vazamento por si só). O convidado chega pelo QR/código como hoje.
-- Hoje `/selfie` sempre cria guest novo → selfie repetida = identidade duplicada e
-  histórico perdido. O reencontro: comparar a selfie nova contra os convidados JÁ
-  registrados do evento; se casar com **limiar de reencontro** (mais duro que os 0,25
-  de agrupar fotos — 0,25 NÃO autentica, PRODUTO §3 item 4) **e margem** sobre o
-  segundo colocado, reatar ao guest_id existente (galeria volta). Senão: guest novo,
-  como hoje — falha silenciosa e inofensiva, nunca "você é a Carol?".
-- **Limiar: `UNKNOWN — REQUIRES EXPERIMENT`.** Experimento antes do código de produção:
-  com `fotos-teste/` (ensaio.py com bom senso, NUNCA em massa), medir a distância
-  selfie↔selfie da mesma pessoa vs pessoas diferentes; escolher limiar com margem e
-  registrar em BENCHMARKS. Sem esse número, o item não entra.
-- **Onde brilha: GLAMON** (biometria não expira — a cliente volta na outra semana,
-  selfie nova, histórico inteiro). Na Patrícia vale dentro da janela de retenção (7d).
-  Depende da resposta do dono à pergunta P1.
-- Copy LGPD na tela (ajustar com a P1): *"Já esteve aqui? Tire uma selfie nova — ela é
-  comparada com quem já se registrou neste evento e descartada. Nada novo é guardado."*
-- Servidor decide tudo (ADR-0025); rota `/selfie` ganha o caminho de reencontro com
-  dono claro; testes de contrato: reencontro certo, abaixo do limiar cria novo,
-  evento errado nunca reata.
+### 3. Coração na foto (double-tap) — VIÁVEL, com uma ressalva de gesto
+É a primeira fatia do chat de emoji já desenhado em PRODUTO §3d (pega carona no poll
+de 2,5 s; tabela `evento, guest_id, foto_id, ts`; POST + contador no `/feed`).
+**Ressalva:** double-tap na GRADE briga com toque-abre e segurar-seleciona (o dedo
+que abre viraria espera de 300 ms). O lugar certo do double-tap é a **foto aberta**
+(lightbox, estilo Instagram) + badge de contagem na miniatura. Um coração por
+convidado por foto (idempotente). Sem texto — a regra do §3d vale aqui.
 
-### 4. Contrato do organizador — de minuta a produto
-`docs/CONTRATO-ORGANIZADOR.md` existe. Conforme a resposta à P3:
-- aceite eletrônico: checkbox ao criar o 1º evento + registro (conta, data/hora, versão)
-  numa tabela `aceite` — rota com dono, teste de contrato; texto integral em `/termo`.
-- Vira ADR quando o dono aceitar a minuta (com ou sem ajuste de advogado).
+### 4. "Adicionar rosto" — associação manual de foto sem rosto (GLAMON, VIÁVEL)
+Caso real do dono: foto artística/zoom (a mão da profissional) não tem rosto para o
+motor. A tabela `match` já é separada de `face`: associar manualmente = **uma linha
+de match com flag `manual`**, sem biometria nova — LGPD mais leve, não mais pesada.
+UI no painel do dono do evento/álbum: foto com `n_faces=0` ganha "atribuir a alguém"
+→ escolhe da lista de convidados registrados. Só o dono do evento pode (`_pode()`);
+rota com dono e teste de contrato. **Só para conta empresa** por ora (decisão dele:
+"especialmente GLAMON; nos outros é fundamental aparecer rosto").
 
-### 5. DNS — plano pronto, executar na ordem, NADA em paralelo
-Estado real: zona no registro.br; raiz+www+app no MESMO certificado da VM. Objetivo:
-raiz/www → Netlify (site), app → VM, e **preparar o R2** (que vai exigir a zona na
-Cloudflare para domínio próprio de fotos, ex.: `fotos.foton.app.br`).
-1. **Cert primeiro** (Cloud Shell): re-emitir cobrindo só `app.foton.app.br` +
-   `getfoton.duckdns.org`; rodar `certbot renew --dry-run` para PROVAR a renovação
-   (encurta a espera de "ver uma renovação passar").
-2. **Zona → Cloudflare** (grátis): importar registros, `app` = A 152.67.46.113
-   **DNS-only (nuvem cinza)** — proxy laranja quebraria o certbot da VM; raiz e `www` →
-   Netlify (CNAME flattening / apex). Só então trocar os NS no registro.br.
-3. **Validar tudo com curl** (app, raiz, www, HTTPS dos três) e registrar em BENCHMARKS.
-4. R2 depois do "primeiro sucesso em evento médio" (palavra do dono): a conta já
-   existe; zona na Cloudflare deixa o domínio de fotos a um passo. Egress zero
-   (ADR-0011); destrava vídeo (ADR-0023) e tira as fotos do ciclo de backup ×8.
-   O passo 1 é executável já; 2–3 dependem dos acessos da pergunta P4.
+### 5. Reencontro por selfie (P1 confirmada)
+Dentro de UM evento, sempre (busca global continua proibida — PRODUTO §3b). Selfie
+nova compara contra convidados já registrados; casa com limiar duro + margem → reata
+ao guest_id (histórico volta); senão cria novo em silêncio. **Limiar: experimento
+ANTES do código** (selfie↔selfie mesma pessoa vs pessoas diferentes, fotos-teste/,
+número em BENCHMARKS). Copy LGPD: "Já esteve aqui? Tire uma selfie nova — ela é
+comparada só com quem já se registrou neste evento e descartada."
 
-## O que o dono precisa dar a esta sessão (comando e permissões)
+### 6. Câmera do app: lag/motion blur (relato do dono, hipótese JÁ localizada)
+`app/web/index.html:2379` — depois de abrir o stream, o app aplica
+`applyConstraints({width:{ideal:3840},height:{ideal:2160}})`: preview em 4K derruba o
+FPS em Android mediano, e é desperdício (o servidor reduz a 2048px). Experimento:
+medir FPS/fluidez do preview no aparelho com e sem a linha; capturar em ≥2048 e
+manter o preview leve (ou `ImageCapture.takePhoto()` para foto cheia sem stream 4K).
+Só aceitar com número dos dois lados. Importa dobrado agora que o Fóton Festa (P2)
+faz todo convidado virar câmera.
 
-- **Comando:** "continua do PROMPT-PROXIMA-SESSAO.md" + as respostas às 5 perguntas
-  abaixo (as que tiver).
-- **Token/admin:** autorizar a leitura de `C:\Users\Pichau\foton-acessos.md` (fica fora
-  do repo) para o item 0; ou colar só o token de admin.
-- **Cloud Shell** (item 5 passo 1 e logs do item 0): rodar os comandos que a sessão
-  preparar, ou dar a chave.
-- **Registro.br + Cloudflare** (item 5 passo 2): criar conta Cloudflare grátis e
-  autorizar a troca de NS — a sessão prepara tudo, o clique é do dono.
-- **Permissões do Claude Code:** aprovar edição de arquivos e os comandos
-  `bash tests/todos.sh`, `git add/commit/push`, `curl`. Deploy segue liberado com bom
-  senso (regra de 2026-08-30); itens 1 e 3 tocam galeria e `/selfie` — checar
-  `/admin/saude` antes do push desses dois.
+### 7. DNS — AUTORIZADO; executar nesta ordem, nada em paralelo
+Zona atual (enumerada em 2026-08-30): **só 3 registros A** — `foton.app.br`,
+`www` e `app` → `152.67.46.113`. **Sem MX, sem TXT** — migração trivial.
+1. **Certificado primeiro** (Cloud Shell, comando do dono):
+   `sudo certbot certificates` (anotar o cert-name) e depois re-emitir só com
+   `-d app.foton.app.br -d getfoton.duckdns.org` usando `--cert-name <o-nome-anotado>`;
+   provar com `sudo certbot renew --dry-run`. (`infra/dominio.sh` emite com `--expand`
+   — não usar para REDUZIR domínios; comando manual acima.)
+2. **Cloudflare** (conta já existe — é a do R2): adicionar o site `foton.app.br`,
+   copiar os 3 registros A; `app` **DNS-only (nuvem cinza)** — proxy laranja quebra o
+   certbot da VM; raiz e `www` já podem apontar para o Netlify
+   (`getfoton.netlify.app` / apex conforme o painel do Netlify instruir).
+3. **registro.br**: trocar os NS pelos dois que a Cloudflare der. Propaga em horas.
+4. Validar com curl: `https://app.foton.app.br/health`, raiz e `www` servindo o site,
+   HTTPS dos três. Números/estado em BENCHMARKS. O R2 vem depois do primeiro sucesso
+   em evento médio (palavra do dono) — a zona na Cloudflare deixa `fotos.foton.app.br`
+   a um passo.
 
-## As 5 perguntas (respostas do dono moldam os itens acima)
+### 8. Perfil `social` atribuível + coluna (completa a ADR-0030 — pré-requisito do Festa)
+Coluna `photographer.perfil` (ALTER guardado); `_perfil()`: coluna vence, senão deriva.
+Toggle no admin. O Fóton Festa (P2) vem em cima disto: papéis `dono`/`participante`
+por evento, participante envia via a sessão de convidado que já existe, limite POR
+PARTICIPANTE (PRODUTO §2 — nunca por IP). As perguntas abertas do §2 (quantas fotos,
+apagar a própria, conteúdo impróprio) precisam do dono ANTES do código do Festa.
 
-- **P1 — Reencontro por selfie, alcance:** na GLAMON (biometria permanente), a cliente
-  que volta semanas depois DEVE reencontrar todo o histórico com uma selfie nova?
-  E na Patrícia, reencontro só dentro da janela de 7 dias do evento — confirma?
-- **P2 — Ana:** o evento dela é (a) só ela envia fotos (perfil social = pro sem câmera,
-  barato, sai já) ou (b) os convidados também enviam (Fóton Festa, PRODUTO §2 — muda o
-  modelo para evento→participantes, mais caro)? Qual das duas na primeira versão? E a
-  Ana se auto-cadastra escolhendo "fotografo com celular" ou o dono atribui à mão?
-- **P3 — Contrato:** quem assina como organizador no casamento da Patrícia — ela ou os
-  noivos? Aceite eletrônico no app (checkbox, escala) ou assinado fora (mais forte,
-  ex.: GLAMON)? Pode ser os dois — qual o padrão?
-- **P4 — DNS/R2:** você tem a senha do registro.br do `foton.app.br` e autoriza mover a
-  zona para a Cloudflare (necessária para domínio próprio no R2 depois)? Feito na ordem
-  do item 5, sem downtime.
-- **P5 — Despejo GLAMON, número esperado:** quantas fotos e de que tamanho médio, de uma
-  vez? Referência medida: ~530 ms de CPU por foto (200 fotos ≈ 2 min de fila) e cada MB
-  no banco custa ×8 em backup. Acima de ~1.000 fotos grandes, o R2 sobe na fila.
+### 9. Contrato — quando o dono confirmar a recomendação da P3
+Checkbox no 1º evento + tabela `aceite` (conta, data/hora, versão) + `/termo` com o
+texto integral. Vira ADR.
 
-## O que NÃO fazer (continua valendo)
+## O que o dono dá a esta sessão
 
-Login e-mail/senha fica (ADR-0019/0026) · crédito fica cortado (ADR-0024) · FTP de
-câmera quieto · nenhuma credencial no repo (público) · não reprocessar foto entregue
-(ADR-0028) · `tests/ensaio.py` nunca em massa · busca global de rosto NÃO (PRODUTO §3b)
-· menores de idade fora de escopo (ADR-0029).
+Token de admin (item 0) · Cloud Shell (itens 0 e 7.1) · cliques na Cloudflare e no
+registro.br (7.2–7.3, ou deixa a sessão guiar tela a tela) · resposta da P5 e o fim
+da frase cortada ("4 e para…") · confirmação da recomendação da P3 · aprovação de
+edições, `tests/todos.sh`, `git push`, `curl`.
+
+## O que NÃO fazer (continua)
+
+Login e-mail/senha fica (ADR-0019/0026) · crédito cortado fica (ADR-0024) · FTP quieto ·
+nenhuma credencial no repo · não reprocessar foto entregue (ADR-0028) · `ensaio.py`
+nunca em massa · busca global de rosto NÃO · menores fora de escopo (ADR-0029) ·
+double-tap NUNCA na grade (briga com abrir/selecionar — só no lightbox).
 
 ## Comandos
 

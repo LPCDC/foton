@@ -20,6 +20,10 @@ O motor (foto → rosto → entrega certa) é o mesmo. O que muda é a casca e o
 | **GLAMON** — empresa, álbum interno | acervo permanente, mesmas pessoas toda semana | álbum, equipe | **no ar** (ADR-0021) |
 | **Ana** — cliente que fotografa **só com celular** | contrata também, mas sem câmera: é fotógrafa **e** convidada ao mesmo tempo (clarificado pelo dono em 2026-08-30) | festa, rolê | **§2, não feito** |
 
+**Adendo do dono (2026-08-30):** a interface da Ana não mostra nada de câmera
+profissional (a pele `social` já esconde câmera/FTP). "Conectar DSLR" fica registrado
+como **bônus de um futuro plano plus** — diferencial de upsell, não escopo de agora.
+
 **Virou código em 2026-08-30 (ADR-0030):** a "casca e o vocabulário" agora são um
 **perfil de conta** (`pro` | `empresa` | `social`) declarado pelo servidor — vocabulário,
 blocos do painel e tokens de cor por perfil. `social` está reservado esperando o fluxo
@@ -33,6 +37,14 @@ plataforma de evento. Ninguém serve quem fotografa o próprio rolê. É consumo
 ---
 
 ## 2. FÓTON FESTA — todo mundo é fotógrafo e convidado
+
+> **DECIDIDO PELO DONO (2026-08-30): esta é a versão da Ana.** Ela E os convidados
+> mandam fotos — não a versão "só ela envia". Consequências que ele mesmo apontou:
+> login/persistência do convidado ficam centrais, e o lag da câmera do app precisa
+> ser resolvido antes (hipótese localizada: preview forçado a 4K —
+> `PROMPT-PROXIMA-SESSAO.md` item 6). Branding do Festa: pensar como expert **na
+> hora de fazer**, não antes (pedido dele). As perguntas de "Decidir" abaixo
+> continuam abertas e precisam de resposta antes do código.
 
 **A ideia:** numa festa todos estão interligados. Qualquer um fotografa, qualquer um
 recebe as fotos em que aparece. **Só o criador apaga.**
