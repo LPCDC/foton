@@ -95,14 +95,21 @@ manter o preview leve (ou `ImageCapture.takePhoto()` para foto cheia sem stream 
 Só aceitar com número dos dois lados. Importa dobrado agora que o Fóton Festa (P2)
 faz todo convidado virar câmera.
 
-### 7. DNS — AUTORIZADO; executar nesta ordem, nada em paralelo
-Zona atual (enumerada em 2026-08-30): **só 3 registros A** — `foton.app.br`,
-`www` e `app` → `152.67.46.113`. **Sem MX, sem TXT** — migração trivial.
-1. **Certificado primeiro** (Cloud Shell, comando do dono):
-   `sudo certbot certificates` (anotar o cert-name) e depois re-emitir só com
-   `-d app.foton.app.br -d getfoton.duckdns.org` usando `--cert-name <o-nome-anotado>`;
-   provar com `sudo certbot renew --dry-run`. (`infra/dominio.sh` emite com `--expand`
-   — não usar para REDUZIR domínios; comando manual acima.)
+### 7. DNS — AUTORIZADO; executar TUDO NO MESMO DIA, nesta ordem
+Zona atual: **só 3 registros A** — `foton.app.br`, `www` e `app` → `152.67.46.113`.
+Sem MX, sem TXT. Cert real (saída do dono, 2026-08-31): **cert-name
+`getfoton.duckdns.org`**, cobre app+raiz+www+duckdns, expira 2026-11-27.
+⚠️ Depois do passo 1, raiz/`www` mostram aviso de certificado até o passo 3 terminar
+— por isso os três passos são da MESMA sessão/dia.
+1. **Certificado** (Cloud Shell, dono):
+   ```
+   ssh -o StrictHostKeyChecking=no -i ~/.ssh/foton.key ubuntu@152.67.46.113 \
+     'sudo certbot --nginx --cert-name getfoton.duckdns.org \
+        -d app.foton.app.br -d getfoton.duckdns.org \
+        --non-interactive --agree-tos && sudo certbot renew --dry-run'
+   ```
+   Se o certbot pedir confirmação para REMOVER domínios, rodar sem
+   `--non-interactive` e responder Update. (`infra/dominio.sh` só EXPANDE — não usar.)
 2. **Cloudflare** (conta já existe — é a do R2): adicionar o site `foton.app.br`,
    copiar os 3 registros A; `app` **DNS-only (nuvem cinza)** — proxy laranja quebra o
    certbot da VM; raiz e `www` já podem apontar para o Netlify

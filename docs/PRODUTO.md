@@ -36,8 +36,11 @@ plataforma de evento. Ninguém serve quem fotografa o próprio rolê. É consumo
 
 ---
 
-## 2. FÓTON FESTA — todo mundo é fotógrafo e convidado
+## 2. FOTO'N FIESTA! — todo mundo é fotógrafo e convidado
 
+> **NOME DECIDIDO PELO DONO (2026-08-31): "Foto'n Fiesta!"** — é o que vai no botão e
+> no branding da terceira porta (era "Fóton Festa" nos documentos antigos).
+>
 > **DECIDIDO PELO DONO (2026-08-30): esta é a versão da Ana.** Ela E os convidados
 > mandam fotos — não a versão "só ela envia". Consequências que ele mesmo apontou:
 > login/persistência do convidado ficam centrais, e o lag da câmera do app precisa
