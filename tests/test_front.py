@@ -102,6 +102,15 @@ todas = re.findall(r"(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(", js)
 checa("funcoes definidas em duplicata", sorted({f for f in todas if todas.count(f) > 1}), [])
 
 print("")
+print("[5b] Nenhum id repetido no HTML")
+# getElementById devolve o PRIMEIRO. Havia dois id="cam-video" (a selfie do convidado,
+# escondida, e o visor da camera): a camera ligava no video INVISIVEL — preview preto e
+# foto funcionando, porque o ImageCapture usa a trilha, nao o elemento.
+_ids = re.findall(r'id="([^"]+)"', html)
+_rep = sorted({i for i in _ids if _ids.count(i) > 1})
+checa("ids repetidos", _rep, [])
+
+print("")
 print("[6] Elementos que o JavaScript procura por id existem no HTML")
 ids_no_html = set(re.findall(r'id="([^"]+)"', html))
 procurados = set(re.findall(r"getElementById\(['\"]([^'\"]+)['\"]\)", js))
