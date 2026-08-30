@@ -298,8 +298,13 @@ def health():
     """Saude do PIPELINE, nao so 'o processo respondeu'.
 
     Antes isto devolvia tres constantes: dizia OK com o banco no chao. Agora bate no
-    banco de verdade e informa se o motor facial ja esta carregado (ele e preguicoso —
-    a PRIMEIRA foto do dia paga o carregamento, e e por isso que ela demora mais).
+    banco de verdade e informa se o motor facial esta carregado.
+
+    `engine_carregado:false` e um ALARME, nao um "ainda vai carregar": o motor e
+    aquecido no startup (`_startup` chama `_face()`), e aquela chamada esta dentro de
+    um try/except para o servidor subir mesmo se o modelo falhar. Entao false significa
+    que o warm-up FALHOU — o app aceita foto e nao reconhece ninguem. Antes disto, esse
+    estado era invisivel ate a festa comecar.
 
     Publico de proposito e por isso SEM numero de negocio (quantas fotos, quantos
     clientes) e sem PII — regra da secao 7. O detalhe fica em /admin/saude."""
@@ -561,6 +566,7 @@ def photos(event: str):
 def ingerir_bytes(event: str, raw: bytes):
     """Coração do pipeline — usado pelo upload do app E pelo FTP da câmera."""
     e = _ev(event, create=True)
+    t0 = time.time()
     sha = store.sha_de(raw)
     ja = store.foto_por_sha(event, sha)      # retentativa do FTP nao vira foto repetida
     if ja:
@@ -575,6 +581,10 @@ def ingerir_bytes(event: str, raw: bytes):
         g = _emb(gemb)
         if any(float(g @ f) >= THRESH for f in faces):
             store.salva_match(gid, pid)
+    # A CAMERA passa por aqui (o /ingest e o caminho do celular). Sem esta linha o P95
+    # ficava cego justamente para o caminho principal do piloto — e o numero do SLA
+    # mediria so o celular da fotografa, nao a R8.
+    _marca_latencia(int((time.time() - t0) * 1000))
     return pid, len(faces)
 
 @app.post("/ingest")
@@ -720,7 +730,12 @@ def admin_latencias(authorization: str = Header(None)):
     Janela em memoria (500 ultimas). Zera no restart de proposito: e um termometro de
     'como esta AGORA', nao um historico — historico medido vive em docs/BENCHMARKS.md.
     Duplicata nao entra na conta: ela nao processa, e entraria como latencia falsamente
-    baixa, maquiando o P95."""
+    baixa, maquiando o P95.
+
+    Cobre os DOIS caminhos: /ingest (celular) e ingerir_bytes (FTP da camera). Ficaram
+    na mesma janela porque a pergunta do SLA e "a foto chega em quanto tempo", nao "por
+    onde ela entrou"; separar por origem so vale a pena quando houver numero que mostre
+    que os dois caminhos tem custos diferentes."""
     _admin(authorization)
     return {"amostras": len(_LATS),
             "p50_ms": _pct(_LATS, 50), "p95_ms": _pct(_LATS, 95), "p99_ms": _pct(_LATS, 99),

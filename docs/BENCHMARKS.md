@@ -407,9 +407,21 @@ legítimas. Duplicata devolve o `photo_id` original + `duplicada:true` + os mesm
 ### `/health` deixou de mentir
 
 Antes devolvia **três constantes** — dizia `ok:true` com o banco no chão. Agora bate no
-banco (`db_ok`, `db_ms`) e informa se o motor facial já carregou (`engine_carregado`) —
-ele é preguiçoso, e é por isso que a **primeira foto do dia demora mais**. Continua
+banco (`db_ok`, `db_ms`) e informa o estado do motor facial (`engine_carregado`). Continua
 público, então **sem número de negócio e sem PII** (§7); o detalhe fica em `/admin/saude`.
+
+> **Correção de um erro meu (mesma sessão):** ao escrever isto afirmei que o motor era
+> preguiçoso e que "a primeira foto do dia paga o carregamento". **Está errado** — o
+> `_startup` chama `_face()` e aquece o modelo no boot ([rig.py:265-268](../app/test_rig/rig.py)).
+> A afirmação foi feita sem ler o startup; a regra do CLAUDE.md §6 ("proibido inventar")
+> vale para explicação, não só para número. O significado **verdadeiro** do campo é mais
+> útil: como o warm-up está dentro de um `try/except` (para o servidor subir mesmo se o
+> modelo falhar), **`engine_carregado:false` é ALARME** — o app aceita foto e não
+> reconhece ninguém. Antes, esse estado era invisível até a festa começar.
+
+**Medido em produção** logo após o deploy (2026-08-30):
+`{"ok":true,"db_ok":true,"db_ms":0,"engine_carregado":true}` — primeira vez que a VM
+afirma que o banco respondeu, em vez de devolver uma constante.
 
 ### `/admin/latencias` — o número do SLA
 
@@ -427,3 +439,18 @@ isso está travado por teste.
 duplicata devolve a mesma entrega; foto diferente continua entrando; mesma foto em outro
 evento não é duplicata; duplicata devolve os convidados já entregues; health não vaza
 número de negócio; latências exige admin.
+
+### Fios apertados depois da primeira volta (mesma sessão)
+
+- **O caminho da CÂMERA não registrava latência.** `_marca_latencia` só estava no
+  `/ingest` (celular); o FTP passa por `ingerir_bytes`. O P95 estava cego justamente para
+  o caminho principal do piloto — mediria o celular da fotógrafa, não a R8. Corrigido; a
+  janela agora cobre os dois caminhos.
+- **Idempotência no caminho do FTP não tinha teste** — e é onde a duplicata é mais
+  provável (retentativa da câmera). Coberto agora.
+- **A pergunta que decide o dedupe, respondida com teste:** *o convidado que chega DEPOIS
+  ainda casa com uma foto cuja segunda cópia foi recusada?* **Sim.** A duplicata não cria
+  foto nova, mas os rostos da original continuam no índice `face`, e `/selfie` faz backfill
+  contra `rostos_de(evento)`. Travado por dois testes (o convidado tardio casa, e a foto
+  chega no feed dele) para ninguém "otimizar" isso por engano. Sem essa garantia a
+  idempotência seria uma troca ruim: economizaria CPU e perderia entrega.

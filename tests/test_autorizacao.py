@@ -525,7 +525,7 @@ C.post("/admin/empresa", data={"email": "perfil@t.com", "ligado": "0"}, headers=
 checa("desligada, volta a 'pro'",
       C.get("/me", headers=h(_pl["token"])).json().get("perfil"), "pro")
 
-print("\n[24] Confiabilidade: idempotencia de ingestao, health do pipeline e latencia")
+print("\n[26] Confiabilidade: idempotencia de ingestao, health do pipeline e latencia")
 # Cenario real: a camera reenvia por retentativa, ou o celular com internet ruim manda o
 # lote de novo. Antes, a MESMA foto virava duas linhas, dois processamentos e duas copias
 # na galeria do convidado. O convidado via a mesma foto duplicada.
@@ -552,6 +552,29 @@ _sf = C.post("/selfie", data={"event": "IDEM1", "consent": "true"},
              files={"file": ("s.jpg", jpeg(), "image/jpeg")}).json()
 _r5 = C.post("/ingest", data={"event": "IDEM1"}, files={"file": ("a.jpg", _foto, "image/jpeg")}, headers=h(dona)).json()
 checa("duplicata devolve os convidados ja entregues", _sf["guest_id"] in _r5["matched_guests"], True)
+
+# A PERGUNTA QUE DECIDE O DEDUPE: o convidado que chega DEPOIS ainda casa com a foto?
+# Se pular o reprocessamento deixasse o convidado atrasado sem a foto, a idempotencia
+# seria uma troca ruim (economiza CPU, perde entrega). Nao deixa: a duplicata nao cria
+# foto nova, mas os ROSTOS da original continuam no indice, e a selfie faz backfill
+# contra rostos_de(evento). Travado aqui para ninguem "otimizar" isso por engano.
+C.post("/event", data={"code": "TARDE1", "brand": "DONA"}, headers=h(dona))
+C.post("/ingest", data={"event": "TARDE1"}, files={"file": ("a.jpg", _foto, "image/jpeg")}, headers=h(dona))
+_dup = C.post("/ingest", data={"event": "TARDE1"}, files={"file": ("a.jpg", _foto, "image/jpeg")}, headers=h(dona)).json()
+checa("(cenario) a 2a foi mesmo tratada como duplicata", _dup.get("duplicada"), True)
+_tardio = C.post("/selfie", data={"event": "TARDE1", "consent": "true"},
+                 files={"file": ("s.jpg", jpeg(), "image/jpeg")}).json()
+checa("convidado que chega DEPOIS casa com a foto deduplicada", len(_tardio["matches"]), 1)
+_feed = C.get(f"/feed?event=TARDE1&guest_id={_tardio['guest_id']}").json()
+checa("e a foto chega no feed dele", len(_feed["photos"]), 1)
+
+# o caminho da CAMERA (FTP) usa ingerir_bytes, nao /ingest: dedupe vale la tambem
+C.post("/event", data={"code": "FTP1", "brand": "DONA"}, headers=h(dona))
+_p1, _n1 = rig.ingerir_bytes("FTP1", _foto)
+_p2, _n2 = rig.ingerir_bytes("FTP1", _foto)     # retentativa da camera
+checa("retentativa do FTP devolve a mesma foto", _p2, _p1)
+checa("e nao duplica no evento", len(C.get("/photos?event=FTP1").json()["photos"]), 1)
+checa("e devolve o mesmo n_faces", _n2, _n1)
 
 # health deixou de ser tres constantes: bate no banco de verdade
 _hj = C.get("/health").json()
