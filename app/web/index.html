@@ -839,6 +839,18 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
     <div class="eyebrow-sm">Créditos</div>
     <div class="tips" id="adm-credito"></div>
 
+    <div class="eyebrow-sm">Criar conta</div>
+    <div class="tips">
+      <p class="muted" style="font-size:16px;margin:0 0 10px">Cria login e senha na hora, sem esperar a pessoa se cadastrar sozinha — já sai com a pele certa.</p>
+      <div class="field"><label>E-mail (login)</label><input id="adm-nova-email" autocomplete="off" autocapitalize="off"></div>
+      <div class="field"><label>Senha</label><input id="adm-nova-senha" autocomplete="off"></div>
+      <div class="field"><label>Nome (opcional)</label><input id="adm-nova-nome" autocomplete="off"></div>
+      <div class="field"><label>Marca (opcional)</label><input id="adm-nova-marca" autocomplete="off"></div>
+      <button class="btn ghost sm block" id="adm-nova-pele-btn" onclick="admEscolherPelaNova()">Pele: automática</button>
+      <button class="btn primary sm block" style="margin-top:10px" onclick="admCriarConta()">Criar conta</button>
+      <div id="adm-nova-resultado" class="note" style="text-align:left;margin-top:8px"></div>
+    </div>
+
     <div class="eyebrow-sm">Contas</div>
     <p class="note" style="text-align:left;margin:0 0 10px">As <b>senhas não aparecem aqui e não podem aparecer</b>: o servidor guarda só um resumo irreversível delas (PBKDF2 com sal). É o que faz um vazamento do banco não virar um vazamento de contas. Para dar acesso a alguém, use <b>Trocar senha</b> e mande a nova.</p>
     <div id="adm-lista"></div>
@@ -3142,9 +3154,11 @@ async function admContatos(revelar){
 /* A PELE da conta (ADR-0030): so vocabulario e blocos da tela, nenhum poder.
    'social' e a pele do Foton Festa — existia no app e era inalcancavel ate o
    servidor passar a devolve-la. Vazio = automatica (empresa -> empresa, senao pro). */
-async function admPerfil(email, atual){
-  /* prompt() NAO serve aqui: em PWA instalado no Android ele aparece sem a caixa de
-     digitar — foi exatamente o que aconteceu. Escolha precisa ser BOTAO. */
+/* Sheet de escolha de pele — usado tanto para mudar a pele de uma conta que ja existe
+   quanto para escolher a pele na hora de criar uma conta nova pelo painel.
+   prompt() NAO serve aqui: em PWA instalado no Android ele aparece sem a caixa de
+   digitar — foi exatamente o que aconteceu. Escolha precisa ser BOTAO. */
+function pelaSheet(atual, legenda, aoEscolher){
   const opcoes=[
     ['',        'Automática', 'empresa vira "empresa", o resto vira "pro"'],
     ['pro',     'Pro',        '"meu painel" · "Seus eventos"'],
@@ -3159,16 +3173,15 @@ async function admPerfil(email, atual){
     +'border-radius:20px 20px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));'
     +'max-height:86vh;overflow:auto';
   cx.innerHTML='<div style="font-weight:600;font-size:18px;margin-bottom:4px">Pele da tela</div>'
-    +'<p class="note" style="text-align:left;margin:0 0 14px">'+String(email).replace(/[<>]/g,'')
+    +'<p class="note" style="text-align:left;margin:0 0 14px">'+String(legenda).replace(/[<>]/g,'')
     +' — muda só as palavras da tela. <b>Não dá poderes.</b></p>';
   opcoes.forEach(([val,rot,desc])=>{
     const b=document.createElement('button');
-    const atualn=(atual||'');
-    const marcada = atualn===val;
+    const marcada = (atual||'')===val;
     b.className='btn '+(marcada?'primary':'ghost')+' block';
     b.style.cssText='text-align:left;margin-bottom:8px';
     b.innerHTML=`<b>${rot}</b>${marcada?' ✓':''}<br><span class="sub" style="opacity:.75">${desc}</span>`;
-    b.onclick=()=>{ esc.remove(); admSalvarPerfil(email,val); };
+    b.onclick=()=>{ esc.remove(); aoEscolher(val); };
     cx.appendChild(b);
   });
   const c=document.createElement('button');
@@ -3178,6 +3191,9 @@ async function admPerfil(email, atual){
   esc.appendChild(cx);
   esc.onclick=e=>{ if(e.target===esc) esc.remove(); };
   document.body.appendChild(esc);
+}
+async function admPerfil(email, atual){
+  pelaSheet(atual, email, val => admSalvarPerfil(email, val));
 }
 /* nome com prefixo adm: `aplicarPerfil()` (sem argumentos) ja existe e e outra
    coisa — e quem pinta a pele na tela do proprio usuario. */
@@ -3189,6 +3205,38 @@ async function admSalvarPerfil(email, perfil){
     toast('Pele: '+(await r.json()).perfil+' ✓');
     abrirAdmin();
   }catch(e){ toast('Erro de conexão.'); }
+}
+
+/* Criar conta pelo painel (admin), com a pele ja escolhida — a conta nasce
+   NAO-admin e NAO-empresa de verdade, so com a pele visual pedida. */
+let admNovaPele='';
+function admEscolherPelaNova(){
+  pelaSheet(admNovaPele, 'a conta nova', val=>{
+    admNovaPele = val;
+    const rot = {'':'automática', pro:'Pro', empresa:'Empresa', social:'Social'}[val] ?? val;
+    document.getElementById('adm-nova-pele-btn').textContent = 'Pele: ' + rot;
+  });
+}
+async function admCriarConta(){
+  const $=id=>document.getElementById(id);
+  const email=($('adm-nova-email').value||'').trim();
+  const senha=$('adm-nova-senha').value||'';
+  const nome=$('adm-nova-nome').value||'';
+  const marca=$('adm-nova-marca').value||'';
+  const res=$('adm-nova-resultado');
+  if(!email || senha.length<6){ res.textContent='Preencha e-mail e uma senha de pelo menos 6 caracteres.'; return; }
+  try{
+    const r=await fetch(API+'/admin/conta/criar',{method:'POST',headers:auth(),
+      body:new URLSearchParams({email,senha,nome,marca,perfil:admNovaPele})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){ res.textContent=j.detail||'Não consegui criar.'; return; }
+    res.textContent=`Criada: ${j.email} — pele ${j.perfil} — ${j.credits} créditos.`;
+    toast('Conta criada ✓');
+    $('adm-nova-email').value=''; $('adm-nova-senha').value='';
+    $('adm-nova-nome').value=''; $('adm-nova-marca').value='';
+    admNovaPele=''; $('adm-nova-pele-btn').textContent='Pele: automática';
+    abrirAdmin();
+  }catch(e){ res.textContent='Erro de conexão.'; }
 }
 
 /* Dar/tirar o cracha de admin. O peso disto esta no aviso: admin le nome e telefone

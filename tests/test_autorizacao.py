@@ -664,5 +664,37 @@ C.post("/admin/perfil", data={"email": "pele@t.com", "perfil": "social"}, header
 checa("e a pele definida VENCE a derivacao", C.get("/me", headers=h(_pt)).json().get("perfil"), "social")
 checa("mesmo assim ela continua sendo empresa de verdade", C.get("/me", headers=h(_pt)).json().get("empresa"), True)
 
+print("\n[29] Admin CRIA conta pelo painel, ja com a pele escolhida")
+checa("anonimo nao cria conta",
+      C.post("/admin/conta/criar", data={"email": "nova1@t.com", "senha": "senha123"}).status_code, 403)
+checa("fotografa comum nao cria conta",
+      C.post("/admin/conta/criar", data={"email": "nova1@t.com", "senha": "senha123"}, headers=h(dona)).status_code, 403)
+checa("senha curta e recusada",
+      C.post("/admin/conta/criar", data={"email": "nova1@t.com", "senha": "123"}, headers=h(chefe)).status_code, 400)
+checa("pele invalida e recusada",
+      C.post("/admin/conta/criar", data={"email": "nova1@t.com", "senha": "senha123", "perfil": "banana"},
+             headers=h(chefe)).status_code, 400)
+checa("login reservado de admin nao pode ser criado pelo painel tambem",
+      C.post("/admin/conta/criar", data={"email": "reservado@t.com", "senha": "senha123"},
+             headers=h(chefe)).status_code, 403)
+checa("email ja existente da 409",
+      C.post("/admin/conta/criar", data={"email": "dona@t.com", "senha": "senha123"}, headers=h(chefe)).status_code, 409)
+
+_nv = C.post("/admin/conta/criar",
+             data={"email": "nova1@t.com", "senha": "senha123", "nome": "Nova", "perfil": "social"},
+             headers=h(chefe))
+checa("cria com sucesso", _nv.status_code, 200)
+checa("nasce com 100 creditos (mesmo padrao do /signup)", _nv.json().get("credits"), 100)
+checa("nasce ja com a pele escolhida", _nv.json().get("perfil"), "social")
+
+_nvtok = C.post("/login", data={"email": "nova1@t.com", "senha": "senha123"}).json()["token"]
+checa("login confirma a pele", C.get("/me", headers=h(_nvtok)).json().get("perfil"), "social")
+# PERFIL NAO ABRE PORTA tambem na criacao: pele 'social' nao te torna admin nem empresa
+checa("conta criada nao nasce admin", C.get("/me", headers=h(_nvtok)).json().get("admin"), False)
+checa("conta criada nao nasce empresa de verdade", C.get("/me", headers=h(_nvtok)).json().get("empresa"), False)
+# pele vazia (padrao) continua derivando pro, igual /signup
+_nv2 = C.post("/admin/conta/criar", data={"email": "nova2@t.com", "senha": "senha123"}, headers=h(chefe))
+checa("sem pele escolhida, cai no padrao 'pro'", _nv2.json().get("perfil"), "pro")
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

@@ -1008,6 +1008,33 @@ def conta_credenciais(atual: str = Form(...), novo_login: str = Form(""), nova_s
             "credits": d["credits"], "credits_total": d["credits_total"],
             "ftp_mudou": login != c["email"].strip().lower()}
 
+@app.post("/admin/conta/criar")
+def admin_conta_criar(email: str = Form(...), senha: str = Form(...), nome: str = Form(""),
+                       marca: str = Form(""), perfil: str = Form(""), authorization: str = Header(None)):
+    """Cria uma conta pelo painel, com a PELE (pro/empresa/social) já escolhida na hora.
+
+    Mesma trava do /signup aberto (não pode reivindicar login de admin) e a mesma
+    validação do /admin/perfil — perfil é só pele (ADR-0030), não dá poder nenhum.
+    A conta nasce NÃO-admin e NÃO-empresa de verdade, mesmo que a pele escolhida
+    seja 'empresa'; poder é a coluna `empresa`/`admin`, sempre à parte."""
+    a = _admin(authorization)
+    alvo = email.strip().lower()
+    if alvo in ADMINS:
+        raise HTTPException(403, "esse login é reservado")
+    if len(senha) < 6:
+        raise HTTPException(400, "senha muito curta (mínimo 6)")
+    p = (perfil or "").strip().lower()
+    if p and p not in PERFIS:
+        raise HTTPException(400, "perfil inválido (use pro, empresa ou social — ou vazio para o padrão)")
+    if not store.cria_conta(alvo, senha, nome, marca):
+        raise HTTPException(409, "já existe uma conta com esse e-mail")
+    if p:
+        store.marca_perfil(alvo, p)
+    log.info('{"stage":"admin","acao":"conta_criada","alvo":"%s","por":"%s"}' % (alvo, a["email"].lower()))
+    d = store.conta(alvo)
+    return {"email": alvo, "nome": d["nome"], "marca": d["marca"],
+            "credits": d["credits"], "credits_total": d["credits_total"], "perfil": _perfil(d)}
+
 @app.post("/admin/conta/excluir")
 def admin_conta_excluir(email: str = Form(...), authorization: str = Header(None)):
     """Limpeza de suporte: apagar conta de teste sem precisar da senha dela."""

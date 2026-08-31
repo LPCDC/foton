@@ -193,9 +193,11 @@ salvar/compartilhar/ZIP · seleção múltipla por toque longo · QR por foto (A
 minha selfie e sair"** visível na galeria (LGPD Art. 18, testado — ADR-0029) · PWA ·
 pré-cadastro funciona (criador sobe fotos antes → reconhecido na 1ª selfie).
 
-**Admin:** resumo · disco · contas + histórico de crédito · marcar empresa · retenção
-por conta · zerar dados · compactar banco · trocar senha de conta · testar foto de
-câmera · adotar órfãos · forçar expiração LGPD · contatos.
+**Admin:** resumo · disco · contas + histórico de crédito · **criar conta já com a pele
+escolhida** (`/admin/conta/criar`, 2026-08-31 — extensão da ADR-0030, perfil continua
+sem dar poder) · marcar empresa · retenção por conta · zerar dados · compactar banco ·
+trocar senha de conta · testar foto de câmera · adotar órfãos · forçar expiração LGPD ·
+contatos.
 
 **Perfis (ADR-0030):** servidor declara `perfil` em `/signup`/`/login`/`/me`; front
 aplica vocabulário/blocos/tokens (`aplicarPerfil()`); `social` reservado à Fiesta.
