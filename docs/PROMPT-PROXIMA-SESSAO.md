@@ -34,11 +34,13 @@ tarefa. Nada é "pronto" sem rodar e ler a saída.
 
 ## O que fazer, em ordem de risco
 
-### 1. Backup fora da VM — ÚNICO RISCO IRREVERSÍVEL, faça primeiro
-`infra/backup-externo.sh` está escrito e **nunca rodou**. As 7 cópias moram no mesmo
-disco da mesma VM: perder a máquina (Oracle Always Free pode recuperar instância) leva o
-acervo do GLAMON junto. Precisa: bucket no R2 + chaves + Cloud Shell do dono.
-Instruções no topo do script. Depois vira ADR. Ver `docs/BACKUP.md`.
+### 1. ~~Backup fora da VM~~ — FEITO (2026-08-31, ADR-0031)
+`infra/backup-externo.sh` rodou em produção (Cloud Shell do dono). Banco de produção
+(**54 MB**, medido pela primeira vez) enviado e confirmado no bucket `foton-backup`
+(Cloudflare R2), timer diário instalado. O único risco irreversível do sistema virou
+"perco um dia", não mais "perco tudo". Detalhe em `docs/DECISIONS.md` ADR-0031 e
+`docs/BACKUP.md`. **Ainda falta:** rodar `restaurar-teste.sh` puxando a cópia *do R2*
+de volta (só a restauração local foi provada até agora).
 
 ### 2. Certificado — PRAZO DURO: antes de 28/10/2026
 Agora que raiz e `www` saíram da VM, o certbot **não consegue mais validá-los** e a
@@ -68,8 +70,9 @@ flags (a tabela `config` já existe) · auditoria administrativa.
 - **Idempotência nunca rodou em produção.** Mandar a mesma foto 2× pelo app deve
   devolver `"duplicada": true`.
 - **`/admin/latencias` sem amostras de evento real** — o P95 só significa algo depois.
-- **Item 0 (saúde do GLAMON)** nunca foi coletado: contagem, bytes, disco. Decide a
-  urgência do R2. Precisa do token admin do dono.
+- **Item 0 (saúde do GLAMON)** — o **total** do banco agora se sabe (54 MB, via
+  backup do ADR-0031), mas a quebra por conta/evento (contagem, bytes, disco) nunca foi
+  coletada. Decide a urgência do R2. Precisa do token admin do dono.
 
 ## O que NÃO fazer
 

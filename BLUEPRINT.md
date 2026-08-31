@@ -101,8 +101,9 @@ docs/
   ARCHITECTURE.md, ROADMAP.md, GAUNTLET.md (parte antiga)   histórico, aviso no topo
 ```
 
-**Dados (nunca apagar):** `/var/lib/foton/foton.db` + `backup/` (7 cópias diárias —
-cada MB no banco custa **×8** em disco).
+**Dados (nunca apagar):** `/var/lib/foton/foton.db` + `backup/` (7 cópias diárias locais)
++ cópia diária fora da VM no Cloudflare R2 (`foton-backup`, 30 dias — ADR-0031,
+2026-08-31). Banco de produção: **54 MB** medido.
 
 ## 5. Como fazer deploy
 

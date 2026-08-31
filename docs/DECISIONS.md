@@ -748,3 +748,60 @@ ao de hoje; `social` inexistente cai em `pro`.
 **Consequências.** `/signup` e `/login` passam a devolver também `empresa` (antes só o
 `/me` devolvia) e `perfil`; testes novos nas seções [25] de `test_autorizacao.py` e
 `test_front.py` guardam o contrato.
+
+---
+
+## ADR-0031 — Backup fora da VM: instalado, rodou, provou
+
+**Data:** 2026-08-31 · **Estado:** aceita — em produção
+
+**Decisão.** `infra/backup-externo.sh` foi executado (Cloud Shell da Oracle, com o dono
+logado) e instalado como serviço permanente na VM. O banco de produção agora tem uma
+**terceira cópia**, fora do disco da VM: Cloudflare R2, bucket `foton-backup`, conta
+gratuita até 10 GB/mês.
+
+**Contexto.** Era o único risco irreversível do sistema (`docs/BACKUP.md` item 1): as 7
+cópias diárias moravam no mesmo disco da mesma VM que o banco — perder a máquina (Always
+Free pode ser recuperada por inatividade) levava o acervo do GLAMON junto com elas.
+
+**Como foi feito.** Sessão conduzida por agente com acesso ao Chrome já autenticado do
+dono (extensão `claude-in-chrome`), dirigindo o navegador real dele:
+1. Bucket R2 `foton-backup` criado no painel Cloudflare (conta `Luizoak@gmail.com`,
+   mesma conta da zona DNS de `foton.app.br`), região automática, storage Standard,
+   privado.
+2. Token de API criado com escopo **restrito ao bucket** (`Object Read & Write`,
+   não "todos os buckets"), tipo **Account API Token** (sobrevive independente da
+   sessão pessoal — é o recomendado da própria Cloudflare para sistema de produção).
+3. **Regra seguida à risca:** o agente nunca digitou a chave nem o segredo em campo
+   nenhum — só o dono copiou do painel Cloudflare e colou no Cloud Shell
+   (`export R2_CHAVE=...` / `export R2_SEGREDO=...`). O agente só preparou as variáveis
+   não sensíveis (`R2_CONTA`, `R2_BALDE`) e disparou o comando final via SSH.
+4. Script instalou `rclone`, gravou as credenciais em `/root/.config/rclone` (modo 600,
+   só root lê), criou o timer diário (`foton-backup-externo.timer`, depois do backup
+   local) e **provou na hora**: enviou o backup mais recente e listou o bucket.
+
+**Prova real (2026-08-31):**
+```
+enviado: foton-2026-08-31.db (54M)
+-- o que existe no R2 hoje --
+ 55709696 foton-2026-08-31.db
+PRONTO. O acervo agora sobrevive a perda da VM.
+```
+
+**O que isso muda em `docs/BACKUP.md`.** O item 1 ("Perder a máquina") deixa de ser
+`SCRIPT PRONTO, FALTA RODAR` — está resolvido. Os itens 2 (`restaurar-teste.sh` no
+timer, recusando sobrescrever quando reprovar) e 3 (tirar o `cp` de emergência) continuam
+abertos, mas já não são o risco catastrófico — agora é "perco um dia", não "perco tudo".
+
+**O que ainda falta, registrado para não perder de vista:**
+- O tamanho real do banco em produção nunca tinha sido medido antes: **54 MB** (era
+  `UNKNOWN — REQUIRES EXPERIMENT` em `docs/BACKUP.md`). Cabe folgado no teto grátis do
+  R2 (10 GB) por muito tempo.
+- Retenção no R2 é 30 dias (script já cuida disso); local continua 7 cópias rotativas.
+- `restaurar-teste.sh` prova que um backup *local* restaura — ainda não foi rodado
+  puxando a cópia *do R2* de volta. Prova de restauração completa a partir da nuvem
+  segue como `UNKNOWN — REQUIRES EXPERIMENT`.
+
+**Consequências.** Nenhuma mudança de código nesta sessão — é infraestrutura pura. O
+segredo do R2 nunca passou pelo repositório, pelo chat ou por este documento (CLAUDE.md
+§7). O timer roda diariamente, sem intervenção manual daqui pra frente.

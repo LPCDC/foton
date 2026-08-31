@@ -49,22 +49,20 @@ ssh ubuntu@152.67.46.113 'bash -s' < infra/restaurar-teste.sh
 
 ## O que o backup atual NÃO protege — em ordem de gravidade
 
-### 1. Perder a máquina (o buraco grande) — `SCRIPT PRONTO, FALTA RODAR`
+### 1. Perder a máquina (o buraco grande) — `RESOLVIDO (2026-08-31, ADR-0031)`
 
-As cópias moram em `/var/lib/foton/backup`, **no mesmo disco da mesma VM** que o banco.
-Isso protege contra apagar por engano e contra corrupção do arquivo. **Não protege contra
-perder a VM** — falha de disco, instância encerrada pela Oracle (é Always Free: pode ser
-recuperada por inatividade), conta suspensa. Nesse cenário o banco e as 7 cópias somem
-juntos, e o acervo do GLAMON vai junto.
+As cópias locais moram em `/var/lib/foton/backup`, **no mesmo disco da mesma VM** que o
+banco. Isso protege contra apagar por engano e contra corrupção do arquivo — mas sozinho
+**não protegia contra perder a VM** — falha de disco, instância encerrada pela Oracle (é
+Always Free: pode ser recuperada por inatividade), conta suspensa.
 
-> **É o único risco irreversível do sistema hoje.** Tudo o mais tem conserto.
-> **Correção escrita:** `infra/backup-externo.sh` instala uma cópia diária no
-> Cloudflare R2 via rclone. Só envia backup que passa no `integrity_check` (mandar
-> para fora um arquivo corrompido é trocar um backup ruim por dois), nomeia por
-> **data** e não por dia-da-semana (isso também resolve o item 2 lá fora), guarda
-> 30 dias, e prova o funcionamento enviando na hora e listando o bucket.
-> **Falta rodar** — exige Cloud Shell e as chaves do R2, que não ficam no repositório.
-> Vira ADR quando rodar.
+> **Era o único risco irreversível do sistema.** Agora não é mais: `infra/backup-externo.sh`
+> rodou em produção (Cloud Shell, com o dono logado) e provou funcionando —
+> **`foton-2026-08-31.db` (54 MB) enviado e confirmado no bucket `foton-backup`
+> (Cloudflare R2)**. Timer diário instalado (`foton-backup-externo.timer`, roda depois
+> do backup local), credenciais gravadas só na VM (`/root/.config/rclone`, modo 600),
+> retenção de 30 dias lá fora. Detalhe completo em `docs/DECISIONS.md` ADR-0031.
+> **54 MB** também resolve o `UNKNOWN` de tamanho do banco que este documento tinha.
 
 ### 2. Corrupção silenciosa vence a rotação — `RESOLVIDO FORA, ABERTO DENTRO`
 
@@ -86,11 +84,15 @@ depende de alguém lembrar.
 
 ## Ordem recomendada
 
-1. **Cópia para fora da VM** (item 1) — é o que muda o risco de "perco tudo" para "perco
-   um dia".
+1. ~~**Cópia para fora da VM**~~ — **feito** (2026-08-31): risco virou "perco um dia",
+   não mais "perco tudo".
 2. `restaurar-teste.sh` no timer diário, com o backup recusando sobrescrever quando reprovar.
 3. Tirar o `cp` de emergência.
+4. (novo) Rodar `restaurar-teste.sh` puxando a cópia **do R2** de volta, não só a local —
+   prova de restauração completa a partir da nuvem ainda não existe.
 
-`UNKNOWN — REQUIRES EXPERIMENT`: tamanho real do banco em produção e quanto tempo leva
-uma restauração completa lá (aqui, num banco sintético, foi instantâneo). Depende do
-Cloud Shell — ver item 0.
+**Medido (2026-08-31):** tamanho real do banco em produção = **54 MB** (era `UNKNOWN`).
+
+`UNKNOWN — REQUIRES EXPERIMENT`: quanto tempo leva uma restauração completa **a partir
+do R2** em produção (aqui, num banco sintético local, foi instantâneo — não é a mesma
+coisa que puxar de volta da nuvem).

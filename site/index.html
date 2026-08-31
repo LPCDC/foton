@@ -175,7 +175,7 @@ footer a:hover{color:var(--champagne)}
       <a href="#como">Como funciona</a>
       <a href="#quem">Para quem</a>
       <a href="#verdade">Em que pé está</a>
-      <a class="navcta" href="mailto:luizoak@gmail.com?subject=Quero%20testar%20o%20F%C3%B3ton%20no%20meu%20evento">Falar comigo</a>
+      <a class="navcta" href="https://wa.me/5511945518801?text=Oi!%20Quero%20testar%20o%20F%C3%B3ton%20no%20meu%20evento." target="_blank" rel="noopener">Falar comigo</a>
     </div>
   </div>
 </nav>
@@ -186,7 +186,7 @@ footer a:hover{color:var(--champagne)}
     <h1>A foto no celular do convidado <em>ainda na festa.</em></h1>
     <p class="sub">Você fotografa. Quem aparece na foto <b>recebe as fotos dela sozinho</b>, enquanto a festa acontece — sem instalar app, sem cadastro, sem você separar nada.</p>
     <div class="acoes">
-      <a class="btn p" href="mailto:luizoak@gmail.com?subject=Quero%20testar%20o%20F%C3%B3ton%20no%20meu%20evento">Testar no meu próximo evento</a>
+      <a class="btn p" href="https://wa.me/5511945518801?text=Oi!%20Quero%20testar%20o%20F%C3%B3ton%20no%20meu%20evento." target="_blank" rel="noopener">Testar no meu próximo evento</a>
       <a class="btn g" href="https://app.foton.app.br">Entrar no app &rarr;</a>
     </div>
     <p class="selo"><b>Em produção, com fotógrafa real.</b> Nesta fase do piloto, sem custo.</p>
@@ -314,7 +314,7 @@ footer a:hover{color:var(--champagne)}
     <h2>Quer ser a próxima a entregar as fotos <em style="font-style:normal;color:var(--champagne)">antes de ir embora</em>?</h2>
     <p class="lead">Estou escolhendo poucas fotógrafas para rodar junto e ajustar o que for preciso. Nesta fase não se paga nada — o que eu quero é o seu evento real e a sua opinião sincera.</p>
     <div class="acoes">
-      <a class="btn p" href="mailto:luizoak@gmail.com?subject=Quero%20testar%20o%20F%C3%B3ton%20no%20meu%20evento">Quero testar no meu evento</a>
+      <a class="btn p" href="https://wa.me/5511945518801?text=Oi!%20Quero%20testar%20o%20F%C3%B3ton%20no%20meu%20evento." target="_blank" rel="noopener">Quero testar no meu evento</a>
       <a class="btn g" href="https://app.foton.app.br">Ver o app por dentro</a>
     </div>
     <p class="selo">Resposta minha, no mesmo dia.</p>
@@ -324,11 +324,22 @@ footer a:hover{color:var(--champagne)}
 <footer>
   <div class="wrap fin">
     <span>© 2026 Fóton · fotos na hora</span>
-    <span><a href="https://app.foton.app.br">Entrar no app</a> · <a href="mailto:luizoak@gmail.com">luizoak@gmail.com</a></span>
+    <span id="fEmail"></span>
   </div>
 </footer>
 
 <script>
+/* e-mail do rodape montado em runtime — nao fica em texto puro no HTML estatico,
+   que e o jeito mais comum de bot de spam/pishing colher endereco de pagina publica */
+(()=>{
+  const u='luizoak', d='gmail.com', el=document.getElementById('fEmail');
+  if(!el) return;
+  const a=document.createElement('a');
+  a.href='mailto:'+u+'@'+d;
+  a.textContent=u+'@'+d;
+  el.appendChild(a);
+})();
+
 /* aparecer ao rolar — só quando a pessoa não pediu menos animação */
 (()=>{
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
