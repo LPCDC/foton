@@ -1,5 +1,11 @@
 # DNS — separar o site de venda do app (runbook)
 
+> **Histórico — o site saiu do Netlify em 2026-08-31 (ADR-0032, `docs/DECISIONS.md`).**
+> A separação raiz+www / app descrita aqui aconteceu como planejado; o que mudou depois
+> foi só o hospedeiro do site (Netlify → Cloudflare Pages, mesmo crédito free do Netlify
+> ter esgotado). O raciocínio de DNS/certificado abaixo continua válido para entender
+> por que a ordem foi essa — só troque "Netlify" por "Cloudflare Pages" mentalmente.
+>
 > Estado medido em 2026-08-30, antes de mexer:
 >
 > | nome | aponta para | o que é |

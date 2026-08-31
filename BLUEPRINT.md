@@ -34,7 +34,7 @@ aparece caem na galeria dele ao vivo.
 |---|---|
 | **App (tudo)** | **https://app.foton.app.br** |
 | App (endereço antigo) | https://getfoton.duckdns.org — funciona, mesmo certificado |
-| **Site de marca** | `getfoton.netlify.app` — **NO AR** (repo ligado, `git push` publica; verificado 2026-08-30) |
+| **Site de marca** | `foton.app.br` + `www` — **Cloudflare Pages**, projeto `foton` (repo ligado, `git push` publica; migrado do Netlify 2026-08-31, ADR-0032, crédito free do Netlify esgotou) |
 | Servidor | Oracle Cloud Always Free, São Paulo · `152.67.46.113` |
 | Máquina | `VM.Standard.E2.1.Micro` — **1/8 OCPU**, 1 GB RAM + 2 GB swap (ver §11: dá para 16× isso de graça) |
 | Código | https://github.com/LPCDC/foton (público — ver §7) |
@@ -84,7 +84,8 @@ app/web/
   sw.js          service worker: cache-first SÓ de estáticos, NUNCA resposta com
                  sessão (armadilha paga, §7); Web Share Target (ADR-0018)
   manifest.webmanifest   share_target (campo "fotos")
-site/            site de marca (GSAP sem Lenis, ADR-0027) — publicado pelo Netlify
+site/            site de marca (GSAP sem Lenis, ADR-0027) — publicado pelo Cloudflare
+                 Pages (ADR-0032; era Netlify até 2026-08-31)
 tests/
   test_autorizacao.py   210 checagens — contrato de rotas, LGPD, admin, perfis
   test_front.py         31 checagens — front como TEXTO: node --check, ids, funções

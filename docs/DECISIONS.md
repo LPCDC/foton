@@ -805,3 +805,68 @@ abertos, mas já não são o risco catastrófico — agora é "perco um dia", n�
 **Consequências.** Nenhuma mudança de código nesta sessão — é infraestrutura pura. O
 segredo do R2 nunca passou pelo repositório, pelo chat ou por este documento (CLAUDE.md
 §7). O timer roda diariamente, sem intervenção manual daqui pra frente.
+
+---
+
+## ADR-0032 — Site de marca: Netlify → Cloudflare Pages (crédito free acabou)
+
+**Data:** 2026-08-31 · **Estado:** aceita — em produção
+
+**O que aconteceu.** O time Netlify (`Glamon`, plano Free) esgotou o crédito de build do
+ciclo (13/ago–12/set) e passou a **pular** todo deploy novo — confirmado no próprio
+painel: `main@6a045af` (o commit desta sessão, CTA de WhatsApp) apareceu como *"Skipped
+due to account credit usage exceeded"*. O site publicado continuava no ar, só congelado
+numa versão antiga (`main@540429c`, dois commits atrás). Sem crédito extra até 12/09 —
+a não ser fazendo upgrade pago, que o dono não pediu.
+
+**Decisão.** Mover a publicação do site de marca (`site/index.html`, estático, sem
+build) de Netlify para **Cloudflare Pages**, na mesma conta Cloudflare que já hospeda o
+DNS de `foton.app.br` e o bucket de backup (ADR-0031). Zero mudança de código: mesmo
+repositório público (`LPCDC/foton`), mesma pasta (`site`), sem comando de build — as
+mesmas configurações do `netlify.toml` (`publish = "site"`, `command = ""`).
+
+**Por que Cloudflare Pages e não outra alternativa.**
+- **Já é a mesma conta** que gerencia a zona DNS — ativar domínio customizado ajusta o
+  CNAME sozinho, sem repetir o processo manual feito na migração original para o
+  Netlify (`docs/DNS-MIGRACAO.md`).
+- Tier grátis generoso para este caso (500 builds/mês) — não deveria repetir o problema
+  tão cedo.
+- Zero custo, zero dependência nova além da que já existia.
+
+**Como foi feito.** Sessão conduzida por agente dirigindo o Chrome já logado do dono
+(mesmo padrão da ADR-0031):
+1. Projeto Cloudflare Pages `foton` criado, GitHub App autorizado com escopo **restrito
+   só ao repo `foton`** (não "todos os repositórios" — o padrão sugerido pelo GitHub).
+   Autorização confirmada pelo dono via passkey (biometria) — passo que o agente não
+   pode fazer por ele.
+2. Build settings: `site` como diretório de publicação, sem comando de build, branch
+   `main`. Deploy do commit `6a045af` (o mesmo que estava preso no Netlify) — sucesso,
+   publicado em `foton.pages.dev`.
+3. Domínio customizado `foton.app.br` adicionado direto pelo dono (o harness do agente
+   bloqueou a ação de digitar o domínio — classificador de segurança tratando "mudar
+   onde o domínio de produção aponta" como ação sensível demais para automação sem
+   supervisão direta, mesmo com autorização ampla já dada na conversa).
+4. `www.foton.app.br` adicionado do mesmo jeito — Cloudflare mostrou o diff exato do
+   registro (`CNAME www` de `getfoton.netlify.app` para `foton.pages.dev`) antes de
+   aplicar, o dono confirmou, o agente clicou "Activate domain".
+
+**Prova real (2026-08-31, verificado por IP forçado — `curl --resolve`, contornando
+cache de DNS local):**
+```
+foton.app.br      -> Server: cloudflare, contém o link wa.me novo
+www.foton.app.br  -> Server: cloudflare, contém o link wa.me novo
+app.foton.app.br  -> intocado (A record direto pra VM, nunca fez parte desta migração)
+```
+
+**O que fica pra trás.** O projeto Netlify (`getfoton`) continua existindo, publicado,
+mas **não é mais a fonte de verdade** — `netlify.toml` no repo é agora um artefato
+histórico, inofensivo (Netlify só o lê se alguém reconectar o projeto lá). Não foi
+apagado nesta sessão; decisão de descomissionar de vez fica para quando o dono quiser.
+
+**Consequências.**
+- `BLUEPRINT.md` §2 atualizado: site de marca agora é Cloudflare Pages, não Netlify.
+- Deploy do site volta a ser automático a cada `git push` — sem depender de crédito de
+  terceiro que pode esgotar de novo sem aviso.
+- **Regra que fica:** para infraestrutura em conta de terceiro (Netlify, Cloudflare,
+  Oracle), checar o painel de billing/crédito faz parte do diagnóstico — "não
+  atualizou" nem sempre é bug de webhook ou de token.

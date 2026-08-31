@@ -22,8 +22,10 @@ tarefa. Nada é "pronto" sem rodar e ler a saída.
 
 ## Estado em 2026-08-30 (tudo verificado em produção)
 
-- **Domínios SEPARADOS e funcionando:** `foton.app.br` + `www` → site novo no Netlify
-  (confirmado: `Server: Netlify`, HTTP 200, TLS ok); `app.foton.app.br` → o app na VM.
+- **Domínios SEPARADOS e funcionando:** `foton.app.br` + `www` → site novo no
+  **Cloudflare Pages** (migrado do Netlify em 2026-08-31 — o crédito free do Netlify
+  acabou e passou a pular deploys; ADR-0032; confirmado: `Server: cloudflare`, HTTP 200);
+  `app.foton.app.br` → o app na VM.
   NS na Cloudflare (`ernest`/`kristina`), os 3 registros em **DNS only** (cinza).
 - **Feito nesta sessão:** teto de 50 na galeria (~24× menos render) · zoom na foto
   (pinça/arrastar/duplo-toque) · arrastar-para-atualizar · confirmação ao sair · voltar
