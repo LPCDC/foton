@@ -472,3 +472,87 @@ descartar tudo acima de 2048 — **a foto entregue ficava idêntica**.
   lado que só o celular dele mediria.
 - Ainda `UNKNOWN — REQUIRES EXPERIMENT`: o número do FPS (antes/depois). A confirmação é
   qualitativa, do usuário; não foi instrumentada.
+
+---
+
+## Experimento de limiar — com pares de DIAS diferentes (2026-09-01)
+
+> Item 3 do `PROMPT-PROXIMA-SESSAO.md` (P1, destrava o "reencontro por selfie" do
+> GLAMON). **Não mude `THRESH` em `rig.py` com base só nisto** — leia as ressalvas
+> antes da tabela. Script e artefato reproduzível: `tests/experimento_limiar.py`.
+> Dados-fonte ficam em `fotos-teste/` (fora do git, CLAUDE.md §7).
+
+**Método.** Rodou o **mesmo modelo de produção** (buffalo_s, `app/test_rig/models/`)
+localmente e offline, sobre 79 fotos reais de celular (não a câmera do evento — fotos
+cedidas pelo dono, de vários encontros/famílias, **de 2023-05 a 2026-08**), calculando a
+**mesma similaridade que `rig.py` usa** para casar foto↔convidado: cosseno entre
+embeddings normalizados (`g @ f`), comparado contra o `THRESH` atual de **0,25**.
+
+- **304 rostos detectados** (`buffalo_s`, `det_size=640`, igual à produção).
+- **Pares IMPOSTORES (pessoas diferentes) — alta confiança, automático:** duas faces na
+  MESMA foto são garantidamente pessoas diferentes — não exige rotulagem manual. **868
+  pares**, similaridade **min -0,176 · p50 0,048 · max 0,450**.
+- **Pares GENUÍNOS (mesma pessoa, fotos diferentes) — dois métodos:**
+  1. **Rajada (1s de intervalo, mesma sessão):** 6 pessoas, cada uma em 2 fotos
+     tiradas a 1s de distância (`IMG_..._210854.jpg`/`_210855.jpg`), pareadas pela
+     posição no quadro. 6 pares.
+  2. **DIAS DIFERENTES (o dado que faltava):** o próprio script sugere os pares mais
+     parecidos entre fotos de datas diferentes (`experimento_limiar.py sugerir`), e só
+     depois eu confiro cada um visualmente antes de aceitar — não o contrário. Um homem
+     (barba rala, brinco, cabelo grisalho curto) foi confirmado em **3 dias distintos**:
+     2023-05-13, 2023-06-04 e 2023-07-02 (até **7 semanas de intervalo**, luz e fundo
+     diferentes). 15 pares dentro desse grupo de 6 fotos.
+  - Um segundo candidato que o script sugeriu (mulher, sim=0,71–0,73 entre
+    2026-03-27 e 2026-08-29) **não teve identidade confirmada com confiança visual** —
+    cabelo e formato de rosto pareciam diferentes o suficiente para não arriscar. Fica
+    de fora da amostra, registrado para não fingir uma certeza que não houve.
+
+| | n | min | p50 | max |
+|---|---|---|---|---|
+| Genuínos — mesma sessão (rajada 1s) | 6 | 0,555 | 0,910 | 0,940 |
+| Genuínos — **dias diferentes** (até 7 semanas) | 15 | 0,679 | 0,745 | 0,965 |
+| Genuínos — total | 21 | 0,555 | 0,770 | 0,965 |
+| Impostores (pessoas diferentes) | 868 | -0,176 | 0,048 | 0,450 |
+
+**A folga sobrevive ao teste mais difícil.** O pior par genuíno de DIAS DIFERENTES
+(0,679) continua bem acima do pior impostor (0,450) — folga de ~0,23, maior que a folga
+da rajada de 1s (~0,10). Isso é o oposto do que eu esperava (esperava a folga FECHAR
+com dias diferentes) e é um resultado bom, mas **n=15 pares vêm todos de UMA única
+pessoa** — não prova que vale para qualquer rosto, só que não foi refutado neste caso.
+
+**Achado que importa mais que o limiar em si:** existem pares IMPOSTORES (pessoas
+diferentes, fotos candid reais) com similaridade até **0,450** — quase o dobro do
+`THRESH=0,25` de produção. O comentário em `rig.py:25` ("iguais ~0,61, diferentes
+~0,01") descreve uma validação provavelmente feita sobre LFW (rostos recortados/
+alinhados de perto); fotos de festa em ângulo, contraluz, de lado, se comportam pior.
+**Isto não é evidência de que 0,25 está causando falso-positivo em produção hoje** — o
+match de evento (foto↔convidado) e o "reencontro" (selfie↔selfie entre dias) são usos
+diferentes — mas é sinal de que **0,25 tem menos margem de segurança do que o comentário
+sugeria**, e vale medir o match real de evento (não só selfie↔selfie) antes de decidir.
+Limiar sugerido pelo meio da faixa livre (0,450–0,555): **~0,50** — só para o uso de
+"reencontro", não para o match de evento dentro do THRESH atual.
+
+**Por que isto AINDA NÃO decide o limiar final — ressalvas sérias:**
+1. **Uma única identidade confirmada em dias diferentes.** Precisa de mais gente, mais
+   dias, mais variação de luz/pele/idade para confiar que 0,679 é representativo e não
+   sorte de um rosto fácil.
+2. **Uma tentativa de usar reflexo de espelho como par genuíno foi DESCARTADA pela
+   própria medição** — visualmente pareciam a mesma pessoa (foto/mirror em
+   `IMG_20260620_190007.jpg`), mas a similaridade medida (0,066) caiu dentro da faixa de
+   impostor. O julgamento visual errou e o número corrigiu — por isso o par foi excluído
+   em vez de forçado, e por isso o segundo candidato ambíguo (acima) também ficou de
+   fora. Lembrete de por que "parece a mesma pessoa" não substitui medir.
+3. Origem das fotos é um número pequeno de câmeras/famílias — falta diversidade real.
+
+**Próximo passo real, não feito ainda:** repetir com MAIS pessoas confirmadas em dias
+diferentes até a amostra parar de ser "uma pessoa só". Sem isso, `THRESH` do reencontro
+continua `UNKNOWN — REQUIRES EXPERIMENT` (com uma pista mais forte, ainda não uma
+resposta).
+
+**Reproduzir:**
+```bash
+python tests/experimento_limiar.py recortar      # deteta+recorta+gera folhas de contato
+python tests/experimento_limiar.py sugerir       # propoe pares parecidos entre dias diferentes
+python tests/experimento_limiar.py medir 121,125,128,156,169,171 \
+  86,92 87,93 88,94 89,96 90,95 91,97 --impostores-mesma-foto
+```
