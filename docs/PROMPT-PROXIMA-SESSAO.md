@@ -67,6 +67,21 @@ Ordenar galeria por pessoas (`n_faces` já vem do servidor — falta só o selet
 coração/favoritos · `photo.oculta` (pré-cadastro) · rate limiting por rota · feature
 flags (a tabela `config` já existe) · auditoria administrativa.
 
+### 6. Playwright para E2E de verdade — decidido, não iniciado (2026-08-31)
+O dono pediu testes de navegador reais (hoje `test_front.py` só faz `node --check` +
+checagem de texto, nunca abre um navegador de verdade). Escopo combinado antes de
+começar:
+- **ADR primeiro** (CLAUDE.md §4.3) — Playwright é dependência nova, ~300 MB de
+  binários de navegador no ambiente de dev/CI. Justificar por que compensa.
+- **Fluxo prioritário:** convidado (QR → selfie → galeria enchendo ao vivo). Fluxo da
+  fotógrafa (criar evento → subir foto → ver na galeria) como segundo alvo.
+- Roda **à parte** de `tests/todos.sh` (é mais lento e pesado) — não bloquear o push
+  normal por causa disso; decidir se entra num `todos.sh --e2e` opcional ou script
+  próprio (`tests/test_e2e.py`?).
+- **Não é** "trocar o navegador que o Claude usa" — isso não existe como conceito;
+  Playwright aqui é ferramenta de teste do produto, nada relacionado a como o agente
+  navega durante a sessão.
+
 ## Sem prova real — não tratar como pronto
 
 - **Idempotência nunca rodou em produção.** Mandar a mesma foto 2× pelo app deve
