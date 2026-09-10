@@ -963,6 +963,16 @@ Amostragem de `/health` a cada ~2,2 s, do push até o SHA novo responder:
 - **Push → no ar: 2 min 02 s** — bate com o timer de auto-update de 2 min.
 - `/health` no SHA novo: `{"ok":true,"versao":"2982a77","db_ok":true,"engine_carregado":true}`.
 
+**Segunda medição, no deploy seguinte (`2982a77..294dac2`, só documento):** push 17:05:17,
+primeiro 502 às 17:07:10 (**1 amostra só**), SHA novo às 17:07:13 → **janela ~3 s**
+(entre ~1 e ~5 s), push → no ar em **1 min 56 s**.
+
+**Conclusão com as duas juntas:** a janela real fica na faixa de **~3 a ~7 s**, e o
+tempo de push até o ar é **~2 min** (o timer do systemd domina — a indisponibilidade em
+si é uma fração pequena da espera). Duas medições não são uma lei: um deploy que mude
+dependência ou que caia sob carga pode custar mais. Refaça a conta com
+`infra/medir-janela-deploy.sh` quando o deploy for diferente destes.
+
 **Isto corrige um número que o projeto vinha repetindo.** `BLUEPRINT.md` §5/§7 e
 `docs/TESTES.md` diziam "~25 s de 502" — uma **estimativa nunca medida**. O valor real
 neste deploy foi ~3× menor. Ressalva honesta: é **uma** medição, de um deploy que só

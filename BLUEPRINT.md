@@ -109,9 +109,10 @@ docs/
 ## 5. Como fazer deploy
 
 **Basta `git push`.** Auto-update na VM (systemd timer, 2 min) puxa `origin/main` e
-reinicia. **Janela de 502: ~7 s** — medida pela primeira vez em 2026-09-10 (ADR-0033;
-push → no ar em 2 min 02 s). O "~25 s" que este documento afirmou por meses era
-estimativa nunca cronometrada. Refazer a conta: `bash infra/medir-janela-deploy.sh <sha>`.
+reinicia. **Janela de 502: ~3 a ~7 s** — medida em dois deploys em 2026-09-10 (ADR-0033).
+O que domina a espera é o timer, não a queda: **push → no ar ≈ 2 min**. O "~25 s" que
+este documento afirmou por meses era estimativa nunca cronometrada. Refazer a conta:
+`bash infra/medir-janela-deploy.sh <sha>` (rodar antes do push, em outro terminal).
 
 ```bash
 bash tests/todos.sh && git add -A && git commit -m "..." && git push origin main
@@ -159,7 +160,7 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/foton.key ubuntu@152.67.46.113 '...'
 | **`/signup` podia reivindicar login de admin** | Cadastro aberto não conferia `FOTON_ADMINS` (que vive em repo público). Fechado (403), com teste. **Rota que concede poder confere quem pode.** |
 | **Leitura que escreve** | `GET /stats`, `/photos` e `/feed` usavam `create=True`: **ler criava evento**. Hoje 404. **Rota de leitura nunca escreve.** |
 | **SQLite não devolve espaço** | Apagar não encolhe o arquivo; backup ×7 multiplica o desperdício. `/admin/compactar` (VACUUM + `wal_checkpoint(TRUNCATE)`, nessa ordem). |
-| **Deploy tem ~7 s de 502** | O auto-update reinicia o serviço. Ver §5. Por meses o doc dizia "~25 s" — **estimativa que ninguém tinha cronometrado**; medida em 2026-09-10 (ADR-0033) deu ~7 s. **Número repetido não é número medido.** |
+| **Deploy tem ~3–7 s de 502** | O auto-update reinicia o serviço. Ver §5. Por meses o doc dizia "~25 s" — **estimativa que ninguém tinha cronometrado**; dois deploys medidos em 2026-09-10 (ADR-0033) deram ~7 s e ~3 s. **Número repetido não é número medido.** |
 | **Autorização inferida do FORMATO no cliente** | `EH_ADMIN` era `/^admin@/`. Login virou `admin` → botão sumiu em silêncio por um mês. ADR-0025: o servidor informa `admin`/`perfil`; o cliente obedece. |
 | **Barra invertida através de heredoc** | `\n` literal virou quebra de linha real dentro de string JS, cortou-a no meio, derrubou `node --check`. Montar com `chr(92)`. |
 | **Texto de estado que mentia** | Cartão da câmera dizia "nenhuma foto ainda" para conta com 30 fotos — falava da CÂMERA com vocabulário de FOTOS. **Todo texto de estado se lê ao lado do número que pode contradizê-lo.** |
