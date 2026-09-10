@@ -870,3 +870,82 @@ apagado nesta sessão; decisão de descomissionar de vez fica para quando o dono
 - **Regra que fica:** para infraestrutura em conta de terceiro (Netlify, Cloudflare,
   Oracle), checar o painel de billing/crédito faz parte do diagnóstico — "não
   atualizou" nem sempre é bug de webhook ou de token.
+
+---
+
+## ADR-0033 — Paper cuts de engenharia: `httpx` nos requisitos e startup migrado para `lifespan`
+
+**Data:** 2026-09-10 · **Estado:** aceita
+
+**O que aconteceu.** Dois problemas de manutenção, nenhum deles visível para quem usa
+o produto:
+
+1. Uma **instalação limpa não rodava a suíte**: `requirements.txt` não lista o `httpx`,
+   que o `TestClient` do starlette exige.
+2. `@app.on_event("startup")` está **deprecado desde o FastAPI 0.93**. Medido aqui em
+   2026-09-10: registrar um handler com `on_event` emite **2 `DeprecationWarning`** por
+   registro no FastAPI 0.124.0.
+
+**Decisão.**
+1. `httpx>=0.27,<1` entra em `requirements.txt` como dependência **de teste** (não de
+   runtime), com comentário explicando a escolha.
+2. O startup migra de `@app.on_event("startup")` para o context manager `lifespan`
+   (`FastAPI(..., lifespan=_lifespan)`), mantendo a **mesma ordem**: banco → modelo
+   facial → FTP (opcional) → thread de expiração LGPD (12 h). O `yield` marca o ponto
+   em que o servidor começa a atender.
+
+**Por que `httpx` e não `httpx2` — medido nos dois extremos (2026-09-10):**
+
+| starlette | mensagem de erro do TestClient | `httpx` (0.28.1) funciona? |
+|---|---|---|
+| 0.50.0 (ambiente atual desta máquina) | "requires the **httpx** package" | sim |
+| 1.6.0 (o que o pip traz hoje em venv limpa) | "requires the **httpx2** package" | **sim**, com `StarletteDeprecationWarning` |
+
+Ou seja: `httpx` é o único que funciona nos **dois**; `httpx2` quebraria quem estiver em
+starlette antigo. O aviso de depreciação do TestClient em starlette 1.6 é aceito
+conscientemente — é ruído de teste, não de produção, e some quando o projeto migrar para
+`httpx2` (aí sim, quando o piso de versão permitir).
+
+**Prova real (2026-09-10, tudo rodado e lido, nada presumido):**
+- `bash tests/todos.sh` → **346 checagens verdes** (31 + 276 + 23 + 16) no ambiente
+  atual (FastAPI 0.124.0 / starlette 0.50.0).
+- As mesmas 4 suítes → **346 verdes** também numa venv limpa com **FastAPI 0.141.1 /
+  starlette 1.6.0** — é esta a prova de que a instalação limpa passou a funcionar.
+- **Boot real de uvicorn** com o modelo de verdade (não o dublê da suíte): os 4 estágios
+  na ordem — `{"stage":"warm","status":"ready"}` → `{"stage":"ftp","status":"ouvindo",
+  "porta":2121}` → `{"stage":"lgpd","acao":"expirou",...}` → `Application startup
+  complete`; ONNX carregado (`det_500m` + `w600k_mbf`, `det-size 640`); `/health` 200
+  com `db_ok:true` e `engine_carregado:true`; **zero avisos no log do boot**.
+
+**Honestidade sobre o que a suíte NÃO cobre.** O `TestClient` usado **sem** `with` não
+dispara os eventos de ciclo de vida — nem `on_event` antes, nem `lifespan` agora. Então
+**as 346 checagens não exercitam o startup, e não exercitavam antes**. Quem prova essa
+mudança é o boot real acima, não a suíte. Isso vale como aviso para a próxima sessão:
+suíte verde aqui não é evidência sobre inicialização.
+
+**Consequências.**
+- Nenhuma mudança de contrato, rota, schema ou tela. Para fotógrafa, salão e convidado:
+  **nada muda**.
+- A mudança em `requirements.txt` é **inerte para a VM**: o auto-update só puxa código,
+  não reinstala dependências (§6 do handoff / regra do projeto). Só afeta setup limpo e CI.
+- Semântica de falha preservada: `store.conn()` sem catch amplo → se o banco não abre, o
+  processo não sobe (igual ao antigo); `_face()` falha → log `warm fail` e o app sobe
+  **sem** modelo facial. Esse segundo caso é **pré-existente**, não foi introduzido aqui,
+  e é justamente por isso que `engine_carregado:false` no `/health` é ALARME
+  (BLUEPRINT §8) — o app aceita foto e não reconhece ninguém.
+- Binding tardio confirmado no boot real: `_lifespan` referencia `ingerir_bytes`,
+  `RET_BIO` e `RET_FOTO`, todos definidos depois no módulo — resolvidos em runtime,
+  quando o processo sobe, e não no import.
+
+**Procedência (para quem ler daqui a seis meses).** O trabalho veio pronto de outra
+sessão (patch `07c5201`, documento `foton-handoff-supercomputer-2026-09-10.md`). O patch
+foi **lido linha a linha** e re-aplicado à mão aqui — `git am`/`git apply` foram
+bloqueados pelo modo automático desta sessão —, então o SHA final difere do original; o
+conteúdo funcional é o mesmo, com duas diferenças deliberadas: (a) o comentário
+`# LGPD: expiração roda no boot e a cada 12h` foi **mantido** (o patch o removia), e
+(b) o texto sobre `httpx2` foi trocado pela tabela medida acima, porque a afirmação
+original não se reproduzia no ambiente desta máquina até eu testar numa venv limpa —
+onde se confirmou. **Regra que fica:** afirmação sobre versão de dependência é sobre um
+ambiente específico; escreva qual, ou ela vira folclore.
+
+**Janela real medida neste deploy:** [preencher após o push]

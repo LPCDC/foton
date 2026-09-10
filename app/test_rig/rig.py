@@ -7,6 +7,7 @@ Segurança (ADR-0005): a selfie do convidado NUNCA é armazenada — vira embedd
 bytes são descartados. Logs sem PII (só id de rastreio, contagem, latência).
 """
 import io, os, re, time, uuid, logging
+from contextlib import asynccontextmanager
 import cv2, numpy as np, qrcode
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header, Request
@@ -246,34 +247,28 @@ def _pode(code, authorization):
         raise HTTPException(403, "este evento é de outra conta")
     return c
 
-INICIO = time.time()
-app = FastAPI(title="Fóton", version="1.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """O startup de verdade — substitui @app.on_event (deprecado desde o FastAPI 0.93).
 
-@app.middleware("http")
-async def _sem_cache_na_api(request, call_next):
-    """Defesa em profundidade: nenhuma resposta de API pode ser cacheada.
-    Um cache em /me ou /events mostra os dados de OUTRA conta depois de trocar
-    de login — foi exatamente o bug do 'entrei como admin e apareceu a Patrícia'."""
-    resp = await call_next(request)
-    p = request.url.path
-    if not p.startswith("/img/") and ("." not in p.rsplit("/", 1)[-1] or p.endswith((".json",))):
-        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
-        resp.headers["Pragma"] = "no-cache"
-    return resp
-
-@app.on_event("startup")
-def _startup():
+    Ordem IDÊNTICA à antiga: banco -> modelo facial -> FTP -> thread de expiração LGPD.
+    Roda quando o processo SOBE, nunca no request — o modelo é aquecido aqui de propósito,
+    para o primeiro /ingest não pagar a conta (§8 do BLUEPRINT: `engine_carregado:false`
+    é ALARME, não estado normal). O `yield` marca o ponto em que o servidor começa a
+    atender; não há nada depois dele porque nunca houve shutdown (as threads são daemon).
+    """
     store.conn()
-    try: _face(); log.info('{"stage":"warm","status":"ready"}')
-    except Exception as e: log.info('{"stage":"warm","status":"fail","err":"%s"}' % str(e)[:140])
-    # LGPD: expiração roda no boot e a cada 12h, sem depender de ninguém lembrar
+    try:
+        _face(); log.info('{"stage":"warm","status":"ready"}')
+    except Exception as e:
+        log.info('{"stage":"warm","status":"fail","err":"%s"}' % str(e)[:140])
     # FTP da câmera (opcional — se a lib não estiver instalada, o resto segue igual)
     try:
         import ftp_camera
         ftp_camera.iniciar(ingerir_bytes)
     except Exception as e:
         log.info('{"stage":"ftp","status":"desligado","motivo":"%s"}' % str(e)[:100])
+    # LGPD: expiração roda no boot e a cada 12h, sem depender de ninguém lembrar
     import threading
     def _limpeza():
         while True:
@@ -292,6 +287,23 @@ def _startup():
                           % str(e).replace('"', "'")[:200])
             time.sleep(12 * 3600)
     threading.Thread(target=_limpeza, daemon=True).start()
+    yield
+
+INICIO = time.time()
+app = FastAPI(title="Fóton", version="1.0.0", lifespan=_lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+@app.middleware("http")
+async def _sem_cache_na_api(request, call_next):
+    """Defesa em profundidade: nenhuma resposta de API pode ser cacheada.
+    Um cache em /me ou /events mostra os dados de OUTRA conta depois de trocar
+    de login — foi exatamente o bug do 'entrei como admin e apareceu a Patrícia'."""
+    resp = await call_next(request)
+    p = request.url.path
+    if not p.startswith("/img/") and ("." not in p.rsplit("/", 1)[-1] or p.endswith((".json",))):
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+    return resp
 
 def _versao():
     """Qual codigo esta rodando AGORA na VM.

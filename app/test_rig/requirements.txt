@@ -9,3 +9,10 @@ pyftpdlib>=1.5
 insightface>=0.7
 onnxruntime>=1.17
 onnx>=1.16
+# Dependência de TESTE (TestClient do starlette), não de runtime: sem ela, uma
+# instalação limpa não roda `tests/todos.sh`. Medido em 2026-09-10 nos dois extremos:
+# starlette 0.50 pede "the httpx package"; starlette 1.6.0 (o que o pip traz hoje numa
+# venv limpa) pede "httpx2" na mensagem de erro MAS aceita httpx com aviso — testado,
+# o TestClient sobe. Por isso entra httpx (funciona nos dois) e não httpx2, que
+# quebraria quem estiver em starlette antigo. Pinado <1 por determinismo (ADR-0033).
+httpx>=0.27,<1
