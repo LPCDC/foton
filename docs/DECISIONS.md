@@ -948,4 +948,27 @@ original não se reproduzia no ambiente desta máquina até eu testar numa venv 
 onde se confirmou. **Regra que fica:** afirmação sobre versão de dependência é sobre um
 ambiente específico; escreva qual, ou ela vira folclore.
 
-**Janela real medida neste deploy:** [preencher após o push]
+**Janela real medida neste deploy (2026-09-10) — primeira vez que foi cronometrada.**
+Amostragem de `/health` a cada ~2,2 s, do push até o SHA novo responder:
+
+| momento | relógio |
+|---|---|
+| `git push` (`dbd1fd0..2982a77`) | 17:01:07 |
+| último 200 no SHA velho | 17:03:00 |
+| **primeiro 502** (serviço reiniciando) | **17:03:02** |
+| **primeiro 200 já no SHA novo** | **17:03:09** |
+
+- **Janela de 502: ~7 s** (3 amostras consecutivas de 502; com granularidade de 2,2 s, o
+  intervalo honesto é **entre ~5 e ~9 s**).
+- **Push → no ar: 2 min 02 s** — bate com o timer de auto-update de 2 min.
+- `/health` no SHA novo: `{"ok":true,"versao":"2982a77","db_ok":true,"engine_carregado":true}`.
+
+**Isto corrige um número que o projeto vinha repetindo.** `BLUEPRINT.md` §5/§7 e
+`docs/TESTES.md` diziam "~25 s de 502" — uma **estimativa nunca medida**. O valor real
+neste deploy foi ~3× menor. Ressalva honesta: é **uma** medição, de um deploy que só
+mexeu em código de startup e documento; um deploy que mude dependência, ou que caia num
+momento de carga, pode demorar mais. Reproduzir em qualquer deploy futuro:
+
+```bash
+bash infra/medir-janela-deploy.sh <sha-esperado>   # rodar ANTES do push, em outro terminal
+```

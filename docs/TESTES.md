@@ -139,7 +139,7 @@ perderam, o que a fotógrafa precisou digitar.
 | Rajada de 5 fotos de demonstração (~80 KB, 720×900) | **3,6 s no total** (170–887 ms cada) |
 | Foto de câmera (24 MP, 13 MB), isolada | 2,9 s |
 | Rajada de 4 fotos de câmera | 19 s (~4,8 s cada) |
-| Janela de 502 durante o auto-update | ~25 s por deploy |
+| Janela de 502 durante o auto-update | **~7 s** por deploy (medido 2026-09-10, ADR-0033; era estimativa de "~25 s") |
 
 ⚠️ As fotos de demonstração são pequenas: **não** servem para medir SLA. O número que
 vale é o da foto de câmera.
