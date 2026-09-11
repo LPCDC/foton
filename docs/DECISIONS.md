@@ -967,11 +967,21 @@ Amostragem de `/health` a cada ~2,2 s, do push até o SHA novo responder:
 primeiro 502 às 17:07:10 (**1 amostra só**), SHA novo às 17:07:13 → **janela ~3 s**
 (entre ~1 e ~5 s), push → no ar em **1 min 56 s**.
 
-**Conclusão com as duas juntas:** a janela real fica na faixa de **~3 a ~7 s**, e o
-tempo de push até o ar é **~2 min** (o timer do systemd domina — a indisponibilidade em
-si é uma fração pequena da espera). Duas medições não são uma lei: um deploy que mude
-dependência ou que caia sob carga pode custar mais. Refaça a conta com
-`infra/medir-janela-deploy.sh` quando o deploy for diferente destes.
+**Terceira e quarta medições (mesmo script):**
+
+| deploy | o que mudou | primeiro 502 → SHA novo | janela | push → no ar |
+|---|---|---|---|---|
+| `2982a77` | código (startup) | 17:03:02 → 17:03:09 | ~7 s (3 amostras) | 2 min 02 s |
+| `294dac2` | só documento | 17:07:10 → 17:07:13 | ~3 s (1 amostra) | 1 min 56 s |
+| `668db82` | só documento | 17:09:13 → 17:09:16 | ~3 s (1 amostra) | 51 s |
+| `9266093` | código (limiar, ADR-0034) | 13:30:21 → 13:30:31 | **~10 s** (4 amostras) | 56 s |
+
+**Conclusão com as quatro:** a janela real fica na faixa de **~3 a ~10 s** (a amostragem é
+de ~2,2 s, então cada número tem essa incerteza). O push leva **de ~1 a ~2 min** até o ar,
+conforme o ponto do timer do systemd em que ele cai. Os dois deploys que mexeram em código
+foram os mais longos. Isso é coerente com o serviço demorar mais para subir, mas com n=4
+**não é prova de causa**. O "~25 s" antigo continua descartado. Refaça a conta com
+`infra/medir-janela-deploy.sh`, principalmente em deploy que mude dependência.
 
 **Isto corrige um número que o projeto vinha repetindo.** `BLUEPRINT.md` §5/§7 e
 `docs/TESTES.md` diziam "~25 s de 502" — uma **estimativa nunca medida**. O valor real

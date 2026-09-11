@@ -98,7 +98,8 @@ tests/
 infra/           VM, HTTPS (dominio.sh — só EXPANDE cert, não reduz), FTP, backup
 docs/
   PROMPT-PROXIMA-SESSAO.md  o plano de trabalho vivo — decisões do dono + ordem
-  DECISIONS.md   30 ADRs · PRODUTO.md  o que ainda não virou código
+  DECISIONS.md   ADRs até a 0034 · PRODUTO.md  o que ainda não virou código
+  FIESTA.md      plano da Foto'n Fiesta (mercado, arquitetura, moderação, fases, decisões)
   CONTRATO-ORGANIZADOR.md   minuta LGPD + pesquisa de aceite (clickwrap)
   BENCHMARKS.md · PILOTO-1.md · TESTES.md · ROTEIRO-CAMERAS.md   medições
   ARCHITECTURE.md, ROADMAP.md, GAUNTLET.md (parte antiga)   histórico, aviso no topo
@@ -111,9 +112,9 @@ docs/
 ## 5. Como fazer deploy
 
 **Basta `git push`.** Auto-update na VM (systemd timer, 2 min) puxa `origin/main` e
-reinicia. **Janela de 502: ~3 a ~7 s** — medida em dois deploys em 2026-09-10 (ADR-0033).
-O que domina a espera é o timer, não a queda: **push → no ar ≈ 2 min**. O "~25 s" que
-este documento afirmou por meses era estimativa nunca cronometrada. Refazer a conta:
+reinicia. **Janela de 502: ~3 a ~10 s**, medida em quatro deploys (2026-09-10/11, ADR-0033).
+O que domina a espera é o timer, não a queda: **push → no ar em ~1 a ~2 min**. O "~25 s"
+que este documento afirmou por meses era estimativa nunca cronometrada. Refazer a conta:
 `bash infra/medir-janela-deploy.sh <sha>` (rodar antes do push, em outro terminal).
 
 ```bash
@@ -162,7 +163,7 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/foton.key ubuntu@152.67.46.113 '...'
 | **`/signup` podia reivindicar login de admin** | Cadastro aberto não conferia `FOTON_ADMINS` (que vive em repo público). Fechado (403), com teste. **Rota que concede poder confere quem pode.** |
 | **Leitura que escreve** | `GET /stats`, `/photos` e `/feed` usavam `create=True`: **ler criava evento**. Hoje 404. **Rota de leitura nunca escreve.** |
 | **SQLite não devolve espaço** | Apagar não encolhe o arquivo; backup ×7 multiplica o desperdício. `/admin/compactar` (VACUUM + `wal_checkpoint(TRUNCATE)`, nessa ordem). |
-| **Deploy tem ~3–7 s de 502** | O auto-update reinicia o serviço. Ver §5. Por meses o doc dizia "~25 s" — **estimativa que ninguém tinha cronometrado**; dois deploys medidos em 2026-09-10 (ADR-0033) deram ~7 s e ~3 s. **Número repetido não é número medido.** |
+| **Deploy tem ~3–10 s de 502** | O auto-update reinicia o serviço. Ver §5. Por meses o doc dizia "~25 s" — **estimativa que ninguém tinha cronometrado**; quatro deploys medidos em 2026-09-10/11 (ADR-0033) deram 7, 3, 3 e 10 s. **Número repetido não é número medido.** |
 | **Autorização inferida do FORMATO no cliente** | `EH_ADMIN` era `/^admin@/`. Login virou `admin` → botão sumiu em silêncio por um mês. ADR-0025: o servidor informa `admin`/`perfil`; o cliente obedece. |
 | **Barra invertida através de heredoc** | `\n` literal virou quebra de linha real dentro de string JS, cortou-a no meio, derrubou `node --check`. Montar com `chr(92)`. |
 | **Texto de estado que mentia** | Cartão da câmera dizia "nenhuma foto ainda" para conta com 30 fotos — falava da CÂMERA com vocabulário de FOTOS. **Todo texto de estado se lê ao lado do número que pode contradizê-lo.** |
@@ -230,8 +231,9 @@ despejo GLAMON de fotos 2000×2000 (2026-08-31). **TTFR fim a fim: nunca medido.
 4. **Câmera sem lag** — preview forçado a 4K localizado (`index.html:2379`); medir e baixar.
 5. **DNS/cert** — autorizado; comandos prontos (PROMPT item 7). Mesma sessão: cert →
    Cloudflare → NS. Depois: `fotos.foton.app.br` no R2.
-6. **Foto'n Fiesta!** — papéis dono/participante, limite POR participante; perguntas
-   do PRODUTO §2 precisam do dono antes do código.
+6. **Foto'n Fiesta!** — **plano completo em `docs/FIESTA.md`** (2026-09-11): fases,
+   3 ADRs e 3 experimentos antes do código, e 8 decisões do dono (crianças é a urgente).
+   Pré-requisito real: fila assíncrona + ARM + R2 — a Fiesta é o pico de carga.
 7. **`photo.oculta`** + roteiro de abordagem no painel (material de venda, PRODUTO §3b).
 8. **Contrato** — clickwrap + tabela `aceite` (aguarda "ok" do dono à recomendação).
 9. **TTFR fim a fim** + testes no aparelho da Patrícia (30 s de teste que valem mais

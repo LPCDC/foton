@@ -65,6 +65,10 @@ plataforma de evento. Ninguém serve quem fotografa o próprio rolê. É consumo
 > revisão do dono do evento) e a que custo de latência — ver a tensão com o "na hora"
 > registrada em IDEIAS-V2 §A.1. **Nada disto está construído.**
 >
+> **PLANO em `docs/FIESTA.md` (2026-09-11):** mercado, arquitetura, moderação por parte do
+> corpo (NudeNet — 0/80 retenções indevidas em foto de festa real, BENCHMARKS), capacidade
+> (o risco nº 1), LGPD, fases e as 8 decisões que ainda são do dono.
+>
 > **DECIDIDO PELO DONO (2026-08-30): esta é a versão da Ana.** Ela E os convidados
 > mandam fotos — não a versão "só ela envia". Consequências que ele mesmo apontou:
 > login/persistência do convidado ficam centrais, e o lag da câmera do app precisa

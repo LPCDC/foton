@@ -648,3 +648,64 @@ python tests/experimento_limiar.py selfie         # pares (selfie, foto) + folha
 # rotular em fotos-teste/_selfie-rotulos.json: {"<selfie>": {"<recorte>": true|false|null}}
 python tests/experimento_limiar.py selfie-medir   # a tabela acima
 ```
+
+---
+
+## Moderação da Foto'n Fiesta — NudeNet em foto de festa real (2026-09-11)
+
+> Experimento de **decisão**, não de produto: nada disto está no app. Alimenta a futura ADR
+> de moderação (`docs/FIESTA.md` §5.3). Script: `tests/experimento_moderacao.py`.
+
+**Pergunta do dono (PRODUTO §2).** O corte é genitália e mamilo, não "nudez" genérica —
+*"um filtro treinado em nudez genérica reprovaria metade de um casamento"*. Medido
+exatamente esse medo.
+
+**Método.** NudeNet 3.4.2, modelo padrão `320n.onnx` (**12,2 MB**, MIT, ONNX Runtime)
+sobre **80 fotos reais de festa** de `fotos-teste/`, **sem nudez nenhuma** — então todo
+alerta em classe bloqueada é **falso positivo**. As fotos foram reduzidas a 2048 px, como
+na produção, e o processo ficou **preso a 1 núcleo**. Na mesma rodada e nas mesmas fotos,
+foi medido o buffalo_s que já roda no `/ingest`, para ter a **razão** de custo.
+
+**Resultado — falso positivo nas classes que o dono bloqueia** (`FEMALE_BREAST_EXPOSED`,
+`*_GENITALIA_EXPOSED`, `ANUS_EXPOSED`):
+
+| confiança mínima | fotos que seriam retidas |
+|---|---|
+| ≥ 0,3 | **0 / 80** |
+| ≥ 0,5 | **0 / 80** |
+| ≥ 0,7 | **0 / 80** |
+
+O que o modelo **viu** nessas fotos (detecções, score máximo): `FACE_FEMALE` 146 (0,88) ·
+**`FEMALE_BREAST_COVERED` 90 (0,72)** · `FEET_COVERED` 75 · `FACE_MALE` 36 · `ARMPITS_EXPOSED`
+18 · `FEMALE_GENITALIA_COVERED` 6 (0,53) · `BELLY_COVERED` 6 · `FEET_EXPOSED` 5 ·
+`BUTTOCKS_COVERED` 4. Os **90 decotes classificados como `COVERED`, e nenhum como exposto**,
+são exatamente a distinção que o dono pediu.
+
+**Custo** (1 núcleo desta máquina, Ryzen 7800X3D):
+
+| por foto | p50 | p95 | máx |
+|---|---|---|---|
+| NudeNet 320n | **181 ms** | 282 ms | 314 ms |
+| buffalo_s (já roda hoje) | 702 ms | 1041 ms | 1672 ms |
+| **razão** | **0,26×** | | |
+
+Leitura: moderar cada foto custa cerca de um quarto do reconhecimento facial que o
+pipeline já paga. O absoluto **na VM** (1/8 OCPU) é `UNKNOWN — REQUIRES EXPERIMENT`; a
+razão é a estimativa que se transfere.
+
+**O que isto NÃO prova — ressalvas sérias:**
+1. **Recall (pegar o que deve) não foi medido**, e não será medido com coleta de imagem
+   de nudez. O caminho é a avaliação publicada do modelo + monitoramento das retenções
+   reais no piloto. `UNKNOWN`.
+2. **0/80 não é "zero falso positivo"**: com 80 fotos, o limite superior de 95% é ~3,7%
+   (regra do três).
+3. **Traje de banho, piscina, bebê sem camisa e pouca luz não estão na amostra.** Festa de
+   piscina é caso comum. **Próximo teste obrigatório antes do ADR.**
+4. Fotos de um mesmo círculo social e de celular; público de salão e festa.
+5. Pacote sem versão nova desde julho/2024. A licença **dos pesos** (treino sobre YOLOv8)
+   precisa ser conferida antes de entrar no produto.
+
+**Reproduzir** (dependências só do experimento: `pip install nudenet==3.4.2 psutil`):
+```bash
+python tests/experimento_moderacao.py
+```
