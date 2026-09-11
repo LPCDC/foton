@@ -109,7 +109,7 @@ evento.
    o e-mail + senha não é detalhe, é o que torna a ideia defensável.
 3. **Não temos e-mail.** O app não envia e-mail; entra dependência nova (exige ADR).
 4. **Falso positivo muda de gravidade.** Errar o match hoje entrega uma foto errada.
-   Errando no *login*, a pessoa entra **na conta de outra**. O limiar de 0,25, que serve
+   Errando no *login*, a pessoa entra **na conta de outra**. O limiar de 0,40 (era 0,25 até 2026-09-11, ADR-0034), que serve
    para agrupar fotos, **não serve** para autenticar.
 
 **Versão defensável:** o rosto **encontra**, a senha **autoriza**.

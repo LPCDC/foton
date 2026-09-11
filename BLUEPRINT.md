@@ -64,7 +64,9 @@ CONVIDADO: foto aparece sozinha (poll 2,5 s), animação; baixa/compartilha/QR p
 ```
 
 **Reconhecimento:** InsightFace **buffalo_s** (SCRFD + ArcFace), CPU, `det_size=640`,
-limiar cosseno **0.25** (agrupar fotos — NÃO serve para autenticar, PRODUTO §3).
+limiar cosseno **0.40** (agrupar fotos — NÃO serve para autenticar, PRODUTO §3). Era 0.25
+até 2026-09-11: medido selfie × fotos do mesmo evento, 0.25 entregava foto de estranho
+(ADR-0034). A selfie registra o **maior** rosto, não o primeiro que o detector devolve.
 Validado: 99,5% no LFW. ⚠️ `det_size=320` perdia rosto de 90px (0/6). Não reduzir.
 
 ## 4. Estrutura do código

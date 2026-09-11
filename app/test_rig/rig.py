@@ -23,7 +23,13 @@ import store
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BASE = os.path.dirname(os.path.dirname(HERE))
-THRESH = 0.25           # ArcFace/buffalo_s — validado (iguais ~0.61, diferentes ~0.01)
+# Limiar de entrega: a foto vai para o convidado se QUALQUER rosto dela passar disto.
+# Era 0.25 ("iguais ~0.61, diferentes ~0.01" — validação em rostos de benchmark, que NÃO
+# se sustentou em foto de festa). Medido em 2026-09-11 com selfie × fotos do MESMO evento
+# (ADR-0034, docs/BENCHMARKS.md): em 0.25 entregava foto de estranho; em 0.40, zero
+# entregas erradas na amostra rotulada, ao custo de 1 em 43 fotos certas (perfil no
+# escuro). Regra do dono: foto na pessoa errada é o pior erro. NÃO baixar sem medir.
+THRESH = 0.40
 LONG_EDGE = 2048
 JPEG_Q = 82
 THUMB_EDGE = 320        # a grade mostra ~110px; 320 cobre tela retina sem exagero
@@ -190,12 +196,24 @@ def _thumb(img: Image.Image) -> bytes:
     except Exception:
         return None
 
+def _area(f):
+    b = getattr(f, "bbox", None)
+    return float((b[2] - b[0]) * (b[3] - b[1])) if b is not None else 0.0
+
 def detect_embed(raw: bytes):
+    """Embeddings de todos os rostos, do MAIOR para o menor.
+
+    A ordem importa por causa do /selfie, que registra `faces[0]` como o convidado. O
+    detector devolve em ordem de CONFIANÇA, não de tamanho: em 82% das fotos de festa
+    com 2+ pessoas o primeiro NÃO era o maior (ADR-0034). Numa selfie com gente ao fundo,
+    quem virava "o convidado" podia ser a pessoa de trás. Para /ingest a ordem é
+    indiferente (entrega se QUALQUER rosto casar)."""
     arr = np.frombuffer(raw, np.uint8)
     bgr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
     if bgr is None:
         return []
-    return [f.normed_embedding.astype(np.float32) for f in _face().get(bgr)]
+    faces = sorted(_face().get(bgr), key=_area, reverse=True)
+    return [f.normed_embedding.astype(np.float32) for f in faces]
 
 def _emb(b):  # bytes -> vetor
     return np.frombuffer(b, np.float32)

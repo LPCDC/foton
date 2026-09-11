@@ -982,3 +982,73 @@ momento de carga, pode demorar mais. Reproduzir em qualquer deploy futuro:
 ```bash
 bash infra/medir-janela-deploy.sh <sha-esperado>   # rodar ANTES do push, em outro terminal
 ```
+
+---
+
+## ADR-0034 — Limiar de entrega 0,25 → 0,40, e selfie pelo MAIOR rosto
+
+**Data:** 2026-09-11 · **Estado:** aceita · **Evidência:** `docs/BENCHMARKS.md`, seção
+"Limiar de ENTREGA — selfie × fotos do mesmo evento"
+
+**Contexto.** O `THRESH = 0.25` vinha de uma validação em rostos de benchmark ("iguais
+~0,61, diferentes ~0,01"). Medido em fotos de festa de verdade, não se sustentou. E há um
+agravante estrutural: a foto é entregue se **qualquer** rosto dela passar do limiar, então
+numa foto com 5 a 16 rostos o risco de um estranho parecido se acumula. Nenhum evento real
+usou o Fóton ainda (dono, 2026-09-11) — por isso não houve vítima. O defeito era latente,
+não teórico.
+
+**Regra do dono que decide o lado da troca (2026-09-11):** *foto na pessoa errada é pior
+que foto perdida.* Além de constranger, foto de alguém no celular de um estranho é dado
+pessoal indo para quem não devia (LGPD).
+
+**Decisão.**
+1. `THRESH` passa de **0,25 para 0,40** (`rig.py`), valendo nos dois sentidos da entrega:
+   foto nova × convidados já cadastrados (`/ingest`, câmera/FTP) e selfie nova × fotos
+   existentes (`/selfie`).
+2. `detect_embed` devolve os rostos do **maior para o menor**. O `/selfie` registra
+   `faces[0]` como o convidado, e o detector ordena por confiança: em 82% das fotos de festa
+   com 2+ pessoas, o primeiro não era o maior.
+
+**O que os números dizem (resumo; o detalhe está no BENCHMARKS):**
+- Impostor rosto a rosto, sem rótulo (n=736): **3,26%** acima de 0,25 → **0,14%** acima de 0,40.
+- Caso real rotulado (4 selfies frontais × fotos do mesmo evento): em 0,25, 1 foto errada
+  de 22; em 0,40, **0 erradas**, e 1 certa perdida de 43 (perfil no escuro, 0,396).
+- 0,45 perderia 16% das fotos certas, e 0,50 perderia 35%.
+
+**Alternativas consideradas.**
+- *0,35:* mantém a entrega errada observada (0,369). Rejeitada pela regra do dono.
+- *0,38:* fica colado no grupo de impostores 0,363–0,378, sem margem. Rejeitada.
+- *0,45 / 0,50:* custo de recall inaceitável (16% / 35%). O "~0,50" sugerido no BENCHMARKS
+  de 01/09 foi medido rosto×rosto e está **superado**.
+- *Cada rosto vai só para o convidado de maior score (argmax 1:N):* reduz entrega errada
+  quando a pessoa certa também está cadastrada. **Adiada, não descartada:** exige decidir o
+  que fazer com foto já entregue quando chega uma selfie que casa melhor. Já entregue não
+  se "desentrega" (o convidado viu), e isso toca a ADR-0028. Merece ADR própria, com medição.
+- *Limiar ajustável sem deploy (tabela `config`):* útil para calibrar no primeiro evento,
+  mas é feature flag — fica para o item de flags do backlog.
+
+**Consequências.**
+- **Menos fotos entregues, de propósito.** Alguém de perfil, no escuro ou muito ao fundo
+  pode não receber uma foto em que aparece. Na amostra, foi 1 de 43.
+- **Nada retroativo.** Matches já gravados com 0,25 continuam como estão (não se reprocessa
+  foto entregue — ADR-0028). Vale para foto e selfie **novas** a partir do deploy. O álbum
+  permanente do GLAMON mantém o que já tinha.
+- Não muda contrato, rota, schema nem tela.
+- O limiar do **reencontro por selfie** (item 3 do backlog, selfie × selfie entre dias) é
+  outro uso e **continua sem decisão**. Esta ADR trata só da entrega dentro do evento.
+
+**Testes — seção [30] de `tests/test_autorizacao.py`, pelas rotas reais.** Um detector
+dublado devolve vetores com cosseno controlado contra a selfie: 6 checagens (limiar
+travado em 0,40; foto a 0,30 não entregue; foto a 0,45 entregue; os dois sentidos; selfie
+pelo maior rosto). **Prova do vermelho:** contra o `rig.py` anterior, **4 das 6 falham** —
+cada falha é o defeito real (foto de 0,30 entregue nos dois sentidos; selfie registrando o
+rosto de trás; limiar 0,25). As 2 que passam nos dois são a guarda de recall (0,45 tem que
+continuar chegando).
+
+**O que ainda é `UNKNOWN — REQUIRES EXPERIMENT`:** taxa de acerto e de erro em 0,40 num
+evento real, com dezenas de convidados sem parentesco e selfie de câmera frontal. O
+primeiro evento real deve medir as duas taxas: fotos erradas reportadas e fotos em que a
+pessoa aparece mas não recebeu.
+
+**Rollback:** `git revert <este commit> && git push origin main` — volta ao 0,25 e à ordem
+do detector. Matches feitos nesse meio-tempo continuam gravados.

@@ -696,5 +696,60 @@ checa("conta criada nao nasce empresa de verdade", C.get("/me", headers=h(_nvtok
 _nv2 = C.post("/admin/conta/criar", data={"email": "nova2@t.com", "senha": "senha123"}, headers=h(chefe))
 checa("sem pele escolhida, cai no padrao 'pro'", _nv2.json().get("perfil"), "pro")
 
+print("\n[30] LIMIAR de entrega 0,40 e selfie pelo MAIOR rosto (ADR-0034)")
+# Pelas rotas de verdade, com um detector que devolve vetores de cosseno CONTROLADO contra
+# a selfie. 0,30 e 0,45 estao dos dois lados do limiar novo — o 0,30 era ENTREGUE no 0,25
+# antigo, e e exatamente a faixa em que foto de estranho chegava (BENCHMARKS 2026-09-11).
+checa("THRESH e 0,40 (baixar exige medir e ADR nova)", rig.THRESH, 0.40)
+
+def _vet(cos):                                  # vetor unitario com <e0, v> = cos
+    v = np.zeros(512, np.float32); v[0] = cos; v[1] = (1 - cos * cos) ** 0.5; return v
+_E0 = np.zeros(512, np.float32); _E0[0] = 1.0   # "o rosto da convidada"
+_E2 = np.zeros(512, np.float32); _E2[2] = 1.0   # outra pessoa, ortogonal a tudo acima
+
+class _Rosto:
+    def __init__(self, emb, lado):
+        self.normed_embedding = emb; self.bbox = np.array([0, 0, lado, lado], np.float32)
+class _Detector:
+    def __init__(self, *rostos): self.rostos = list(rostos)
+    def get(self, bgr): return self.rostos
+
+def _jpg(cor):                                  # bytes DIFERENTES: a idempotencia nao pode engolir
+    b = io.BytesIO(); Image.new("RGB", (200, 200), cor).save(b, "JPEG"); return b.getvalue()
+
+_lt = C.post("/signup", data={"email": "limiar@t.com", "senha": "senha123", "nome": "L"}).json()["token"]
+C.post("/event", data={"code": "LIMIAR", "brand": "L"}, headers=h(_lt))
+_fa_original = rig._fa
+try:
+    rig._fa = _Detector(_Rosto(_E0, 300))
+    g1 = C.post("/selfie", data={"event": "LIMIAR", "consent": "true"},
+                files={"file": ("s.jpg", _jpg((10, 10, 10)), "image/jpeg")}).json()["guest_id"]
+
+    rig._fa = _Detector(_Rosto(_vet(0.30), 120))
+    r30 = C.post("/ingest", data={"event": "LIMIAR"}, headers=h(_lt),
+                 files={"file": ("a.jpg", _jpg((20, 20, 20)), "image/jpeg")}).json()
+    checa("foto a 0,30 NAO vai para a convidada (no 0,25 antigo, ia)", g1 in r30["matched_guests"], False)
+
+    rig._fa = _Detector(_Rosto(_vet(0.45), 120))
+    r45 = C.post("/ingest", data={"event": "LIMIAR"}, headers=h(_lt),
+                 files={"file": ("b.jpg", _jpg((30, 30, 30)), "image/jpeg")}).json()
+    checa("foto a 0,45 vai para a convidada", g1 in r45["matched_guests"], True)
+
+    # o outro sentido (selfie chega DEPOIS das fotos, rig.py:/selfie) tem que obedecer igual
+    rig._fa = _Detector(_Rosto(_E0, 300))
+    m2 = C.post("/selfie", data={"event": "LIMIAR", "consent": "true"},
+                files={"file": ("s2.jpg", _jpg((40, 40, 40)), "image/jpeg")}).json()["matches"]
+    checa("selfie tardia recebe a foto de 0,45", r45["photo_id"] in m2, True)
+    checa("selfie tardia NAO recebe a foto de 0,30", r30["photo_id"] in m2, False)
+
+    # selfie com alguem MAIOR ao lado de alguem menor que o detector devolve PRIMEIRO:
+    # antes, faces[0] = o menor (a pessoa de tras) virava "a convidada"
+    rig._fa = _Detector(_Rosto(_E2, 60), _Rosto(_E0, 400))
+    m3 = C.post("/selfie", data={"event": "LIMIAR", "consent": "true"},
+                files={"file": ("s3.jpg", _jpg((50, 50, 50)), "image/jpeg")}).json()["matches"]
+    checa("selfie registra o MAIOR rosto (recebe a foto da convidada)", r45["photo_id"] in m3, True)
+finally:
+    rig._fa = _fa_original
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

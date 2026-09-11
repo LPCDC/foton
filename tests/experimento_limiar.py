@@ -28,7 +28,7 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PASTA = os.path.join(RAIZ, "fotos-teste")
 RECORTES = os.path.join(PASTA, "_recortes")
 EMB_JSON = os.path.join(PASTA, "_embeddings.json")
-THRESH_ATUAL = 0.25  # o mesmo valor de app/test_rig/rig.py -- NAO mudar aqui sem medir
+THRESH_ATUAL = 0.40  # o mesmo valor de app/test_rig/rig.py (ADR-0034) -- NAO mudar aqui sem medir
 
 
 # excluido de proposito: grade de 36 fotos de perfil de contatos de terceiros
@@ -244,7 +244,147 @@ def sugerir(top=25):
         print(f"  #{a:>3} ({fa:<32}) <-> #{b:>3} ({fb:<32})  sim={v:.3f}")
 
 
+SELFIE_JSON = os.path.join(PASTA, "_selfie-verificar.json")
+ROTULOS_JSON = os.path.join(PASTA, "_selfie-rotulos.json")
+
+
+def _data(arquivo):
+    import re
+    m = re.search(r"(20\d{6})", arquivo)
+    return m.group(1) if m else arquivo
+
+
+def selfie(lado_min=600, piso=0.20, fotos_min=5):
+    """O caso REAL da producao: selfie x fotos do MESMO evento (nunca entre eventos --
+    busca global de rosto e proibida, PRODUTO §3b).
+
+    A unidade e o par (convidado, FOTO), nao (rosto, rosto): rig.py entrega a foto se
+    QUALQUER rosto dela passar do limiar (`any(g @ f >= THRESH for f in faces)`). Entao o
+    score de um par e o MAXIMO sobre os rostos da foto, e a pergunta de rotulo e so uma:
+    "essa pessoa esta nessa foto?".
+
+    Selfie = o maior rosto de uma foto, com recorte >= lado_min px (proxy de selfie: rosto
+    grande e nitido em primeiro plano -- NAO e camera frontal, ressalva no BENCHMARKS).
+    Gera folhas para conferencia visual so dos pares com score >= piso; abaixo disso a
+    foto nao seria entregue em nenhum limiar candidato, entao o rotulo nao muda a decisao.
+    """
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
+    registros = json.load(open(EMB_JSON, encoding="utf-8"))
+    E = {r["n"]: np.array(r["embedding"], dtype=np.float32) for r in registros}
+    arq = {r["n"]: r["arquivo"] for r in registros}
+    lado = {n: min(Image.open(os.path.join(RECORTES, f"{n:03d}.jpg")).size) for n in E}
+
+    fotos_do_evento = {}
+    for n, a in arq.items():
+        fotos_do_evento.setdefault(_data(a), {}).setdefault(a, []).append(n)
+    eventos = {d: fs for d, fs in fotos_do_evento.items() if len(fs) >= fotos_min}
+
+    pares, abaixo = [], {}
+    probes = []
+    for d, fotos in sorted(eventos.items()):
+        for a, ns in sorted(fotos.items()):
+            p = max(ns, key=lambda n: lado[n])
+            if lado[p] >= lado_min:
+                probes.append((d, p))
+    for d, p in probes:
+        for a, ns in sorted(eventos[d].items()):
+            if a == arq[p]:
+                continue  # a propria foto da selfie nao conta
+            s = [(float(E[p] @ E[n]), n) for n in ns]
+            score, melhor = max(s)
+            if score >= piso:
+                pares.append({"evento": d, "probe": p, "foto": a, "melhor": melhor,
+                              "score": round(score, 4)})
+            else:
+                abaixo[str(p)] = abaixo.get(str(p), 0) + 1
+    json.dump({"piso": piso, "probes": [p for _, p in probes], "pares": pares,
+               "abaixo_do_piso": abaixo}, open(SELFIE_JSON, "w", encoding="utf-8"), indent=1)
+    print(f"{len(probes)} selfies em {len(eventos)} eventos; {len(pares)} pares (selfie, foto) "
+          f"com score >= {piso} para conferir; {sum(abaixo.values())} abaixo do piso")
+
+    # folhas: uma linha por selfie -> [selfie] | candidatos em ordem de score
+    CEL, MAXC = 150, 9
+    try:
+        fonte = ImageFont.truetype(r"C:\Windows\Fonts\arialbd.ttf", 18)
+    except Exception:
+        fonte = ImageFont.load_default()
+    linhas = []
+    for d, p in probes:
+        cs = sorted([x for x in pares if x["probe"] == p], key=lambda x: -x["score"])
+        for i in range(0, max(len(cs), 1), MAXC):
+            linhas.append((p, cs[i:i + MAXC]))
+    for folha, i0 in enumerate(range(0, len(linhas), 8), 1):
+        lote = linhas[i0:i0 + 8]
+        img = Image.new("RGB", ((MAXC + 1) * CEL + 10, len(lote) * CEL), (20, 20, 20))
+        dr = ImageDraw.Draw(img)
+        for r, (p, cs) in enumerate(lote):
+            for c, (n, rot) in enumerate([(p, f"SELFIE #{p}")] +
+                                         [(x["melhor"], f"#{x['melhor']} {x['score']:.2f}") for x in cs]):
+                t = Image.open(os.path.join(RECORTES, f"{n:03d}.jpg"))
+                t.thumbnail((CEL - 8, CEL - 26))
+                x0 = c * CEL + (10 if c else 0)
+                img.paste(t, (x0 + 4, r * CEL + 4))
+                cor = (120, 220, 255) if c == 0 else (255, 220, 80)
+                dr.text((x0 + 4, r * CEL + CEL - 22), rot, font=fonte, fill=cor)
+        caminho = os.path.join(PASTA, f"_selfie-folha-{folha}.jpg")
+        img.save(caminho, quality=88)
+        print(f"folha: {os.path.relpath(caminho, RAIZ)}")
+
+
+def selfie_medir():
+    """Le os rotulos visuais e monta a tabela de decisao, SO para as selfies rotuladas.
+
+    Formato de _selfie-rotulos.json: {"<selfie>": {"<recorte-candidato>": true|false|null}}
+      true = a pessoa esta nessa foto · false = nao esta · null = incerto (fica de FORA
+      das duas contas e aparece contado -- incerteza declarada, nunca chutada).
+    Taxa de ENTREGA ERRADA = fotos SEM a pessoa que seriam entregues / fotos sem a pessoa.
+    Pares abaixo do piso contam como 'sem a pessoa' no denominador (vies pequeno, citado)."""
+    v = json.load(open(SELFIE_JSON, encoding="utf-8"))
+    rot = json.load(open(ROTULOS_JSON, encoding="utf-8"))
+    tem, nao, incertos, sem_rotulo = [], [], [], 0
+    for x in v["pares"]:
+        r = rot.get(str(x["probe"]))
+        if r is None:
+            continue  # selfie nao rotulada: fora da amostra inteira
+        lab = r.get(str(x["melhor"]), "faltou")
+        if lab == "faltou":
+            sem_rotulo += 1; print(f"SEM ROTULO: selfie #{x['probe']} x #{x['melhor']}")
+        elif lab is None:
+            incertos.append(x["score"])
+        else:
+            (tem if lab else nao).append((x["score"], x["probe"], x["melhor"]))
+    n_abaixo = sum(n for p, n in v["abaixo_do_piso"].items() if p in rot)
+    sem_pessoa = len(nao) + n_abaixo
+    tem_s = [s for s, _, _ in tem]
+    nao_s = [s for s, _, _ in nao]
+    print(f"selfies rotuladas: {sorted(int(p) for p in rot)}")
+    print(f"pares (selfie, foto) do mesmo evento: {len(tem) + len(nao) + len(incertos) + n_abaixo}")
+    print(f"  a pessoa ESTA na foto (conferido):  {len(tem)}")
+    print(f"  a pessoa NAO esta (conferido):      {len(nao)}  + {n_abaixo} abaixo do piso {v['piso']}")
+    print(f"  INCERTOS (fora da conta):           {len(incertos)}  "
+          f"(scores {min(incertos):.2f}-{max(incertos):.2f})" if incertos else "  INCERTOS: 0")
+    tem_t, nao_t = tem, nao
+    tem, nao = tem_s, nao_s
+    print()
+    print("limiar | fotos ERRADAS entregues        | fotos CERTAS perdidas (dos pares conferidos)")
+    for t in (0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55):
+        fa = sum(s >= t for s in nao)
+        fr = sum(s < t for s in tem)
+        print(f" {t:.2f}  | {fa:4d}/{sem_pessoa} = {100 * fa / max(sem_pessoa, 1):5.2f}%        "
+              f"| {fr:3d}/{len(tem)} = {100 * fr / max(len(tem), 1):5.1f}%")
+    print()
+    print("fotos ERRADAS (selfie x recorte, score):",
+          sorted(((p, m, round(s, 3)) for s, p, m in nao_t), key=lambda x: -x[2]))
+    print("fotos CERTAS mais fracas (< 0,50):",
+          sorted(((p, m, round(s, 3)) for s, p, m in tem_t if s < 0.50), key=lambda x: x[2]))
+
+
 if __name__ == "__main__":
+    if len(sys.argv) >= 2 and sys.argv[1] == "selfie":
+        selfie(); sys.exit(0)
+    if len(sys.argv) >= 2 and sys.argv[1] == "selfie-medir":
+        selfie_medir(); sys.exit(0)
     if len(sys.argv) < 2 or sys.argv[1] not in ("recortar", "medir", "sugerir"):
         print(__doc__); sys.exit(1)
     if sys.argv[1] == "recortar":

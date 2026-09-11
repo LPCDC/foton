@@ -531,6 +531,10 @@ diferentes — mas é sinal de que **0,25 tem menos margem de segurança do que 
 sugeria**, e vale medir o match real de evento (não só selfie↔selfie) antes de decidir.
 Limiar sugerido pelo meio da faixa livre (0,450–0,555): **~0,50** — só para o uso de
 "reencontro", não para o match de evento dentro do THRESH atual.
+> ⚠️ **SUPERADO em 2026-09-11 (seção seguinte).** Medido o caso real — selfie × fotos do
+> mesmo evento —, a mesma pessoa em foto de grupo cai até ~0,40. Um limiar de 0,50 teria
+> **perdido 35% das fotos certas**. O "~0,50" acima valia só para rosto×rosto de boa
+> qualidade e não deve ser usado para decidir nada.
 
 **Por que isto AINDA NÃO decide o limiar final — ressalvas sérias:**
 1. **Uma única identidade confirmada em dias diferentes.** Precisa de mais gente, mais
@@ -555,4 +559,92 @@ python tests/experimento_limiar.py recortar      # deteta+recorta+gera folhas de
 python tests/experimento_limiar.py sugerir       # propoe pares parecidos entre dias diferentes
 python tests/experimento_limiar.py medir 121,125,128,156,169,171 \
   86,92 87,93 88,94 89,96 90,95 91,97 --impostores-mesma-foto
+```
+
+---
+
+## Limiar de ENTREGA — selfie × fotos do mesmo evento (2026-09-11) → `THRESH` 0,25 → 0,40
+
+> Decisão em ADR-0034. É a medição que a seção anterior pedia ("medir o match real de
+> evento antes de mudar THRESH"). Regra do dono que orienta a escolha (2026-09-11):
+> **foto na pessoa errada é pior que foto perdida.**
+
+**Método — igual à produção, não rosto×rosto.** `rig.py` entrega a foto se *qualquer*
+rosto dela passar do limiar (`any(g @ f >= THRESH)`), então a unidade é o par **(convidado,
+FOTO)** e o score é o **máximo** sobre os rostos da foto. Sempre dentro do **mesmo evento**
+(nunca entre eventos — PRODUTO §3b). Três eventos reais (27/03, 16/07 e 29/08/2026): 61
+fotos, 244 rostos. "Selfie" = o maior rosto de uma foto, com recorte ≥ 600 px — 20 delas.
+
+**Achado 1 — o máximo sobre vários rostos sobe muito.** Dos 433 pares (selfie, foto),
+**333 passavam de 0,25**. Com 5 a 16 rostos por foto, basta um parecido.
+
+**Achado 2 — impostor rosto a rosto, sem rótulo nenhum.** Dois rostos na mesma foto são
+pessoas diferentes por construção (n = 736 pares):
+
+| limiar | pares de pessoas diferentes acima |
+|---|---|
+| 0,25 | 24 = **3,26%** |
+| 0,30 | 9 = 1,22% |
+| 0,36 | 5 = 0,68% |
+| 0,38 | 1 = 0,14% |
+| 0,40 | 1 = 0,14% |
+| 0,50 | 0 |
+
+Cauda exata: 0,450 · **0,378 · 0,370 · 0,365 · 0,363** · 0,330 … — quatro impostores
+colados entre 0,363 e 0,378.
+
+**Achado 3 — o caso real, com rótulo visual, só onde o rótulo é confiável.** Das 20
+selfies, 16 são perfil ou foram tiradas numa festa de mulheres de idade e cabelo
+parecidos: **não consegui separá-las com segurança em miniatura, e não rotulei** (o
+experimento de 01/09 já tinha mostrado o olho errando — o par do espelho). Rotulei as 4
+**frontais** (#10, #21, #74, #266): 75 pares, **43 com a pessoa presente**, 1 ausente
+conferido + 21 abaixo de 0,20, e **10 incertos, deixados de fora** (scores 0,22–0,45).
+
+| limiar | fotos **erradas** entregues | fotos **certas** perdidas |
+|---|---|---|
+| **0,25 (antigo)** | 1/22 (4,5%) | 0/43 |
+| 0,30 | 1/22 | 0/43 |
+| 0,35 | 1/22 | 0/43 |
+| **0,40 (novo)** | **0/22** | **1/43 (2,3%)** |
+| 0,45 | 0/22 | 7/43 (16%) |
+| 0,50 | 0/22 | **15/43 (35%)** |
+| 0,55 | 0/22 | 22/43 (51%) |
+
+- A foto errada: selfie #266 × outra mulher, **0,369**. A certa mais fraca: #74 num perfil
+  no escuro, **0,396**. Depois: 0,419 · 0,424 · 0,432 · 0,439 · 0,444 · 0,447 …
+- A mesma pessoa, de frente na selfie, aparece em foto de grupo com **0,40–0,50** com
+  frequência (15 das 43). **Isto derruba o "~0,50" da seção anterior.**
+
+**Por que 0,40 e não outro.** 0,38 fica colado no grupo de impostores 0,363–0,378. 0,45
+ou mais custa de 16% a metade das fotos certas. 0,40 zera as entregas erradas vistas nas
+duas medições (exceto o 0,450 isolado), com margem sobre o grupo de impostores, e perde
+só o perfil no escuro.
+
+**Achado 4 — a selfie escolhia o rosto pela ordem do detector.** O `/selfie` usava
+`faces[0]`, e o detector ordena por **confiança**, não por tamanho. **Em 58 de 71 fotos
+(82%) com 2+ pessoas, `faces[0]` NÃO era o maior rosto.** Numa selfie com gente ao fundo,
+"a convidada" podia ser a pessoa de trás. Corrigido: maior rosto primeiro. Em selfie de
+câmera frontal de verdade, a taxa desse erro é `UNKNOWN — REQUIRES EXPERIMENT`; a correção
+vale por construção.
+
+**Ressalvas — o que isto NÃO prova:**
+1. **Os 10 pares incertos caem na faixa que decide.** Quatro deles ficam ≥ 0,40 (0,45 ·
+   0,43 · 0,41 · 0,41). Se fossem estranhas, seriam entregas erradas **mesmo em 0,40**. Pela
+   taxa sem rótulo (0,14% por par ≥ 0,40), quatro estranhas acima disso num evento só seria
+   muito improvável — a leitura mais provável é que sejam a mesma mulher em foto escura.
+   Mas é *provável*, não conferido.
+2. "Selfie" aqui é rosto grande fotografado por outra pessoa, não câmera frontal. Os 4
+   rotulados são frontais, que é o que o app pede.
+3. Três eventos de um mesmo círculo social, e amostra rotulada pequena (4 selfies).
+   Público de salão e festa, muitas mulheres parecidas: o caso **mais difícil** — e o real
+   para GLAMON e Patrícia.
+4. Recall em 0,40 num evento real, com dezenas de convidados sem parentesco:
+   `UNKNOWN — REQUIRES EXPERIMENT`. **O primeiro evento real precisa medir as duas taxas.**
+
+**Reproduzir:**
+```bash
+python tests/experimento_limiar.py recortar       # deteta e recorta todos os rostos
+python tests/experimento_limiar.py selfie         # pares (selfie, foto) + folhas para rotular
+# rotular em fotos-teste/_selfie-rotulos.json: {"<selfie>": {"<recorte>": true|false|null}}
+python tests/experimento_limiar.py selfie-medir   # a tabela acima
 ```
