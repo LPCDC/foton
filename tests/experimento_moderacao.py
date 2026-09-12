@@ -21,11 +21,11 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PASTA = os.path.join(RAIZ, "fotos-teste")
 LONG_EDGE = 2048                                     # o mesmo de app/test_rig/rig.py
 
-# A regra do dono (PRODUTO §2): genitalia e mamilo nao; bunda pode; decote passa.
+# A regra do dono (PRODUTO §2, fechada em 2026-09-12): genitalia, mamilo e anus nao;
+# bunda pode; decote passa; PEITO MASCULINO PASSA (festa de piscina, praia).
 BLOQUEIA = {"FEMALE_BREAST_EXPOSED", "FEMALE_GENITALIA_EXPOSED",
             "MALE_GENITALIA_EXPOSED", "ANUS_EXPOSED"}
-# Em aberto para o dono: peito masculino (festa de piscina) -- medido a parte.
-EM_ABERTO = {"MALE_BREAST_EXPOSED"}
+EM_ABERTO = set()          # nada em aberto: as tres duvidas foram decididas pelo dono
 EXCLUIR = {"captura de tela 2026-09-01 104301.png"}   # grade de contatos de terceiros
 
 

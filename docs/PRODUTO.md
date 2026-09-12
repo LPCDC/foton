@@ -67,7 +67,14 @@ plataforma de evento. Ninguém serve quem fotografa o próprio rolê. É consumo
 >
 > **PLANO em `docs/FIESTA.md` (2026-09-11):** mercado, arquitetura, moderação por parte do
 > corpo (NudeNet — 0/80 retenções indevidas em foto de festa real, BENCHMARKS), capacidade
-> (o risco nº 1), LGPD, fases e as 8 decisões que ainda são do dono.
+> (o risco nº 1), LGPD, fases e as decisões do dono.
+>
+> **FECHADO PELO DONO EM 2026-09-12:** (a) **ânus entra no bloqueio**; (b) **peito
+> masculino passa** (piscina, praia); (c) **crianças entram na Fiesta**, com desenho
+> próprio — a criança não é usuária, quem registra e recebe é o responsável, com cláusula
+> em destaque (LGPD art. 14 §1). Isso **altera para a Fiesta** o "menores fora de escopo"
+> da ADR-0029; nos modos fotógrafa e empresa a regra antiga continua. Ver **ADR-0036** e
+> `FIESTA.md` §6.2/§6.4 — a parte de criança depende de parecer jurídico antes de lançar.
 >
 > **DECIDIDO PELO DONO (2026-08-30): esta é a versão da Ana.** Ela E os convidados
 > mandam fotos — não a versão "só ela envia". Consequências que ele mesmo apontou:

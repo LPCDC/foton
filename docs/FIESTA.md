@@ -30,7 +30,10 @@ hoje tem **1/8 de OCPU** e guarda foto **dentro do SQLite**. A Fiesta é o dia e
 experimentos → backend → front → **piloto fechado com uma festa pequena da Ana** → v2
 (telão, revelação). §7.
 
-**O que é seu:** 8 decisões em §8. A mais urgente: **crianças** (§6.2).
+**O que é seu:** o dono decidiu 3 em 2026-09-12 — **crianças entram** (com o desenho do
+§6.2: a criança não é usuária, o responsável é), peito masculino passa, ânus bloqueia.
+Restam **6 decisões**, em §8. E a parte de crianças precisa de **advogado antes do
+lançamento**, não antes do código (§6.4).
 
 ---
 
@@ -95,6 +98,10 @@ Coerente com a nossa decisão de PWA, mas não medido por nós.
 3. As fotos em que ele aparece chegam sozinhas — de qualquer autor.
 4. Aba **Todas**: a festa inteira (só fotos **publicadas**).
 5. Apagar a **própria** foto, se ela tiver no máximo 1 rosto. Nas outras, **"Pedir remoção"**.
+6. **Registrar uma criança sob sua responsabilidade** (§6.2): foto da criança + cláusula em
+   destaque, separada do resto. As fotos dela caem na galeria **do responsável** — a
+   criança não tem sessão, não tem galeria e não recebe nada no celular dela. O responsável
+   apaga tudo quando quiser.
 
 **Para a dona da festa (Ana):**
 1. Criar festa → QR (existe).
@@ -131,6 +138,9 @@ Padrão da casa: `ALTER` guardado, **NULL = comportamento idêntico ao de hoje**
 | `photo.status TEXT` (`'retida'`, `'removida'`) | **publicada** (hoje) | moderação sem apagar dado — a dona decide |
 | `photo.moderacao TEXT` (JSON: classes, scores, **versão do modelo e da política**, sem PII) | não passou por filtro | auditar falso positivo, calibrar limiar, e explicar por que a mesma foto passaria hoje e seria retida amanhã (invariante 6) |
 | `guest.token TEXT` | convidado só lê (hoje) | **credencial de escrita** separada do `guest_id` (§5.5) |
+| `guest.responsavel TEXT` | é um adulto que se cadastrou sozinho | **criança registrada por um responsável** (§6.2): guarda o `guest_id` de quem autorizou. Entrega vai para a galeria dele |
+| `guest.apelido TEXT` | sem rótulo | como a criança aparece na galeria do responsável ("fotos da Manu") — apelido, não nome completo |
+| `guest.consent_resp TEXT` (JSON: quando, versão do texto em destaque) | não se aplica | prova do consentimento do art. 14 §1, que é requisito de forma |
 | tabela `pedido_remocao(event, photo_id, guest_id, ts, status)` | — | regra 2 |
 
 - **Migração:** tudo aditivo; nenhuma linha antiga muda de significado.
@@ -163,10 +173,10 @@ já usa), modelo de **12,2 MB**. O que o torna certo para a regra do dono: ele n
 |---|---|---|
 | mamilo não | `FEMALE_BREAST_EXPOSED` | **retém** |
 | genitália não | `FEMALE_GENITALIA_EXPOSED`, `MALE_GENITALIA_EXPOSED` | **retém** |
-| (implícito) | `ANUS_EXPOSED` | **retém** — confirmar com o dono |
+| ânus não | `ANUS_EXPOSED` | **retém** — decidido pelo dono em 2026-09-12 |
 | decote passa | `FEMALE_BREAST_COVERED` | publica |
 | bunda pode | `BUTTOCKS_EXPOSED` / `_COVERED` | publica |
-| peito masculino (piscina) | `MALE_BREAST_EXPOSED` | **decisão do dono** (§8) |
+| peito masculino (piscina) passa | `MALE_BREAST_EXPOSED` | **publica** — decidido pelo dono em 2026-09-12 |
 
 **Medido em 2026-09-11** (`tests/experimento_moderacao.py`, BENCHMARKS): nas 80 fotos
 reais de festa, **0 retenções indevidas** mesmo com confiança ≥ 0,3; o modelo marcou
@@ -281,6 +291,13 @@ VM de verdade, antes do piloto.
 11. **Quem aparece na foto tem direito de remoção mesmo sem ser participante.** O art. 18
     não exige ter feito selfie. Precisa de canal (organizadora / Fóton), e ele não pode
     ser o botão do app, que só existe para quem entrou.
+12. **Criança nunca tem sessão própria.** Não faz selfie, não tem galeria, não recebe no
+    celular dela: quem recebe é o responsável que a registrou (§6.2).
+13. **Biometria de menor nunca é permanente.** Morre com o evento, e a retenção permanente
+    do modo álbum (GLAMON, `ret_bio_dias = 0`) é **proibida** para quem tem responsável
+    registrado — é a única regra da Fiesta que precisa de uma trava explícita no código de
+    retenção, porque hoje a isenção é por conta, não por pessoa.
+14. **Criança nunca vai para o telão** (v2), em nenhuma configuração.
 
 ---
 
@@ -294,17 +311,75 @@ envia precisa de um **aceite curto no primeiro envio**: "tenho direito de compar
 esta foto; sem nudez; entendo que os rostos serão usados para entregar a foto a quem
 aparece nela".
 
-### 6.2 Crianças — decisão urgente
-ADR-0029 deixa **menores fora de escopo**. Numa festa, convidado **vai** fotografar
-criança, e a foto vai entrar no pipeline (os rostos viram vetor, como já acontece no modo
-fotógrafa). A Fiesta **aumenta** essa exposição, porque tira o filtro humano da
-profissional. O classificador de conteúdo **não detecta idade**, e não deve ser vendido
-como proteção de menores. Precisa de decisão explícita (§8) antes do código.
+### 6.2 Crianças — DECIDIDO pelo dono em 2026-09-12: entram, com desenho próprio
+
+> **A decisão:** *"Crianças na Fiesta pode, e será seguro para elas. Outros apps já fazem
+> isso fora do Brasil, vamos adaptar."* Detalhe completo e base legal na **ADR-0036**
+> (que altera o "menores fora de escopo" da ADR-0029 **só para a Fiesta**).
+
+**O que é verdade na premissa, e o que não é.** Lá fora existe mesmo, e funciona — mas
+quem faz isso com criança de forma legítima são as **plataformas de foto escolar**, e o
+modelo delas é sempre o mesmo: **o responsável autoriza antes**. A atualização da COPPA de
+2025 passou a tratar **molde facial como dado pessoal** de forma explícita. Do outro lado,
+quem agrupou rosto sem pedir pagou caro: Google Fotos fechou acordo de **US$ 100 milhões**
+em Illinois, a Apple responde ação que cita **justamente menores**, TikTok pagou US$ 92
+milhões, e Nova York mantém moratória de reconhecimento facial em escola. **Não existe
+caso de sucesso do modelo "processa a criança e depois se vê".**
+
+**No Brasil a régua é mais explícita, não menos.** LGPD **art. 14 §1**: dado de criança
+exige **consentimento específico e em destaque, dado por ao menos um dos pais ou
+responsável**, e o controlador deve fazer *"todos os esforços razoáveis"* para verificar
+que foi o responsável mesmo, considerando as tecnologias disponíveis. O caput manda tratar
+sempre no **melhor interesse** da criança. (A lei separa **criança**, até 12, de
+**adolescente**, 12 a 18; o consentimento do responsável é exigência escrita para
+criança — trataremos os dois de forma conservadora.)
+
+**O desenho que atende os dois lados — a criança não é usuária; o responsável é:**
+
+1. **Ninguém vira destinatário sem alguém autorizar.** A criança **não** faz selfie, não
+   tem sessão, não tem galeria e não recebe nada no celular dela.
+2. **Quem registra é o responsável**, que já é participante identificado da festa (fez a
+   própria selfie): ele tira a foto da criança, marca a **cláusula em destaque, separada
+   do resto**, e declara ser o responsável. É o "esforço razoável" que o art. 14 §1 pede —
+   e é o ponto que **precisa passar por advogado antes do lançamento** (§6.4).
+3. **As fotos da criança chegam na galeria do responsável**, identificadas como dela.
+4. **Retenção curta e nunca permanente.** A biometria da criança morre com o evento, e a
+   retenção permanente do modo álbum (GLAMON) fica **proibida para menor**.
+5. **Criança nunca aparece no telão** (v2), em nenhuma hipótese.
+6. **O responsável apaga tudo a qualquer momento**, exercendo o art. 18 em nome dela.
+7. **Distinção que precisa ficar clara no contrato:** detectar um rosto numa foto (o que o
+   motor faz com todo mundo, para saber a quem entregar) **não é** transformar aquela
+   pessoa em destinatária. Para criança, virar destinatária depende do passo 2.
+
+**O que NÃO vamos afirmar, nem vender:**
+- O filtro de conteúdo **não detecta idade** e **não é proteção infantil**. Ele separa
+  parte do corpo, nada mais.
+- Não faremos estimativa de idade por imagem para "proteger": estimar idade **é mais**
+  tratamento biométrico, é impreciso, e criaria um problema novo para resolver outro.
 
 ### 6.3 Remoção e retenção
 - Pedido de remoção vai para a dona; retenção igual à do evento (ADR-0029).
 - Foto retida pela moderação **não entra** na entrega por rosto até ser publicada.
 - Telão só na v2, com consentimento próprio (IDEIAS-V2 A.1).
+- Quem aparece na foto **sem ser participante** também tem direito de remoção (art. 18 não
+  exige ter feito selfie) — precisa de canal fora do app (invariante 11 da §5.6).
+
+### 6.4 O que precisa de advogado antes de lançar
+
+Não é formalidade: são os pontos em que uma opinião jurídica muda o desenho, e nenhum
+deles se resolve escrevendo mais código.
+
+1. **A verificação de responsável** do §6.2 passo 2 satisfaz os "esforços razoáveis" do
+   art. 14 §1? Se não, o que satisfaz numa festa — e continua viável em 15 segundos na
+   porta do salão?
+2. **Adendo Fiesta ao contrato do organizador** (`docs/CONTRATO-ORGANIZADOR.md`), que hoje
+   pressupõe fotógrafa contratada, não convidado fotografando convidado.
+3. **Texto do aceite do participante** (uma tela, linguagem simples) e da **cláusula em
+   destaque do responsável** — o "destaque" do art. 14 §1 é requisito de forma, não de
+   estilo.
+4. Base legal do rosto **detectado mas não registrado** (a pessoa que aparece na foto e
+   nunca fez selfie) — hoje sustentado pelo contrato do organizador; na Fiesta o
+   fotógrafo é convidado, e vale confirmar se a construção continua de pé.
 
 ---
 
@@ -313,7 +388,7 @@ como proteção de menores. Precisa de decisão explícita (§8) antes do códig
 | Fase | O quê | Porta de saída (evidência, não afirmação) |
 |---|---|---|
 | **0. Pré-requisitos** | limite de tamanho/tipo e rate limit no `/ingest` e `/selfie` (handoff §3.3); feature flags na tabela `config`; ~~limiar 0,40~~ (**feito**, ADR-0034) | testes de contrato verdes; deploy verificado por SHA |
-| **1. Decidir e medir** | **ADR Fiesta** (papéis, dados, rotas); **ADR moderação** (NudeNet, limiar de retenção, licença dos pesos); **ADR capacidade** (fila + ARM + R2). Experimentos: falso positivo em traje de banho/piscina; tempo do NudeNet **na VM**; teste de carga | 3 ADRs aceitas pelo dono; 3 números em BENCHMARKS |
+| **1. Decidir e medir** | ~~**ADR crianças**~~ (**feita**: ADR-0036); **ADR Fiesta** (papéis, dados, rotas); **ADR moderação** (NudeNet, limiar de retenção, licença dos pesos); **ADR capacidade** (fila + ARM + R2). Experimentos: falso positivo em traje de banho/piscina; tempo do NudeNet **na VM**; teste de carga. Em paralelo, o que é do advogado (§6.4) | 3 ADRs aceitas pelo dono; 3 números em BENCHMARKS; parecer jurídico do §6.4 |
 | **2. Backend** | fila assíncrona, rotas §5.2, moderação no caminho, contador de 50, apagar/pedir remoção | testes de contrato para cada regra do §1; prova do vermelho |
 | **3. Front** | pele `social` completa; botão enviar + "12 de 50"; retidas e pedidos no painel da dona | `test_front` + (quando existir) E2E Playwright |
 | **4. Piloto fechado** | uma festa pequena de verdade da Ana, com o dono presente | medir: fotos enviadas, retidas, **retidas por engano**, **entregas erradas reportadas**, P95 do envio à entrega |
@@ -321,20 +396,26 @@ como proteção de menores. Precisa de decisão explícita (§8) antes do códig
 
 ---
 
-## 8. Decisões do dono (não codar antes)
+## 8. Decisões do dono
 
-1. **Crianças na Fiesta** (§6.2): aceitar com aviso no aceite, restringir, ou manter a
-   Fiesta só para festa adulta nesta fase?
-2. **Peito masculino** (piscina, praia): passa? A regra "mamilo não" foi dita pensando em
-   quê?
-3. **`ANUS_EXPOSED`** entra no bloqueio? (Parece óbvio, mas é regra dele, não minha.)
-4. **Foto retida**: só a Ana decide? Em quanto tempo? E se ela não olhar durante a festa?
-5. **"Enviada por"**: mostrar quem tirou a foto (vira reconhecimento e diversão) ou manter
-   anônimo (mais privacidade)?
-6. **Participante que sai da festa**: as fotos que ele enviou ficam? (pergunta aberta desde
-   PRODUTO §2)
-7. **Telão**: MVP ou v2? (A recomendação aqui é v2, pelo risco de LGPD e de vergonha.)
-8. **Preço da Fiesta** nesta fase: grátis como o resto (ADR-0024), ou já com limite pago?
+### Já decididas (2026-09-12)
+
+| # | Pergunta | Decisão |
+|---|---|---|
+| 1 | Crianças na Fiesta | **Entram**, com o desenho do §6.2: a criança não é usuária, o responsável é. ADR-0036 |
+| 2 | Peito masculino (piscina) | **Passa** |
+| 3 | `ANUS_EXPOSED` | **Bloqueia** |
+
+### Ainda abertas (não codar antes)
+
+| # | Pergunta | Por que importa |
+|---|---|---|
+| 4 | **Foto retida**: só a Ana decide? Em quanto tempo? E se ela não olhar durante a festa? | Define se precisa de um "publicar depois do evento" ou de um segundo moderador |
+| 5 | **"Enviada por"**: mostra quem tirou a foto, ou anônimo? | Muda o produto (diversão e crédito) e a privacidade |
+| 6 | **Participante que sai da festa**: as fotos que ele enviou ficam? | Aberta desde PRODUTO §2; mexe em retenção e no "só o criador apaga" |
+| 7 | **Telão**: MVP ou v2? | Recomendação daqui: **v2**, pelo risco de LGPD e de vergonha ao vivo |
+| 8 | **Preço da Fiesta** nesta fase | Grátis como o resto (ADR-0024) ou já com limite pago |
+| 9 | **Criança sem responsável presente** (a prima que veio com a tia): vale a declaração de quem está com ela? | É o caso mais comum de festa brasileira, e o §6.2 passo 2 depende da resposta |
 
 ---
 
@@ -344,7 +425,10 @@ como proteção de menores. Precisa de decisão explícita (§8) antes do códig
    parabéns. (§5.4)
 2. **Moderação que não pega** — recall desconhecido; uma foto imprópria no telão ou na
    galeria é a vergonha máxima. Mitigação: retenção antes de publicar + dona no controle.
-3. **Menores** — exposição maior que no modo fotógrafa; decisão pendente.
+3. **Menores** — exposição maior que no modo fotógrafa. Decidido que entram (ADR-0036), o
+   que **troca o risco de lugar**: deixa de ser "e se aparecer criança?" e passa a ser
+   "o consentimento do responsável se sustenta?". Mitigação: criança não é usuária,
+   retenção curta, nunca no telão, e revisão jurídica antes de lançar (§6.4).
 4. **Entrega errada em escala** — mitigada pelo 0,40 (ADR-0034); ainda precisa ser medida
    num evento real com gente sem parentesco.
 5. **Abuso** (spam de fotos, foto de fora da festa) — limite por participante + rate limit.

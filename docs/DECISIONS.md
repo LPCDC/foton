@@ -689,6 +689,10 @@ cadastra — **continua não existindo**. É documento, não código, e segue pe
 seria LGPD **Art. 14** (consentimento específico de um dos pais) somado ao Art. 11
 (dado sensível) — regime jurídico diferente, que exige decisão antes de qualquer tela.
 
+> ⚠️ **ALTERADO PARA A FIESTA em 2026-09-12 (ADR-0036).** O dono decidiu incluir crianças
+> na Foto'n Fiesta, com desenho próprio: a criança não é usuária, quem registra e recebe é
+> o responsável. **Para os modos fotógrafa e empresa, o parágrafo acima continua valendo.**
+
 ---
 
 ## ADR-0030 — Perfil de conta: uma estrutura, três peles (não são três apps)
@@ -1135,3 +1139,65 @@ convidado com foto de qualquer evento.
 
 **Rollback:** `git revert`. As colunas ficam no banco (inofensivas, `NULL` para o código
 antigo) e o `salva_match` volta a gravar só o par.
+
+---
+
+## ADR-0036 — Crianças na Foto'n Fiesta: a criança não é usuária, o responsável é
+
+**Data:** 2026-09-12 · **Estado:** aceita como **direção de produto**; o desenho só vai
+para o ar depois da revisão jurídica (abaixo) · **Altera a ADR-0029 só para a Fiesta** —
+nos modos fotógrafa e empresa, menores continuam fora de escopo
+
+**A decisão do dono (2026-09-12).** *"Crianças na Fiesta pode, e será seguro para elas.
+Outros apps já fazem isso fora do Brasil, vamos adaptar de alguma forma."*
+
+**O que foi verificado antes de aceitar (2026-09-12).** A premissa está certa, mas só na
+metade que importa:
+- Quem faz isso com criança de forma legítima lá fora são as **plataformas de foto
+  escolar** (pixevety, Vidigami, Capturely, Lenzeit), e o modelo é sempre **opt-in do
+  responsável**. A atualização da **COPPA de 2025** passou a listar **molde facial** como
+  dado pessoal de forma explícita.
+- Quem agrupou rosto **sem pedir** foi processado: Google Fotos (**US$ 100 milhões**,
+  BIPA/Illinois), Apple Fotos (ação que cita **menores** nominalmente), TikTok (US$ 92
+  milhões), Photomyne. Nova York mantém **moratória** de reconhecimento facial em escolas.
+- **Não há caso de sucesso do modelo "processa a criança e resolve depois".**
+- No Brasil a exigência é escrita: **LGPD art. 14 §1** — consentimento **específico e em
+  destaque** de ao menos um dos pais ou responsável, com *"todos os esforços razoáveis"*
+  de verificação; o caput manda tratar no **melhor interesse** da criança. A lei separa
+  **criança** (até 12) de **adolescente** (12–18); a exigência escrita de consentimento do
+  responsável é para criança, e aqui trataremos os dois de forma conservadora.
+
+**Decisão de desenho — sete regras (detalhe em `docs/FIESTA.md` §6.2):**
+1. A criança **não faz selfie, não tem sessão, não tem galeria** e não recebe nada no
+   celular dela.
+2. Quem registra é o **responsável**, que já é participante identificado (fez a própria
+   selfie): foto da criança + **cláusula em destaque, separada do resto** + declaração de
+   responsabilidade.
+3. As fotos da criança caem na **galeria do responsável**, rotuladas por apelido.
+4. **Biometria de menor nunca é permanente:** morre com o evento, e a isenção de retenção
+   do modo álbum (`ret_bio_dias = 0`, ADR-0021) fica **proibida** para quem tem
+   responsável registrado. É a única regra que exige trava nova no código de retenção,
+   porque hoje a isenção é **por conta**, não por pessoa.
+5. Criança **nunca** aparece no telão (v2), em nenhuma configuração.
+6. O responsável **apaga tudo quando quiser** (art. 18 em nome dela).
+7. Detectar um rosto numa foto **não é** transformar a pessoa em destinatária. Para
+   criança, virar destinatária depende do passo 2.
+
+**O que esta ADR NÃO autoriza dizer:**
+- Que o filtro de conteúdo protege menores. Ele **não detecta idade** — separa parte do
+  corpo (ADR de moderação, futura).
+- Que faremos estimativa de idade por imagem "para proteger": seria **mais** tratamento
+  biométrico, impreciso, criando um problema para resolver outro.
+
+**Pendente, e é bloqueio de lançamento (não de código):** parecer jurídico sobre (a) se a
+verificação do passo 2 satisfaz os "esforços razoáveis" do art. 14 §1 numa festa; (b)
+adendo Fiesta ao contrato do organizador; (c) texto da cláusula em destaque; (d) base
+legal do rosto detectado e não registrado. Lista em `docs/FIESTA.md` §6.4.
+
+**Decisão do dono ainda aberta:** criança que chega **sem o responsável legal** (a prima
+que veio com a tia) — vale a declaração de quem está com ela? É o caso mais comum de festa
+brasileira (§8, item 9).
+
+**Consequências.** O risco muda de lugar: deixa de ser *"e se aparecer criança?"* e passa
+a ser *"o consentimento do responsável se sustenta?"*. Em troca, a Fiesta deixa de ter um
+buraco que a realidade abriria de qualquer jeito — numa festa, criança aparece.

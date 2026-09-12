@@ -689,6 +689,10 @@ são exatamente a distinção que o dono pediu.
 | buffalo_s (já roda hoje) | 702 ms | 1041 ms | 1672 ms |
 | **razão** | **0,26×** | | |
 
+Segunda rodada no mesmo conjunto (2026-09-12, já com a política final de classes):
+**183 ms** contra **684 ms**, razão **0,27×**, e os mesmos **0/80**. A diferença entre as
+duas rodadas é variação de execução, não mudança de comportamento.
+
 Leitura: moderar cada foto custa cerca de um quarto do reconhecimento facial que o
 pipeline já paga. O absoluto **na VM** (1/8 OCPU) é `UNKNOWN — REQUIRES EXPERIMENT`; a
 razão é a estimativa que se transfere.
