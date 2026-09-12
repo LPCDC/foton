@@ -94,6 +94,12 @@ Fatos lidos no código em 2026-09-12, não suposições.
 
 ### 3.1 Bloqueiam — preciso da sua resposta antes de começar
 
+> **Respostas do dono (2026-09-12):**
+> **A — mantém: v1 sem registro de criança.** · **B — login de teste só em
+> desenvolvimento.** · **D — costura + provedor falso.**
+> **C — ainda aberta:** o dono pediu alternativa com licença permissiva (MIT, Apache 2.0,
+> BSD). A pesquisa está no §3.4; falta o experimento que decide.
+
 **A. Crianças: o pedido conflita com a decisão que você fechou.**
 O pedido lista "registro de criança conforme as regras do Fiesta" e teste de "regras de
 crianças". A regra vigente, fechada por você em 12/09 depois da revisão externa, é **v1 só
@@ -143,6 +149,39 @@ sandbox já — adiciona dependência e superfície sem uso no piloto.
 | L | `artifact.html` antigo | Remover | App velho servido em produção, sem dono |
 | M | Tamanho do piloto | **Teto definido pelo teste de carga**, não por chute | É o número 1 do §6 |
 
+### 3.4 Moderação com licença permissiva — o que a pesquisa encontrou (2026-09-12)
+
+**A família NudeNet inteira sai.** O **repositório** `notAI-tech/NudeNet` é **AGPL-3.0**
+(API do GitHub), apesar de o pacote no PyPI dizer MIT, e os pesos v3 declaram AGPL-3.0 e
+autoria Ultralytics nos metadados do ONNX. O fork `ifnude` não serve: **não declara licença**
+(sem licença, o padrão legal é todos os direitos reservados) e baixa um modelo de 139 MB de
+origem não informada.
+
+**O que existe com licença permissiva é outra coisa: classificador da imagem inteira, não
+detector de parte do corpo.** Isso importa porque a regra do dono é por parte do corpo
+("decote passa, mamilo não"), e classificador genérico é justamente o que ele disse que
+"reprovaria metade de um casamento". **Nenhum** candidato permissivo com detecção por parte
+do corpo foi encontrado.
+
+Licença e tamanho lidos da API do Hugging Face:
+
+| Modelo | Licença | Saída | Peso | Por que é candidato | Risco |
+|---|---|---|---|---|---|
+| `Freepik/nsfw_image_detector` | **MIT** | **4 níveis**: neutro · baixo · médio · alto (explícito) | 172,7 MB | é o único que **separa sugestivo de explícito** — o mais perto da regra do dono | arquitetura EVA02 a 448 px: custo em CPU `UNKNOWN`, provavelmente alto para 1/8 de OCPU |
+| `Marqo/nsfw-image-detection-384` | **Apache-2.0** | binário (NSFW / normal) | **22,4 MB** | o único leve o bastante para parecer caber na VM | binário: pode reter decote |
+| `AdamCodd/vit-base-nsfw-detector` | **Apache-2.0** | binário | 344 MB; tem **ONNX pronto**, inclusive 4-bit (52,6 MB) | já em ONNX, que é o stack da VM | binário: mesmo risco |
+| `Falconsai/nsfw_image_detection` | Apache-2.0 | binário | 343 MB | o mais baixado | o repositório traz também um `yolov9` quantizado, de outra linhagem — conferir antes de usar |
+
+**O que decide é medir, não o card do modelo:** as mesmas **80 fotos reais de festa, sem
+nudez** do experimento anterior → quantas cada modelo reteria (falso positivo contra a
+regra "decote passa") e quanto custa por foto num núcleo. O **recall** continua
+`UNKNOWN` para todos, pelo mesmo motivo de antes: não vamos coletar imagem de nudez.
+
+**Uma leitura de produto que o experimento vai testar:** como a retenção só **atrasa** (a
+dona libera), um classificador que erre um pouco para o lado de reter pode ser aceitável —
+**desde que** o número de fotos de festa retidas por engano fique baixo. Se o Freepik
+separar bem os níveis, "alto" vira o gatilho de retenção e "médio" publica.
+
 ### 3.3 Continuam dependendo de advogado, mesmo sem crianças
 
 Do `FIESTA.md` §6.4, os itens 2 a 4 valem para público adulto:
@@ -152,7 +191,7 @@ Do `FIESTA.md` §6.4, os itens 2 a 4 valem para público adulto:
    convidado.
 4. *(novo)* **Canal de notificação e remoção** do art. 21 do Marco Civil — prazo diligente,
    o que a notificação precisa conter, e como se verifica a legitimidade de quem pede.
-5. *(novo)* **AGPL-3.0 do modelo** (decisão C).
+5. *(novo)* **Licença do modelo de moderação** (decisão C) — só se o escolhido não for permissivo.
 
 ---
 
