@@ -660,7 +660,8 @@ python tests/experimento_limiar.py selfie-medir   # a tabela acima
 *"um filtro treinado em nudez genérica reprovaria metade de um casamento"*. Medido
 exatamente esse medo.
 
-**Método.** NudeNet 3.4.2, modelo padrão `320n.onnx` (**12,2 MB**, MIT, ONNX Runtime)
+**Método.** NudeNet 3.4.2, modelo padrão `320n.onnx` (**12,2 MB**, ONNX Runtime; pacote
+MIT, mas **pesos declarados AGPL-3.0 nos metadados do próprio ONNX** — ver `FIESTA.md` §5.3)
 sobre **80 fotos reais de festa** de `fotos-teste/`, **sem nudez nenhuma** — então todo
 alerta em classe bloqueada é **falso positivo**. As fotos foram reduzidas a 2048 px, como
 na produção, e o processo ficou **preso a 1 núcleo**. Na mesma rodada e nas mesmas fotos,

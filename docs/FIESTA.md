@@ -8,7 +8,8 @@
 >
 > **Estado em 2026-09-12: pronto para ADR e medição — não pronto para construir.**
 > Faltam três números (§7) e um parecer jurídico (§6.4). Revisado por fora em 12/09, com o
-> mesmo veredito.
+> mesmo veredito. **Proposta de implementação** (aguardando aprovação):
+> `docs/FIESTA-IMPLEMENTACAO.md`.
 
 ---
 
@@ -173,8 +174,21 @@ O `/ingest` da fotógrafa **não muda**. Rota que muda dado exige dono ou token 
 ### 5.3 Moderação: filtro por PARTE DO CORPO, antes de publicar
 
 **Tecnologia candidata: NudeNet 3.4.2** ([PyPI](https://pypi.org/project/nudenet/)) —
-licença MIT, detector YOLOv8n de 320 px em **ONNX** (roda no `onnxruntime`, que o projeto
-já usa), modelo de **12,2 MB**. O que o torna certo para a regra do dono: ele não diz
+detector YOLOv8n de 320 px em **ONNX** (roda no `onnxruntime`, que o projeto já usa),
+modelo de **12,2 MB**.
+
+> ⚠️ **CORREÇÃO DE LICENÇA (2026-09-12) — este documento dizia "licença MIT", e está errado
+> para o que importa.** O **pacote** Python se declara MIT. Mas o **arquivo do modelo**
+> (`320n.onnx`) traz nos próprios metadados, lidos com `onnx.load`:
+> `author = Ultralytics` · `version = 8.2.46` · `description = Ultralytics best model trained
+> on data.yml` · **`license = AGPL-3.0`**. A Ultralytics declara que modelos treinados com
+> o código dela ficam sob AGPL-3.0, cuja exigência para serviço acessível pela rede é
+> disponibilizar o código-fonte correspondente da aplicação.
+> **Consequência para o Fóton:** o repositório já é público, o que pode atender a exigência
+> — mas **fecha a porta de torná-lo privado** (BLUEPRINT §9, item 10) sem licença comercial
+> da Ultralytics ou troca de modelo. É decisão de negócio e de advogado, **antes** da ADR de
+> moderação. O "conferir a licença dos pesos antes da ADR" abaixo não era formalidade: ele
+> pegou isso. O que o torna certo para a regra do dono: ele não diz
 "nudez sim/não", ele devolve **partes do corpo, cobertas ou expostas**:
 
 | Regra do dono | Classe | Ação |
@@ -488,11 +502,10 @@ propunha.
 | 7 | Telão | **v2**, não v1 | menos superfície na v1; o telão volta com moldura de consentimento |
 | 9 | Criança sem o responsável legal | Valeria a declaração de quem está com ela — **sem efeito na v1**, que não registra criança | continua sendo o ponto jurídico a resolver antes de a §6.2 sair do papel |
 
-### Ainda aberta (não codar antes)
+| 8 | Preço | **Piloto gratuito**, com a arquitetura já preparada para monetização futura (evento gratuito → pago → pagamento confirmado → limites do plano), sem cobrança real e sem credencial fora do servidor | costura e provedor falso agora; o provedor real (PSP) numa ADR quando a monetização ligar. Ver `FIESTA-IMPLEMENTACAO.md` §4.5 |
 
-| # | Pergunta | Por que importa |
-|---|---|---|
-| 8 | **Preço da Fiesta** nesta fase | Grátis como o resto (ADR-0024) ou já com limite pago. É a única decisão de produto que continua sua |
+**Não há mais decisão de produto aberta neste plano.** As decisões novas — que surgiram ao
+propor a implementação — estão em `docs/FIESTA-IMPLEMENTACAO.md` §3.
 
 ---
 

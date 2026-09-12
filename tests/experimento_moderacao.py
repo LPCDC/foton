@@ -13,7 +13,8 @@ mede exatamente esse medo, e o custo em tempo, antes de qualquer linha de produt
     python tests/experimento_moderacao.py
 
 Dependencias SO do experimento (nao do produto -- entrar no produto exige ADR):
-nudenet==3.4.2 (MIT, ONNX), psutil. Roda offline; nada sai da maquina.
+nudenet==3.4.2 (pacote MIT; os PESOS 320n.onnx declaram AGPL-3.0 nos metadados -- ver
+docs/FIESTA.md §5.3), psutil. Roda offline; nada sai da maquina.
 """
 import os, sys, time, glob, json
 
