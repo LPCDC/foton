@@ -203,7 +203,8 @@ pré-cadastro funciona (criador sobe fotos antes → reconhecido na 1ª selfie).
 escolhida** (`/admin/conta/criar`, 2026-08-31 — extensão da ADR-0030, perfil continua
 sem dar poder) · marcar empresa · retenção por conta · zerar dados · compactar banco ·
 trocar senha de conta · testar foto de câmera · adotar órfãos · forçar expiração LGPD ·
-contatos.
+contatos · **auditoria de entrega** (`/admin/entregas?event=` — score, limiar vigente,
+modelo e caminho de cada foto entregue; ADR-0035).
 
 **Perfis (ADR-0030):** servidor declara `perfil` em `/signup`/`/login`/`/me`; front
 aplica vocabulário/blocos/tokens (`aplicarPerfil()`); `social` reservado à Fiesta.

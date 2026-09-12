@@ -30,6 +30,7 @@ BASE = os.path.dirname(os.path.dirname(HERE))
 # entregas erradas na amostra rotulada, ao custo de 1 em 43 fotos certas (perfil no
 # escuro). Regra do dono: foto na pessoa errada é o pior erro. NÃO baixar sem medir.
 THRESH = 0.40
+MODELO = "buffalo_s"    # entra na auditoria de entrega: trocar de modelo muda o score (ADR-0035)
 LONG_EDGE = 2048
 JPEG_Q = 82
 THUMB_EDGE = 320        # a grade mostra ~110px; 320 cobre tela retina sem exagero
@@ -661,8 +662,11 @@ def ingerir_bytes(event: str, raw: bytes):
     store.salva_foto(pid, event, treated, faces, thumb, sha)
     for gid, gemb in store.convidados_de(event):
         g = _emb(gemb)
-        if any(float(g @ f) >= THRESH for f in faces):
-            store.salva_match(gid, pid)
+        # max em vez de any: o pior caso do any ja percorria tudo, e o MAIOR score e o
+        # que explica a entrega depois (ADR-0035).
+        s = max((float(g @ f) for f in faces), default=0.0)
+        if s >= THRESH:
+            store.salva_match(gid, pid, s, THRESH, MODELO, "ingest")
     # A CAMERA passa por aqui (o /ingest e o caminho do celular). Sem esta linha o P95
     # ficava cego justamente para o caminho principal do piloto — e o numero do SLA
     # mediria so o celular da fotografa, nao a R8.
@@ -698,8 +702,9 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...),
     matched = []
     for gid, gemb in store.convidados_de(event):
         g = _emb(gemb)
-        if any(float(g @ f) >= THRESH for f in faces):
-            store.salva_match(gid, pid); matched.append(gid)
+        s = max((float(g @ f) for f in faces), default=0.0)     # o maior explica a entrega
+        if s >= THRESH:
+            store.salva_match(gid, pid, s, THRESH, MODELO, "ingest"); matched.append(gid)
     lat = int((time.time() - t0) * 1000)
     _marca_latencia(lat)
     log.info('{"stage":"ingest","photo_id":"%s","n_faces":%d,"proc_ms":%.0f,"latency_ms":%d,"status":"ok"}'
@@ -720,11 +725,16 @@ async def selfie(event: str = Form(...), consent: bool = Form(...), file: Upload
     emb = faces[0]
     gid = uuid.uuid4().hex[:12]
     store.salva_convidado(gid, event, emb)
-    matched = []
+    # `rostos_de` devolve UMA linha por rosto, entao a mesma foto aparece varias vezes:
+    # guarda o MAIOR score por foto e grava uma vez so, no fim (ADR-0035).
+    matched, melhor = [], {}
     for pid, femb in store.rostos_de(event):
-        if float(emb @ _emb(femb)) >= THRESH:
-            store.salva_match(gid, pid)
-            if pid not in matched: matched.append(pid)
+        s = float(emb @ _emb(femb))
+        if s >= THRESH:
+            if pid not in melhor: matched.append(pid)
+            melhor[pid] = max(melhor.get(pid, 0.0), s)
+    for pid in matched:
+        store.salva_match(gid, pid, melhor[pid], THRESH, MODELO, "selfie")
     if (nome or "").strip() or (contato or "").strip():
         store.salva_contato(event, gid, (nome or "").strip(), (contato or "").strip())
     log.info('{"stage":"selfie","guest_id":"%s","matches":%d,"status":"ok"}' % (gid, len(matched)))
@@ -870,6 +880,32 @@ def admin_latencias(authorization: str = Header(None)):
             "p50_ms": _pct(_LATS, 50), "p95_ms": _pct(_LATS, 95), "p99_ms": _pct(_LATS, 99),
             "max_ms": max(_LATS) if _LATS else None,
             "alvo_ms": 10000, "escopo": "servidor (ingest->banco+match), NAO end-to-end"}
+
+@app.get("/admin/entregas")
+def admin_entregas(event: str, authorization: str = Header(None)):
+    """Por que ESTA foto foi para ESTA pessoa (ADR-0035).
+
+    Sem isto, a unica coisa que sobrava de uma entrega era "aconteceu": a tabela `match`
+    guardava o par e nada da razao. Duas perguntas ficavam sem resposta — a do dia
+    seguinte ("entregaram foto minha para outra pessoa, por que?") e a da calibragem
+    ("o 0,40 da ADR-0034 esta certo para evento real?", o UNKNOWN que ela deixou aberto).
+
+    `score` e a MAIOR similaridade encontrada entre a selfie e os rostos da foto; `limiar`
+    e o valor vigente no instante da decisao — por isso entrega antiga continua explicavel
+    depois de o limiar mudar. `via` diz quem chegou depois: a foto (ingest) ou a selfie.
+    Linha com score nulo e anterior a esta ADR (nao da para saber o limiar dela).
+
+    Admin porque cruza convidado com foto de todos os eventos. Sem PII: `guest_id` e um
+    id aleatorio, nao nome nem contato."""
+    _admin(authorization)
+    rs = [dict(r) for r in store.entregas_de(event)]
+    scores = sorted(r["score"] for r in rs if r["score"] is not None)
+    return {"event": event, "entregas": len(rs),
+            "sem_razao_registrada": sum(1 for r in rs if r["score"] is None),
+            "score": {"min": round(scores[0], 4) if scores else None,
+                      "p50": round(scores[len(scores) // 2], 4) if scores else None,
+                      "max": round(scores[-1], 4) if scores else None},
+            "limiar_atual": THRESH, "modelo": MODELO, "lista": rs}
 
 def _mascara_nome(n):
     """"Ana Carolina Souza" -> "Ana C. S." — da para reconhecer o formato, nao a pessoa."""

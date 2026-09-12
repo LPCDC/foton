@@ -709,3 +709,33 @@ razão é a estimativa que se transfere.
 ```bash
 python tests/experimento_moderacao.py
 ```
+
+---
+
+## Auditoria de entrega — custo da migração e prova ponta a ponta (2026-09-12)
+
+Decisão em ADR-0035 (guardar score, limiar, modelo, caminho e hora de cada entrega).
+
+**Migração** (5 colunas em `match`, banco sintético com **50.000 entregas**):
+
+| operação | tempo |
+|---|---|
+| `ALTER TABLE match ADD COLUMN` ×5 (score, limiar, modelo, via, ts) | **2,3 ms** |
+
+Metadado, não reescreve tabela — mesmo comportamento medido na migração do `photo.sha`
+(1,0 ms). Aplicado sobre banco **criado pelo código antigo**: as entregas antigas
+sobrevivem com `NULL` e as novas gravam tudo (verificado, não presumido).
+
+**Ponta a ponta com o modelo real** (uvicorn + buffalo_s + fotos reais de festa, não o
+dublê da suíte):
+
+| cenário | score | limiar | via |
+|---|---|---|---|
+| convidada cadastrada; chega foto de grupo com 6 rostos onde ela aparece | **0,655** | 0,40 | `ingest` |
+| foto já existia; a convidada faz a selfie depois | **0,677** | 0,40 | `selfie` |
+
+Os dois valores batem com a medição de 11/09 para essa mesma pessoa (0,65 entre os
+recortes #74 e #87) — o pipeline real e o experimento concordam.
+
+**Custo em latência: nenhum relevante.** O código trocou `any(...)` por `max(...)` sobre
+os rostos da foto; o pior caso do `any` já percorria todos.

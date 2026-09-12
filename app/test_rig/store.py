@@ -92,6 +92,19 @@ def conn():
         except sqlite3.OperationalError: pass
         try: _conn.execute("CREATE INDEX IF NOT EXISTS ix_photo_sha ON photo(event_code, sha)")
         except sqlite3.OperationalError: pass
+
+        # AUDITORIA DA ENTREGA (ADR-0035): por que ESTA foto foi para ESTA pessoa.
+        # Guarda a razao da decisao junto com ela: a maior similaridade encontrada, o
+        # limiar vigente naquele instante, o modelo e por qual caminho foi decidido
+        # (a foto chegou depois do convidado, ou o convidado chegou depois da foto).
+        # Linha antiga fica NULL = "entregue antes disto existir" (nao da para saber se
+        # foi no limiar 0,25 ou 0,40) — e exatamente o que a coluna resolve daqui p/ frente.
+        # NAO e biometria nova: e um numero derivado da comparacao que ja acontecia, e
+        # morre junto com o convidado (apagar_dados_do_convidado / expirar apagam match).
+        for _col, _tipo in (("score", "REAL"), ("limiar", "REAL"), ("modelo", "TEXT"),
+                            ("via", "TEXT"), ("ts", "REAL")):
+            try: _conn.execute(f"ALTER TABLE match ADD COLUMN {_col} {_tipo}")
+            except sqlite3.OperationalError: pass
         _conn.commit()
     return _conn
 
@@ -532,12 +545,30 @@ def conta_convidados(code):
     r = q("SELECT COUNT(*) n FROM guest WHERE event_code=?", (code,), "one")
     return r["n"] if r else 0
 
-def salva_match(gid, pid):
-    q("INSERT OR IGNORE INTO match(guest_id,photo_id) VALUES(?,?)", (gid, pid))
+def salva_match(gid, pid, score=None, limiar=None, modelo=None, via=None):
+    """Grava a entrega E a razao dela (ADR-0035).
+
+    `INSERT OR IGNORE` continua: a PRIMEIRA decisao fica. Se a foto ja tinha sido
+    entregue a esta pessoa, o score da primeira vez nao e reescrito — e ele que explica
+    por que ela chegou. Os argumentos sao opcionais para nao quebrar chamador antigo."""
+    import time as _t
+    q("""INSERT OR IGNORE INTO match(guest_id,photo_id,score,limiar,modelo,via,ts)
+         VALUES(?,?,?,?,?,?,?)""",
+      (gid, pid, score, limiar, modelo, via, _t.time() if score is not None else None))
 
 def matches_de(gid):
     rs = q("SELECT photo_id FROM match WHERE guest_id=?", (gid,), "all")
     return sorted(r["photo_id"] for r in rs)
+
+def entregas_de(code, limite=500):
+    """Auditoria: as entregas de um evento com a razao de cada uma (ADR-0035).
+
+    Serve para responder 'por que essa foto foi para essa pessoa' e para calibrar o
+    limiar com dado de evento real — que e o UNKNOWN que a ADR-0034 deixou aberto."""
+    return q("""SELECT m.guest_id, m.photo_id, m.score, m.limiar, m.modelo, m.via, m.ts
+                FROM match m JOIN photo p ON p.id = m.photo_id
+                WHERE p.event_code = ?
+                ORDER BY m.ts IS NULL, m.ts DESC LIMIT ?""", (code, limite), "all") or []
 
 # ---------------- contatos ----------------
 def salva_contato(code, gid, nome, contato):

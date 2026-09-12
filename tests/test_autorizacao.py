@@ -751,5 +751,58 @@ try:
 finally:
     rig._fa = _fa_original
 
+print("\n[31] AUDITORIA da entrega: por que esta foto foi para esta pessoa (ADR-0035)")
+import store as _store
+
+C.post("/event", data={"code": "AUDIT", "brand": "L"}, headers=h(_lt))
+_fa_original = rig._fa
+try:
+    # a convidada chega PRIMEIRO: a foto que vier depois decide por "ingest"
+    rig._fa = _Detector(_Rosto(_E0, 300))
+    gA = C.post("/selfie", data={"event": "AUDIT", "consent": "true"},
+                files={"file": ("a.jpg", _jpg((11, 11, 11)), "image/jpeg")}).json()["guest_id"]
+    # foto com DOIS rostos: um a 0,30 e outro a 0,45. O score gravado tem que ser o MAIOR
+    rig._fa = _Detector(_Rosto(_vet(0.30), 100), _Rosto(_vet(0.45), 200))
+    p1 = C.post("/ingest", data={"event": "AUDIT"}, headers=h(_lt),
+                files={"file": ("p1.jpg", _jpg((12, 12, 12)), "image/jpeg")}).json()["photo_id"]
+    e1 = [r for r in _store.entregas_de("AUDIT") if r["guest_id"] == gA and r["photo_id"] == p1][0]
+    checa("grava o MAIOR score da foto, nao o primeiro", round(e1["score"], 2), 0.45)
+    checa("grava o limiar vigente na decisao", e1["limiar"], 0.40)
+    checa("grava o modelo", e1["modelo"], "buffalo_s")
+    checa("grava o caminho: a foto chegou depois", e1["via"], "ingest")
+    checa("grava quando foi decidido", isinstance(e1["ts"], float) and e1["ts"] > 0, True)
+
+    # agora o outro sentido: a foto ja existe e a selfie chega depois -> "selfie"
+    rig._fa = _Detector(_Rosto(_E0, 300))
+    gB = C.post("/selfie", data={"event": "AUDIT", "consent": "true"},
+                files={"file": ("b.jpg", _jpg((13, 13, 13)), "image/jpeg")}).json()["guest_id"]
+    e2 = [r for r in _store.entregas_de("AUDIT") if r["guest_id"] == gB and r["photo_id"] == p1][0]
+    checa("grava o caminho: a selfie chegou depois", e2["via"], "selfie")
+    checa("mesmo pela selfie, o score e o MAIOR rosto da foto", round(e2["score"], 2), 0.45)
+
+    # a PRIMEIRA decisao fica: regravar nao reescreve a razao da entrega
+    _store.salva_match(gA, p1, 0.99, 0.99, "outro", "ingest")
+    _re = [r for r in _store.entregas_de("AUDIT") if r["guest_id"] == gA and r["photo_id"] == p1][0]
+    checa("regravar nao reescreve o score da primeira entrega", round(_re["score"], 2), 0.45)
+
+    # entrega ANTIGA (anterior a esta ADR) continua legivel, marcada como sem razao
+    _store.salva_match("legado_teste", p1)
+    _aud = C.get("/admin/entregas?event=AUDIT", headers=h(chefe)).json()
+    checa("entrega antiga aparece como sem razao registrada", _aud["sem_razao_registrada"], 1)
+    checa("resumo traz o menor score", round(_aud["score"]["min"], 2), 0.45)
+    checa("resumo diz o limiar de hoje", _aud["limiar_atual"], 0.40)
+
+    # portao: auditoria cruza convidado com foto -> so admin
+    checa("anonimo NAO audita", C.get("/admin/entregas?event=AUDIT").status_code, 403)
+    checa("fotografa comum NAO audita", C.get("/admin/entregas?event=AUDIT", headers=h(_lt)).status_code, 403)
+    checa("admin audita", C.get("/admin/entregas?event=AUDIT", headers=h(chefe)).status_code, 200)
+
+    # LGPD: o score e derivado de biometria -> sai junto com o titular (ADR-0029)
+    C.post("/convidado/excluir", data={"guest_id": gA})
+    checa("auditoria do convidado some quando ele exerce o direito de exclusao",
+          any(r["guest_id"] == gA for r in _store.entregas_de("AUDIT")), False)
+finally:
+    rig._fa = _fa_original
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

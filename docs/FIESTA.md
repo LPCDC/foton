@@ -129,7 +129,7 @@ Padrão da casa: `ALTER` guardado, **NULL = comportamento idêntico ao de hoje**
 | `event.modo TEXT` (`'fiesta'`) | evento normal (fotógrafa) | liga as regras da Fiesta **por evento**, testável, sem depender de inferir pelo perfil da conta |
 | `photo.autor_guest TEXT` | foto da fotógrafa/dona | contar as 50, e saber quem pode apagar |
 | `photo.status TEXT` (`'retida'`, `'removida'`) | **publicada** (hoje) | moderação sem apagar dado — a dona decide |
-| `photo.moderacao TEXT` (JSON: classes e scores, **sem PII**) | não passou por filtro | auditar falso positivo, calibrar limiar |
+| `photo.moderacao TEXT` (JSON: classes, scores, **versão do modelo e da política**, sem PII) | não passou por filtro | auditar falso positivo, calibrar limiar, e explicar por que a mesma foto passaria hoje e seria retida amanhã (invariante 6) |
 | `guest.token TEXT` | convidado só lê (hoje) | **credencial de escrita** separada do `guest_id` (§5.5) |
 | tabela `pedido_remocao(event, photo_id, guest_id, ts, status)` | — | regra 2 |
 
@@ -202,10 +202,23 @@ fotografando no mesmo minuto) enfileiram muito além dos 10 s de P95. O próprio
 tinha dito: a **fila explícita "vira obrigatória no dia em que a Fiesta fizer N convidados
 subirem ao mesmo tempo"** (IDEIAS-V2 A-bis #4).
 
+**Fila não é capacidade — e confundir as duas é o erro caro aqui.** A fila impede que o
+envio falhe ou estoure timeout; ela **não** aumenta quantas fotos por minuto a VM
+processa. Se no parabéns chegam 60 fotos por minuto e a máquina processa 20, a fila
+converte *erro* em *atraso* — e atraso é exatamente o que o "na hora" promete não ter.
+Capacidade vem de CPU (a ARM) e de saber o número (teste de carga). Junto com a fila, o
+SLA muda de nome: deixa de ser "o `/ingest` respondeu em X" e passa a ser
+**P95 de "recebida" → "entregue no celular de quem aparece"**, que é a promessa real.
+
 Pré-requisitos, em ordem:
-1. **Fila assíncrona**: o envio responde na hora ("recebida"), o processamento acontece
-   atrás, e o participante vê o estado. A fila IndexedDB do celular já existe; falta a do
-   servidor.
+1. **Fila assíncrona e DURÁVEL**: o envio responde na hora ("recebida"), o processamento
+   acontece atrás, e o participante vê o estado. Durável porque **aqui deploy é `git push`
+   a qualquer hora e todo deploy reinicia o serviço** (medido: 3 a 10 s de queda) — fila em
+   memória perderia, a cada push, as fotos recebidas e ainda não processadas. Uma tabela no
+   SQLite com estado (`recebida → processada`) e um worker que retoma depois do restart
+   resolve, sem Redis nem Celery (CLAUDE.md §4.3: o menor stack que cumpra). De bônus, o
+   estado visível para o participante sai de graça. A fila IndexedDB do celular já existe;
+   falta a do servidor.
 2. **VM ARM A1** gratuita — ~16× a CPU de hoje (BLUEPRINT §11); A1 em São Paulo costuma
    dar "out of capacity", então tentar com retry agendado. Mudança de infra = ADR.
 3. **Fotos fora do SQLite (R2)** — IDEIAS-V2 A.0; milhares de fotos por festa num BLOB
@@ -226,6 +239,48 @@ VM de verdade, antes do piloto.
   nunca o contrário (PRODUTO §2).
 - Tipo e tamanho no servidor: JPEG/PNG/HEIC, teto de tamanho (item §3.3 do handoff).
 - Tudo com teste de contrato, como as rotas atuais.
+
+### 5.6 Invariantes da Fiesta
+
+> Isto não é estilo: **cada linha aqui vira teste de contrato**. É o que impede que a
+> próxima sessão (humana ou agente) "simplifique" uma delas sem perceber o que está
+> quebrando. Escritas depois de uma revisão externa do plano (2026-09-11), com as
+> correções que a leitura do código impôs.
+
+1. **Envio da Fiesta nunca espera o processamento.** O upload termina em `recebida`, não
+   em "processada e entregue". (§5.4)
+2. **Foto não publicada não participa de nada.** Uma foto `retida` fica fora da entrega,
+   da listagem e do byte. Vale no **índice de rostos** (`rostos_de`, senão a próxima
+   selfie casa com ela e a foto retida chega no feed), em `GET /photos` e em
+   `GET /img/...` — **nunca só na interface**. Hoje as duas rotas são públicas para quem
+   tem o código do evento, e o código está no QR projetado na parede.
+3. **`guest_id` não é credencial de escrita na Fiesta.** Escrita de participante (enviar,
+   apagar, pedir remoção) exige token próprio, no cabeçalho, com escopo do evento.
+   **Exceção legada, consciente:** `/convidado/excluir` (`rig.py`) aceita só o `guest_id`
+   — é a saída do titular (LGPD Art. 18) e o pior dano possível é alguém apagar o próprio
+   cadastro de outra pessoa. Fica como está; quem "consertar" isso sem ler aqui quebra um
+   direito do titular.
+4. **Toda foto da Fiesta tem exatamente um autor: um participante OU a dona do evento.**
+   (A Ana também fotografa — PRODUTO §2. Por isso `autor_guest` é `NULL` quando a autora é
+   a conta dona, e não "toda foto tem `autor_guest`".)
+5. **Toda entrega é auditável**: score, limiar vigente, modelo e caminho. **Já feito e em
+   produção** — ADR-0035, vale para todos os modos.
+6. **Toda decisão de moderação é auditável**: versão do modelo **e** da política, junto da
+   foto. Sem isso não há como explicar por que a mesma foto passaria hoje e seria retida
+   amanhã.
+7. **O limite de 50 é por participante e por evento, nunca por IP** — e a checagem é
+   **atômica**: com envio simultâneo, dois uploads chegando em 49 não podem virar 51.
+8. **A fila é durável**: reiniciar o serviço não perde foto recebida. Todo deploy
+   reinicia. (§5.4)
+9. **R2 guarda o binário; o SQLite guarda estado e metadado.** E apagar apaga nos dois:
+   expiração de retenção e pedido do titular precisam remover **o objeto**, senão sobra
+   arquivo órfão — dado que a política de privacidade afirma não existir. O teste de
+   restauração (`docs/BACKUP.md`) passa a cobrir os dois lados.
+10. **Nada da Fiesta muda o significado de dado legado.** `NULL` continua querendo dizer
+    "comportamento de hoje".
+11. **Quem aparece na foto tem direito de remoção mesmo sem ser participante.** O art. 18
+    não exige ter feito selfie. Precisa de canal (organizadora / Fóton), e ele não pode
+    ser o botão do app, que só existe para quem entrou.
 
 ---
 

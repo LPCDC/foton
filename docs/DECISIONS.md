@@ -1062,3 +1062,76 @@ pessoa aparece mas não recebeu.
 
 **Rollback:** `git revert <este commit> && git push origin main` — volta ao 0,25 e à ordem
 do detector. Matches feitos nesse meio-tempo continuam gravados.
+
+---
+
+## ADR-0035 — Auditoria da entrega: por que ESTA foto foi para ESTA pessoa
+
+**Data:** 2026-09-12 · **Estado:** aceita · **Vale para todos os modos** (fotógrafa,
+empresa e a futura Fiesta), não só para a Fiesta
+
+**O que estava faltando.** A tabela `match` guardava `(guest_id, photo_id)` e mais nada.
+A entrega acontecia e **a razão dela se perdia no mesmo instante**. Isso deixava duas
+perguntas sem resposta possível:
+
+1. A do dia seguinte, feita por um cliente: *"entregaram uma foto minha para outra pessoa
+   — por quê?"* A resposta honesta era "não dá para saber".
+2. A da calibragem: a ADR-0034 acabou de trocar o limiar de 0,25 para 0,40 e deixou
+   registrado que a validação em **evento real** continua `UNKNOWN`. Sem guardar o score,
+   o primeiro evento real **não mediria nada** — passaria e não deixaria dado. Pior: as
+   entregas já gravadas não dizem se foram decididas no 0,25 ou no 0,40.
+
+**Decisão.** A entrega passa a guardar a razão junto com ela. Cinco colunas em `match`:
+
+| coluna | o que é |
+|---|---|
+| `score` | a **maior** similaridade entre a selfie e os rostos daquela foto |
+| `limiar` | o `THRESH` vigente **no instante da decisão** — por isso a entrega continua explicável depois de o limiar mudar |
+| `modelo` | o pacote de reconhecimento (`buffalo_s`) — trocar de modelo muda a escala do score |
+| `via` | quem chegou depois: `ingest` (a foto) ou `selfie` (o convidado) |
+| `ts` | quando foi decidido (o `match` não tinha tempo próprio) |
+
+Leitura por `GET /admin/entregas?event=CODE`: a lista e um resumo (mínimo, mediana e
+máximo dos scores, e quantas entregas são anteriores a esta ADR).
+
+**Detalhes que a implementação fixa (e os testes travam):**
+- **O score é o MAIOR rosto da foto.** O código trocou `any(...)` por `max(...)`; o pior
+  caso do `any` já percorria todos os rostos, então não há custo novo relevante.
+- **A primeira decisão fica.** O `INSERT OR IGNORE` foi mantido: se a foto já tinha sido
+  entregue àquela pessoa, o score da primeira vez não é reescrito — é ele que explica.
+- **Entrega antiga continua legível**, com as colunas em `NULL`, e o resumo a conta
+  separadamente como "sem razão registrada". `NULL` aqui significa *"entregue antes disto
+  existir"*, e é honesto: não dá para saber o limiar daquela decisão.
+
+**LGPD.** O score é número derivado de comparação biométrica que **já acontecia** — não é
+biometria nova nem PII: `guest_id` é id aleatório, sem nome nem contato. Herda a retenção
+existente sem código novo: `apagar_dados_do_convidado()` (direito de exclusão, Art. 18) e
+`expirar()` (retenção automática) **já apagam as linhas de `match`** do convidado e das
+fotos vencidas — conferido, e agora travado por teste. A rota é de admin porque cruza
+convidado com foto de qualquer evento.
+
+**Prova (rodada e lida, 2026-09-12):**
+- **Suíte: 367 checagens verdes** (eram 352), com **15 novas** na seção [31].
+- **Prova do vermelho:** contra o código de produção, a seção [31] nem roda — `store` não
+  tem `entregas_de`. A funcionalidade testada não existia.
+- **Migração sobre banco criado pelo código ANTIGO** (o caso da produção): as 5 colunas
+  entram, a entrega antiga sobrevive com `NULL` e a nova grava tudo.
+- **Custo da migração: 2,3 ms** num banco com **50.000 entregas** — `ALTER ADD COLUMN` no
+  SQLite é metadado, não reescreve tabela (mesmo resultado da migração do `photo.sha`).
+- **Ponta a ponta com o modelo real** (uvicorn + buffalo_s + fotos reais): selfie de uma
+  convidada + foto de grupo de 6 rostos em que ela aparece → entregue com
+  **score 0,655 · limiar 0,40 · via `ingest`**; uma segunda convidada chegando **depois**
+  da foto → **0,677 · via `selfie`**. A auditoria explicou as duas.
+
+**Consequências.**
+- O primeiro evento real vira, sozinho, o experimento que a ADR-0034 pediu: dá para ver a
+  distribuição dos scores entregues e decidir se 0,40 está apertado ou frouxo, **com dado
+  do evento**, não com foto de teste.
+- Nenhuma mudança de comportamento visível: mesma entrega, mesma regra, mesma tela.
+- Não guarda score de quem **não** foi entregue (o quase-match). Ficou de fora de
+  propósito: seria uma linha por par (convidado × foto) e cresce como produto, num banco
+  que já é o gargalo (IDEIAS-V2 A.0). Se a calibragem precisar do lado de baixo, a hora de
+  decidir é depois do R2.
+
+**Rollback:** `git revert`. As colunas ficam no banco (inofensivas, `NULL` para o código
+antigo) e o `salva_match` volta a gravar só o par.
