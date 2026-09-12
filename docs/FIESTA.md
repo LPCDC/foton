@@ -30,10 +30,12 @@ hoje tem **1/8 de OCPU** e guarda foto **dentro do SQLite**. A Fiesta é o dia e
 experimentos → backend → front → **piloto fechado com uma festa pequena da Ana** → v2
 (telão, revelação). §7.
 
-**O que é seu:** o dono decidiu 3 em 2026-09-12 — **crianças entram** (com o desenho do
-§6.2: a criança não é usuária, o responsável é), peito masculino passa, ânus bloqueia.
-Restam **6 decisões**, em §8. E a parte de crianças precisa de **advogado antes do
-lançamento**, não antes do código (§6.4).
+**O que é seu.** Em 2026-09-12 o dono fechou **sete** decisões: **crianças entram** (a
+criança não é usuária, o responsável é — §6.2), **vale a declaração de quem está com ela**,
+peito masculino passa, ânus bloqueia, **só a dona libera** foto retida, a foto é
+**assinada** por quem enviou, e quem **sai da festa deixa as fotos**. Restam **duas**
+(telão na v1 ou v2, e preço), em §8. E a parte de crianças precisa de **advogado antes do
+lançamento** — não antes do código (§6.4).
 
 ---
 
@@ -94,8 +96,12 @@ Coerente com a nossa decisão de PWA, mas não medido por nós.
 
 **Para o participante (convidado):**
 1. Selfie de sempre (consentimento já existe) → vira participante.
-2. Botão **Fotografar / Enviar da galeria**, com contador visível **"12 de 50"**.
-3. As fotos em que ele aparece chegam sozinhas — de qualquer autor.
+2. Botão **Fotografar / Enviar da galeria**, com contador visível **"12 de 50"**, e o
+   estado de cada envio — inclusive **"em análise"** quando o filtro reteve (§5.3).
+   A selfie da Fiesta pede um **apelido**, porque a foto enviada é assinada (decisão 5).
+3. As fotos em que ele aparece chegam sozinhas — de qualquer autor, **assinadas pelo
+   apelido de quem enviou** (decisão 5: vira crédito e diversão, e inibe quem pensar em
+   mandar bobagem).
 4. Aba **Todas**: a festa inteira (só fotos **publicadas**).
 5. Apagar a **própria** foto, se ela tiver no máximo 1 rosto. Nas outras, **"Pedir remoção"**.
 6. **Registrar uma criança sob sua responsabilidade** (§6.2): foto da criança + cláusula em
@@ -111,8 +117,8 @@ Coerente com a nossa decisão de PWA, mas não medido por nós.
 4. **Pedidos de remoção** dos participantes.
 5. Resumo no fim: fotos enviadas, participantes, retidas, removidas.
 
-**Fora do MVP, de propósito:** telão, revelação atrasada, reações, ZIP, vídeo, número de
-fotos configurável, "enviada por" público (§8).
+**Fora do MVP, de propósito:** telão, revelação atrasada, reações, ZIP, vídeo e número de
+fotos configurável (§8). A autoria visível **entrou** no MVP (decisão 5).
 
 ### 4.2 v2 — depois de uma festa real
 
@@ -139,7 +145,7 @@ Padrão da casa: `ALTER` guardado, **NULL = comportamento idêntico ao de hoje**
 | `photo.moderacao TEXT` (JSON: classes, scores, **versão do modelo e da política**, sem PII) | não passou por filtro | auditar falso positivo, calibrar limiar, e explicar por que a mesma foto passaria hoje e seria retida amanhã (invariante 6) |
 | `guest.token TEXT` | convidado só lê (hoje) | **credencial de escrita** separada do `guest_id` (§5.5) |
 | `guest.responsavel TEXT` | é um adulto que se cadastrou sozinho | **criança registrada por um responsável** (§6.2): guarda o `guest_id` de quem autorizou. Entrega vai para a galeria dele |
-| `guest.apelido TEXT` | sem rótulo | como a criança aparece na galeria do responsável ("fotos da Manu") — apelido, não nome completo |
+| `guest.apelido TEXT` | sem rótulo | duplo uso: como a criança aparece na galeria do responsável ("fotos da Manu") **e** como o autor assina a foto que enviou (decisão 5). Apelido, nunca nome completo — e na Fiesta ele deixa de ser opcional: sem apelido não há como assinar |
 | `guest.consent_resp TEXT` (JSON: quando, versão do texto em destaque) | não se aplica | prova do consentimento do art. 14 §1, que é requisito de forma |
 | tabela `pedido_remocao(event, photo_id, guest_id, ts, status)` | — | regra 2 |
 
@@ -186,7 +192,13 @@ que o pipeline já gasta com rosto.
 
 **Desenho: publica na hora, ou retém — nunca "publica e apaga depois".** Filtro no
 caminho, antes da entrega: foto limpa segue direto (mantém o "na hora"); foto com classe
-bloqueada fica `retida`, **invisível para todos menos a dona**, até ela decidir. É o
+bloqueada fica `retida`, **invisível para todos menos a dona**, até ela decidir.
+
+**Quem libera é só a dona, quando puder olhar** (decisão do dono, 2026-09-12). Isso tem um
+efeito colateral que precisa de tela: numa festa ela **não** vai estar olhando o celular, e
+a foto pode ficar retida até o dia seguinte. Então **quem enviou tem que ver "em análise"**,
+com o motivo em linguagem humana — senão ele acha que o envio falhou e manda de novo (e a
+idempotência vai devolver a mesma foto retida, o que parece um bug e não é). É o
 meio-termo da tensão de IDEIAS-V2 A.1: humano **só** no caminho da foto suspeita.
 "Publicar e remover depois" foi descartado: numa festa, 10 segundos de foto imprópria na
 galeria de 100 pessoas já é o estrago.
@@ -338,10 +350,20 @@ criança — trataremos os dois de forma conservadora.)
 
 1. **Ninguém vira destinatário sem alguém autorizar.** A criança **não** faz selfie, não
    tem sessão, não tem galeria e não recebe nada no celular dela.
-2. **Quem registra é o responsável**, que já é participante identificado da festa (fez a
-   própria selfie): ele tira a foto da criança, marca a **cláusula em destaque, separada
-   do resto**, e declara ser o responsável. É o "esforço razoável" que o art. 14 §1 pede —
-   e é o ponto que **precisa passar por advogado antes do lançamento** (§6.4).
+2. **Quem registra é o adulto que está com a criança**, já participante identificado da
+   festa (fez a própria selfie): ele tira a foto dela, marca a **cláusula em destaque,
+   separada do resto**, e **declara ser o responsável por ela naquele evento**.
+   **Decidido pelo dono em 2026-09-12:** vale a declaração de quem está com a criança — não
+   só de pai, mãe ou responsável legal. A razão é a festa real: no Brasil, a criança
+   costuma chegar com a tia, a avó ou a madrinha, e um desenho que só aceitasse o
+   responsável legal deixaria de fora o caso mais comum.
+   **Consequência honesta, e é a mais séria deste documento:** o art. 14 §1 fala em *"pais
+   ou responsável legal"*. Aceitar o adulto acompanhante é uma leitura mais larga, e passa
+   a ser **o ponto jurídico central** do plano, não um detalhe. O que reduz o risco, e
+   precisa estar no desenho: a declaração é explícita e em destaque (não uma caixinha
+   escondida), fica **registrada com quem declarou, quando e sob qual texto**, a biometria
+   morre com o evento, e o responsável pode apagar tudo a qualquer momento. Confirmar isso
+   com advogado é **item 1 do §6.4** e é bloqueio de lançamento.
 3. **As fotos da criança chegam na galeria do responsável**, identificadas como dela.
 4. **Retenção curta e nunca permanente.** A biometria da criança morre com o evento, e a
    retenção permanente do modo álbum (GLAMON) fica **proibida para menor**.
@@ -358,6 +380,14 @@ criança — trataremos os dois de forma conservadora.)
   tratamento biométrico, é impreciso, e criaria um problema novo para resolver outro.
 
 ### 6.3 Remoção e retenção
+- **Quem sai da festa deixa as fotos** (decisão do dono, 2026-09-12): ao apagar a selfie, o
+  participante perde a **própria galeria** e a própria biometria, mas as fotos que ele
+  enviou **ficam** — são lembrança dos outros também, a mesma lógica da regra de não apagar
+  foto com mais gente. **Consequência que precisa de desenho:** a assinatura dele sai
+  junto. Quem pediu para sair não continua com o apelido estampado em dezenas de fotos,
+  então a autoria daquelas fotos vira **anônima** ("um convidado"). O vínculo interno
+  (`autor_guest`) aponta para um convidado que não existe mais, e isso é estado válido, não
+  erro — o código precisa tratar, não "consertar".
 - Pedido de remoção vai para a dona; retenção igual à do evento (ADR-0029).
 - Foto retida pela moderação **não entra** na entrega por rosto até ser publicada.
 - Telão só na v2, com consentimento próprio (IDEIAS-V2 A.1).
@@ -369,9 +399,10 @@ criança — trataremos os dois de forma conservadora.)
 Não é formalidade: são os pontos em que uma opinião jurídica muda o desenho, e nenhum
 deles se resolve escrevendo mais código.
 
-1. **A verificação de responsável** do §6.2 passo 2 satisfaz os "esforços razoáveis" do
-   art. 14 §1? Se não, o que satisfaz numa festa — e continua viável em 15 segundos na
-   porta do salão?
+1. **A declaração do adulto acompanhante** (§6.2 passo 2, decisão do dono) satisfaz o
+   art. 14 §1, que fala em *pais ou responsável legal*? Se não satisfaz, o que satisfaz
+   numa festa — e continua viável em 15 segundos na porta do salão? **É a pergunta nº 1
+   desta lista, e a que pode mudar o desenho.**
 2. **Adendo Fiesta ao contrato do organizador** (`docs/CONTRATO-ORGANIZADOR.md`), que hoje
    pressupõe fotógrafa contratada, não convidado fotografando convidado.
 3. **Texto do aceite do participante** (uma tela, linguagem simples) e da **cláusula em
@@ -400,22 +431,22 @@ deles se resolve escrevendo mais código.
 
 ### Já decididas (2026-09-12)
 
-| # | Pergunta | Decisão |
-|---|---|---|
-| 1 | Crianças na Fiesta | **Entram**, com o desenho do §6.2: a criança não é usuária, o responsável é. ADR-0036 |
-| 2 | Peito masculino (piscina) | **Passa** |
-| 3 | `ANUS_EXPOSED` | **Bloqueia** |
+| # | Pergunta | Decisão | O que ela puxa junto |
+|---|---|---|---|
+| 1 | Crianças na Fiesta | **Entram**, com o desenho do §6.2: a criança não é usuária, o responsável é | ADR-0036; trava de retenção por pessoa |
+| 2 | Peito masculino (piscina) | **Passa** | classe liberada na política (§5.3) |
+| 3 | `ANUS_EXPOSED` | **Bloqueia** | classe retida (§5.3) |
+| 4 | Quem libera foto retida | **Só a dona**, quando puder olhar | quem enviou precisa ver **"em análise"**, senão acha que falhou (§5.3) |
+| 5 | Mostrar quem tirou a foto | **Sim, com apelido** | a selfie da Fiesta passa a **pedir um apelido** — hoje o nome é opcional (§5.1) |
+| 6 | Participante que sai da festa | **As fotos ficam**; ele perde a própria galeria | a autoria vira **anônima** ao sair (§6.3) |
+| 9 | Criança sem o responsável legal | **Vale a declaração de quem está com ela** | é o ponto jurídico mais sensível do plano (§6.2, §6.4) |
 
 ### Ainda abertas (não codar antes)
 
 | # | Pergunta | Por que importa |
 |---|---|---|
-| 4 | **Foto retida**: só a Ana decide? Em quanto tempo? E se ela não olhar durante a festa? | Define se precisa de um "publicar depois do evento" ou de um segundo moderador |
-| 5 | **"Enviada por"**: mostra quem tirou a foto, ou anônimo? | Muda o produto (diversão e crédito) e a privacidade |
-| 6 | **Participante que sai da festa**: as fotos que ele enviou ficam? | Aberta desde PRODUTO §2; mexe em retenção e no "só o criador apaga" |
-| 7 | **Telão**: MVP ou v2? | Recomendação daqui: **v2**, pelo risco de LGPD e de vergonha ao vivo |
+| 7 | **Telão**: v1 ou v2? | Recomendação daqui: **v2**, pelo risco de LGPD e de travar na frente da festa |
 | 8 | **Preço da Fiesta** nesta fase | Grátis como o resto (ADR-0024) ou já com limite pago |
-| 9 | **Criança sem responsável presente** (a prima que veio com a tia): vale a declaração de quem está com ela? | É o caso mais comum de festa brasileira, e o §6.2 passo 2 depende da resposta |
 
 ---
 

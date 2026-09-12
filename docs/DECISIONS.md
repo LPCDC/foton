@@ -1170,9 +1170,16 @@ metade que importa:
 **Decisão de desenho — sete regras (detalhe em `docs/FIESTA.md` §6.2):**
 1. A criança **não faz selfie, não tem sessão, não tem galeria** e não recebe nada no
    celular dela.
-2. Quem registra é o **responsável**, que já é participante identificado (fez a própria
-   selfie): foto da criança + **cláusula em destaque, separada do resto** + declaração de
-   responsabilidade.
+2. Quem registra é **o adulto que está com a criança**, já participante identificado (fez a
+   própria selfie): foto da criança + **cláusula em destaque, separada do resto** +
+   declaração de responsabilidade por ela naquele evento. **Vale a declaração de quem está
+   com ela** (decisão do dono, 2026-09-12) — não só de pai, mãe ou responsável legal —
+   porque no Brasil a criança chega com a tia, a avó ou a madrinha, e o desenho estrito
+   deixaria de fora o caso mais comum. **É a leitura mais larga que este projeto faz da
+   lei**, e por isso vira o ponto jurídico central: o art. 14 §1 fala em *pais ou
+   responsável legal*. Atenuantes que ficam no desenho: declaração explícita e em destaque,
+   **registro de quem declarou, quando e sob qual texto**, biometria que morre com o evento
+   e remoção a qualquer momento.
 3. As fotos da criança caem na **galeria do responsável**, rotuladas por apelido.
 4. **Biometria de menor nunca é permanente:** morre com o evento, e a isenção de retenção
    do modo álbum (`ret_bio_dias = 0`, ADR-0021) fica **proibida** para quem tem
@@ -1194,9 +1201,11 @@ verificação do passo 2 satisfaz os "esforços razoáveis" do art. 14 §1 numa 
 adendo Fiesta ao contrato do organizador; (c) texto da cláusula em destaque; (d) base
 legal do rosto detectado e não registrado. Lista em `docs/FIESTA.md` §6.4.
 
-**Decisão do dono ainda aberta:** criança que chega **sem o responsável legal** (a prima
-que veio com a tia) — vale a declaração de quem está com ela? É o caso mais comum de festa
-brasileira (§8, item 9).
+**Fechado no mesmo dia:** criança que chega sem o responsável legal — **vale a declaração
+de quem está com ela** (ver regra 2). Junto vieram outras três decisões do dono que tocam a
+Fiesta: só a dona libera foto retida; a foto enviada é **assinada pelo apelido** de quem
+enviou; e quem sai da festa **deixa as fotos**, perdendo só a própria galeria — com a
+assinatura virando anônima, porque quem pediu para sair não continua estampado nas fotos.
 
 **Consequências.** O risco muda de lugar: deixa de ser *"e se aparecer criança?"* e passa
 a ser *"o consentimento do responsável se sustenta?"*. Em troca, a Fiesta deixa de ter um
