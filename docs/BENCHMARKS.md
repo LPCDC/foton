@@ -758,8 +758,14 @@ os rostos da foto; o pior caso do `any` já percorria todos.
 **Método.** As **mesmas 80 fotos reais de festa, sem nudez nenhuma**, do experimento do
 NudeNet; reduzidas a 2048 px como na produção; processo preso a **1 núcleo** (Ryzen 7800X3D),
 `torch.set_num_threads(1)` e `onnxruntime` com 1 thread. **Toda retenção é falso positivo.**
-Cada modelo usado como documenta o próprio card (desvio declarado: Freepik em float32 na
-CPU; o README usa bfloat16 em GPU).
+Cada modelo usado como documenta o próprio card.
+> ⚠️ **Correção (2026-09-12, mesmo dia):** esta seção dizia que o Freepik rodou "em float32
+> na CPU". **Rodou em bfloat16.** Os pesos carregam em bf16 pela config do repositório, e o
+> `forward` do wrapper converte a entrada sozinho (`pixel_values.to(self.device,
+> self.dtype)`) — descoberto só quando o exportador ONNX recusou a mistura de tipos. O
+> resultado **0/80 continua válido** (é a precisão nativa do README, e a versão float32 decide
+> igual em 80/80 — seção seguinte). O que muda é o **tempo de 1.813 ms**, que é de bf16 numa
+> CPU com AVX-512 BF16, e não se transfere para uma VM sem essa instrução.
 
 | Modelo | Licença (API do HF) | Saída | Retidas por engano (score ≥ 0,5) | ≥ 0,3 | Custo p50 · p95 |
 |---|---|---|---|---|---|
@@ -809,4 +815,73 @@ que a regra do dono pede.
 `huggingface_hub`, `onnxruntime`, `psutil`):
 ```bash
 HF_HOME=.venv-experimento/hf-cache python tests/experimento_moderacao_permissiva.py
+```
+
+---
+
+## A cascata no stack da VM — ONNX, paridade, memória e INT8 (2026-09-12)
+
+> A VM **não tem PyTorch**, o auto-update **não instala dependência** e há **1 GB de RAM**
+> dividida com o reconhecimento facial. A cascata acima rodou em PyTorch. Aqui ela vai para
+> o `onnxruntime`, que a VM já tem, e é medida lado a lado com o buffalo_s.
+> Script: `tests/experimento_moderacao_onnx.py` (`exportar` · `paridade` · `recursos` ·
+> `quantizar` · `recursos-int8`). Os `.onnx` ficam fora do git.
+
+**1. Exportação** (exportador clássico, opset 17): Marqo **22,5 MB**; Freepik **358,2 MB** em
+float32 (o arquivo original tinha 172,7 MB porque é bfloat16). Dois tropeços resolvidos,
+registrados porque vão se repetir: os pesos do Freepik vêm em bf16 (e o experimento anterior
+rodou nessa precisão sem avisar — correção feita acima), e a atenção "fundida" do EVA02 não
+passa pelo exportador — `timm.layers.set_fused_attn(False)` troca pelo caminho matemático.
+
+**2. Paridade — o que vai para a VM decide igual ao original?** Nas 80 fotos:
+
+| Prova | Resultado |
+|---|---|
+| Pré-processamento reescrito **sem PyTorch** × transform do timm | **diferença 0** pixel a pixel, nos dois modelos |
+| Probabilidade ONNX × PyTorch float32 | máx. **3,0e-6** (Marqo) · **1,1e-6** (Freepik) |
+| Freepik ONNX float32 × PyTorch **bf16** (o experimento anterior) | máx. 0,017 |
+| Decisão da cascata ONNX × PyTorch float32 | **80/80 idêntica** |
+| Decisão ONNX × PyTorch bf16 | **80/80 idêntica** |
+
+**3. Memória e tempo**, num processo que **já carrega o buffalo_s**, preso a 1 núcleo, 1 thread:
+
+| Configuração | Marqo acrescenta | Freepik acrescenta | Processo inteiro | Marqo p50 | Freepik p50 |
+|---|---|---|---|---|---|
+| float32, arena padrão do ORT | +46 MB | **+496 MB** | **826 MB** | 91 ms | 1.924 ms |
+| float32, arena desligada | +33 MB | +363 MB | 556 MB | 92 ms | 1.936 ms |
+| **Freepik INT8**, arena desligada | **+35 MB** | **+114 MB** | **308 MB** | **89 ms** | **1.098 ms** |
+
+(Referência: python + bibliotecas = 62 MB; + buffalo_s = 156 MB.) Em float32 com a arena
+padrão, o processo passaria de 800 MB numa VM de 1 GB — **swap na certa**.
+
+**4. INT8** (quantização dinâmica do próprio `onnxruntime`, sem download): Freepik de 358,2
+para **102,2 MB**. Contra o float32: maior diferença no nível "alto" **0,023**; maior "alto"
+nas 80 fotos **0,030** (o gatilho é 0,5); **decisão da cascata idêntica em 80/80**. Em **1 das
+80** fotos o nível mais provável mudou de "baixo" para "neutro" — sem efeito na decisão,
+registrado porque é mudança real de leitura.
+
+**Custo médio por foto da cascata recomendada** (Marqo em toda foto; Freepik INT8 nas 6 de 80
+que passam do portão 0,15), calculado dos tempos medidos:
+**89 ms + 6/80 × 1.098 ms ≈ 171 ms** — cerca de **24 %** do custo do reconhecimento facial na
+mesma máquina.
+
+**O que isto NÃO prova:**
+1. **Tudo medido num núcleo de desktop** (Ryzen 7800X3D). Tempo e memória **na VM real** —
+   com FastAPI, nginx, FTP e SQLite no mesmo 1 GB — são `UNKNOWN — REQUIRES EXPERIMENT`. É o
+   número 2 do plano, e agora com um alvo concreto: o processo de 308 MB aqui.
+2. **Recall do INT8 desconhecido**, como o de todos. A diferença de 0,023 foi medida em fotos
+   **sem** nudez; em foto explícita, o erro de quantização pode ser maior e empurrar um "alto"
+   para baixo do gatilho. O INT8 herda o `UNKNOWN` e acrescenta essa incerteza.
+3. **RSS do Windows ≠ memória no Linux da VM.** Ordem de grandeza confiável; número exato, não.
+4. **Como os pesos chegam na VM está em aberto**: 125 MB não cabem bem num repo git, e o
+   auto-update não baixa nada. MIT e Apache-2.0 permitem redistribuir **com o aviso de
+   licença**, inclusive a versão INT8, que é trabalho derivado.
+
+**Reproduzir:**
+```bash
+HF_HOME=.venv-experimento/hf-cache HF_HUB_OFFLINE=1 python tests/experimento_moderacao_onnx.py exportar
+HF_HOME=.venv-experimento/hf-cache HF_HUB_OFFLINE=1 python tests/experimento_moderacao_onnx.py paridade
+python tests/experimento_moderacao_onnx.py recursos
+python tests/experimento_moderacao_onnx.py quantizar
+python tests/experimento_moderacao_onnx.py recursos-int8
 ```

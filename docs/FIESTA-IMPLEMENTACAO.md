@@ -199,9 +199,26 @@ ordem, e o julgamento **sugestivo × explícito** que a regra do dono pede. O Ma
 não serve: a única foto que ele reteria é justamente um vestido de festa. O AdamCodd está
 descartado.
 
-**Antes da ADR de moderação — três pendências, nenhuma resolvida por mais leitura:**
-1. **Exportar os dois para ONNX e medir memória e tempo**, porque a VM não tem PyTorch e
-   tem 1 GB de RAM já dividida com o reconhecimento facial. O Freepik pode exigir a VM ARM.
+#### No stack da VM (ONNX), medido em 2026-09-12 — detalhe no BENCHMARKS
+
+**Pendência 1 resolvida: a cascata cabe no stack da VM, com uma condição — o Freepik tem que
+ser INT8.** Exportados para ONNX, com pré-processamento reescrito sem PyTorch (**diferença 0**
+pixel a pixel) e **decisão idêntica em 80/80** em todas as etapas (PyTorch bf16 → PyTorch fp32
+→ ONNX fp32 → ONNX INT8):
+
+| Freepik | Processo inteiro (rosto + Marqo + Freepik) | Freepik por foto | Cascata, média por foto |
+|---|---|---|---|
+| float32 | 556–826 MB — **não cabe** com folga em 1 GB | 1.936 ms | ~237 ms |
+| **INT8** | **308 MB** | **1.098 ms** | **~171 ms** (24 % do rosto) |
+
+**Recomendação atualizada para a decisão C:** **Marqo em ONNX float32 → Freepik em ONNX INT8**,
+arena de memória desligada, portão 0,15. Sem PyTorch na VM, sem dependência nova de runtime
+(o `onnxruntime` já está lá), duas licenças permissivas.
+
+**Antes da ADR de moderação — o que continua pendente:**
+1. ~~Exportar para ONNX e medir memória e tempo~~ — **feito localmente**. Falta a mesma
+   medição **na VM real**, com o processo de produção inteiro no mesmo 1 GB (número 2 do plano).
+   E o INT8 soma uma incerteza: o erro de quantização foi medido em foto **sem** nudez.
 2. **Falso positivo em traje de banho, piscina e pouca luz** — precisa de fotos cedidas
    pelo dono, como as de festa. Imagem de pessoa baixada da internet não entra (sem
    consentimento). **É também onde se descobre se a regra sobrevive à troca de modelo:** o
@@ -210,6 +227,12 @@ descartado.
    homem sem camisa de "alto".
 3. **Escolher o portão**, que é decisão de risco: 0,15 custa 252 ms; 0,10 custa 547 ms e
    deixa menos coisa escapar do Freepik. O recall continua desconhecido nos dois.
+   *(Custos em PyTorch; na cascata ONNX/INT8 o portão 0,15 sai por ~171 ms e o 0,10 por
+   ~89 + 19/80 × 1.098 ≈ 350 ms.)*
+4. **Como os 125 MB de pesos chegam na VM.** Não cabem bem no git, e o auto-update não baixa
+   nada. Caminho provável: um passo de instalação único, no Cloud Shell, que baixa uma revisão
+   **fixada** do Hugging Face, confere o **SHA-256**, converte e mantém os avisos de licença
+   (MIT e Apache-2.0 exigem isso, inclusive na versão INT8). Entra na ADR.
 
 ### 3.3 Continuam dependendo de advogado, mesmo sem crianças
 
