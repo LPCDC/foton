@@ -5,6 +5,10 @@
 > produto já decididas vivem em `docs/PRODUTO.md` §2; este documento diz **como** fazer,
 > **em que ordem**, **o que falta medir** e **o que ainda é decisão do dono**.
 > Regra do projeto: nada aqui vira código sem ADR antes (CLAUDE.md §4.3/§4.5).
+>
+> **Estado em 2026-09-12: pronto para ADR e medição — não pronto para construir.**
+> Faltam três números (§7) e um parecer jurídico (§6.4). Revisado por fora em 12/09, com o
+> mesmo veredito.
 
 ---
 
@@ -30,12 +34,12 @@ hoje tem **1/8 de OCPU** e guarda foto **dentro do SQLite**. A Fiesta é o dia e
 experimentos → backend → front → **piloto fechado com uma festa pequena da Ana** → v2
 (telão, revelação). §7.
 
-**O que é seu.** Em 2026-09-12 o dono fechou **sete** decisões: **crianças entram** (a
-criança não é usuária, o responsável é — §6.2), **vale a declaração de quem está com ela**,
-peito masculino passa, ânus bloqueia, **só a dona libera** foto retida, a foto é
-**assinada** por quem enviou, e quem **sai da festa deixa as fotos**. Restam **duas**
-(telão na v1 ou v2, e preço), em §8. E a parte de crianças precisa de **advogado antes do
-lançamento** — não antes do código (§6.4).
+**O que é seu.** Em 2026-09-12 o dono fechou tudo menos uma: peito masculino passa, ânus
+bloqueia, **só a dona libera** foto retida, a foto é **assinada** por quem enviou, quem
+**sai da festa deixa as fotos**, **telão fica para a v2** — e, depois de decidir que
+crianças entrariam, **voltou atrás no mesmo dia: a v1 é só para maiores** (§6.2, e leia lá
+o que isso *não* significa). Resta **uma** decisão: o preço. O desenho para crianças fica
+guardado, esperando **parecer jurídico** (§6.4).
 
 ---
 
@@ -104,10 +108,8 @@ Coerente com a nossa decisão de PWA, mas não medido por nós.
    mandar bobagem).
 4. Aba **Todas**: a festa inteira (só fotos **publicadas**).
 5. Apagar a **própria** foto, se ela tiver no máximo 1 rosto. Nas outras, **"Pedir remoção"**.
-6. **Registrar uma criança sob sua responsabilidade** (§6.2): foto da criança + cláusula em
-   destaque, separada do resto. As fotos dela caem na galeria **do responsável** — a
-   criança não tem sessão, não tem galeria e não recebe nada no celular dela. O responsável
-   apaga tudo quando quiser.
+*(Registrar criança sob responsabilidade **saiu da v1** — decisão do dono, 2026-09-12,
+§6.2. O desenho está pronto e espera parecer jurídico.)*
 
 **Para a dona da festa (Ana):**
 1. Criar festa → QR (existe).
@@ -305,6 +307,8 @@ VM de verdade, antes do piloto.
     ser o botão do app, que só existe para quem entrou.
 12. **Criança nunca tem sessão própria.** Não faz selfie, não tem galeria, não recebe no
     celular dela: quem recebe é o responsável que a registrou (§6.2).
+    *(12, 13 e 14 valem trivialmente na v1, que não registra criança — ficam escritas
+    porque são a condição de entrada da §6.2 quando ela voltar.)*
 13. **Biometria de menor nunca é permanente.** Morre com o evento, e a retenção permanente
     do modo álbum (GLAMON, `ret_bio_dias = 0`) é **proibida** para quem tem responsável
     registrado — é a única regra da Fiesta que precisa de uma trava explícita no código de
@@ -323,11 +327,38 @@ envia precisa de um **aceite curto no primeiro envio**: "tenho direito de compar
 esta foto; sem nudez; entendo que os rostos serão usados para entregar a foto a quem
 aparece nela".
 
-### 6.2 Crianças — DECIDIDO pelo dono em 2026-09-12: entram, com desenho próprio
+### 6.2 Crianças — ADIADO: a v1 é só para maiores
 
-> **A decisão:** *"Crianças na Fiesta pode, e será seguro para elas. Outros apps já fazem
-> isso fora do Brasil, vamos adaptar."* Detalhe completo e base legal na **ADR-0036**
-> (que altera o "menores fora de escopo" da ADR-0029 **só para a Fiesta**).
+> ### ⛔ Estado, e ele mudou duas vezes no mesmo dia (2026-09-12)
+>
+> **De manhã:** *"Crianças na Fiesta pode, e será seguro para elas."* O desenho abaixo foi
+> escrito a partir dessa decisão.
+> **Depois de ler a revisão externa, o dono voltou atrás:** *"por enquanto vamos deixar o
+> Fóton para maiores"*. **A v1 da Fiesta não terá registro de criança.** O desenho abaixo
+> fica pronto, e volta à mesa quando houver parecer jurídico (§6.4).
+>
+> **Foi a decisão certa**, e não é recuo: o art. 14 §1 fala em *pais ou responsável legal*,
+> e a regra que tínhamos acabado de aceitar (valer a declaração do adulto acompanhante) é
+> uma leitura mais larga que isso. O desenho técnico estava na frente da validação
+> jurídica — e o jeito de resolver é a validação vir antes, não o código andar assim.
+
+> ### ⚠️ O que "só para maiores" NÃO quer dizer
+>
+> Não quer dizer que nenhum dado de criança seja tocado. **Numa festa, criança aparece na
+> foto**, e o motor detecta e vetoriza **todo rosto de toda foto** para saber a quem
+> entregar — é assim hoje, também no modo fotógrafa. O que a v1 deixa de ter é o
+> **registro da criança como destinatária**: ninguém a cadastra, ela não vira convidada, e
+> nada é entregue por causa dela.
+>
+> Ou seja, "só para maiores" é **quem usa**, não **quem aparece**. Vender como "o Fóton não
+> processa criança" seria mentira, e é exatamente o tipo de frase que não pode sair daqui.
+> A posição honesta para o contrato e para a venda: *o Fóton não cadastra menores; rostos
+> de menores que apareçam em fotos são tratados como qualquer outro rosto não cadastrado,
+> com a mesma retenção curta, e nunca viram destinatário.*
+
+**O desenho guardado** (para quando houver parecer): a base legal e o que foi verificado
+estão na **ADR-0036**, que segue valendo como decisão de desenho — e cuja aplicação na v1
+está suspensa por esta decisão.
 
 **O que é verdade na premissa, e o que não é.** Lá fora existe mesmo, e funciona — mas
 quem faz isso com criança de forma legítima são as **plataformas de foto escolar**, e o
@@ -422,8 +453,23 @@ deles se resolve escrevendo mais código.
 | **1. Decidir e medir** | ~~**ADR crianças**~~ (**feita**: ADR-0036); **ADR Fiesta** (papéis, dados, rotas); **ADR moderação** (NudeNet, limiar de retenção, licença dos pesos); **ADR capacidade** (fila + ARM + R2). Experimentos: falso positivo em traje de banho/piscina; tempo do NudeNet **na VM**; teste de carga. Em paralelo, o que é do advogado (§6.4) | 3 ADRs aceitas pelo dono; 3 números em BENCHMARKS; parecer jurídico do §6.4 |
 | **2. Backend** | fila assíncrona, rotas §5.2, moderação no caminho, contador de 50, apagar/pedir remoção | testes de contrato para cada regra do §1; prova do vermelho |
 | **3. Front** | pele `social` completa; botão enviar + "12 de 50"; retidas e pedidos no painel da dona | `test_front` + (quando existir) E2E Playwright |
-| **4. Piloto fechado** | uma festa pequena de verdade da Ana, com o dono presente | medir: fotos enviadas, retidas, **retidas por engano**, **entregas erradas reportadas**, P95 do envio à entrega |
-| **5. v2** | telão com consentimento, revelação opcional, ZIP, limite configurável | depois de uma v1 sem vergonha |
+| **4. Piloto fechado** | uma festa pequena de verdade da Ana, **de público adulto**, com o dono presente | medir: fotos enviadas, retidas, **retidas por engano**, **entregas erradas reportadas**, P95 do envio à entrega |
+| **5. v2** | **telão** com consentimento (decidido: não é v1), revelação opcional, ZIP, limite configurável, e a §6.2 se o parecer permitir | depois de uma v1 sem vergonha |
+
+### Os três números que abrem a porta do piloto
+
+Uma revisão externa do plano (2026-09-12) isolou o que precisa ter número **antes** da
+fase 4, e concordo — nenhum deles existe hoje:
+
+1. **Throughput e latência da VM real** sob envio concorrente.
+2. **Custo do filtro de conteúdo na VM real** (aqui só temos a razão de 0,26× medida em
+   outra máquina).
+3. **P95 de "recebida" até "entregue"** sob carga — a promessa percebida pelo convidado,
+   não o tempo de resposta do upload.
+
+Enquanto os três forem `UNKNOWN`, o estado do projeto é **pronto para ADR e medição**, não
+pronto para construir. É a mesma conclusão da revisão, e é a ordem que este documento já
+propunha.
 
 ---
 
@@ -433,20 +479,20 @@ deles se resolve escrevendo mais código.
 
 | # | Pergunta | Decisão | O que ela puxa junto |
 |---|---|---|---|
-| 1 | Crianças na Fiesta | **Entram**, com o desenho do §6.2: a criança não é usuária, o responsável é | ADR-0036; trava de retenção por pessoa |
+| 1 | Crianças na Fiesta | **ADIADA no mesmo dia.** De manhã: entram, com o desenho do §6.2. À tarde, depois da revisão externa: **a v1 é só para maiores** | o desenho fica guardado (ADR-0036); volta quando houver parecer jurídico. Cuidado com o que "só para maiores" não significa — §6.2 |
 | 2 | Peito masculino (piscina) | **Passa** | classe liberada na política (§5.3) |
 | 3 | `ANUS_EXPOSED` | **Bloqueia** | classe retida (§5.3) |
 | 4 | Quem libera foto retida | **Só a dona**, quando puder olhar | quem enviou precisa ver **"em análise"**, senão acha que falhou (§5.3) |
 | 5 | Mostrar quem tirou a foto | **Sim, com apelido** | a selfie da Fiesta passa a **pedir um apelido** — hoje o nome é opcional (§5.1) |
 | 6 | Participante que sai da festa | **As fotos ficam**; ele perde a própria galeria | a autoria vira **anônima** ao sair (§6.3) |
-| 9 | Criança sem o responsável legal | **Vale a declaração de quem está com ela** | é o ponto jurídico mais sensível do plano (§6.2, §6.4) |
+| 7 | Telão | **v2**, não v1 | menos superfície na v1; o telão volta com moldura de consentimento |
+| 9 | Criança sem o responsável legal | Valeria a declaração de quem está com ela — **sem efeito na v1**, que não registra criança | continua sendo o ponto jurídico a resolver antes de a §6.2 sair do papel |
 
-### Ainda abertas (não codar antes)
+### Ainda aberta (não codar antes)
 
 | # | Pergunta | Por que importa |
 |---|---|---|
-| 7 | **Telão**: v1 ou v2? | Recomendação daqui: **v2**, pelo risco de LGPD e de travar na frente da festa |
-| 8 | **Preço da Fiesta** nesta fase | Grátis como o resto (ADR-0024) ou já com limite pago |
+| 8 | **Preço da Fiesta** nesta fase | Grátis como o resto (ADR-0024) ou já com limite pago. É a única decisão de produto que continua sua |
 
 ---
 
@@ -456,10 +502,13 @@ deles se resolve escrevendo mais código.
    parabéns. (§5.4)
 2. **Moderação que não pega** — recall desconhecido; uma foto imprópria no telão ou na
    galeria é a vergonha máxima. Mitigação: retenção antes de publicar + dona no controle.
-3. **Menores** — exposição maior que no modo fotógrafa. Decidido que entram (ADR-0036), o
-   que **troca o risco de lugar**: deixa de ser "e se aparecer criança?" e passa a ser
-   "o consentimento do responsável se sustenta?". Mitigação: criança não é usuária,
-   retenção curta, nunca no telão, e revisão jurídica antes de lançar (§6.4).
+3. **Menores** — a v1 **não registra criança** (§6.2), o que tira o risco maior da mesa por
+   ora. O que **sobra** e não some: criança aparece em foto de festa, e todo rosto é
+   detectado e vetorizado para a entrega funcionar. Mitigação do que sobra: retenção curta
+   igual à de qualquer rosto não cadastrado, nunca vira destinatária, nunca vai ao telão
+   (que também saiu da v1), e o contrato do organizador tem que dizer isso com todas as
+   letras. O risco grande — "o consentimento do responsável se sustenta?" — volta junto com
+   a §6.2, depois do parecer.
 4. **Entrega errada em escala** — mitigada pelo 0,40 (ADR-0034); ainda precisa ser medida
    num evento real com gente sem parentesco.
 5. **Abuso** (spam de fotos, foto de fora da festa) — limite por participante + rate limit.

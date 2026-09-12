@@ -69,12 +69,16 @@ plataforma de evento. Ninguém serve quem fotografa o próprio rolê. É consumo
 > corpo (NudeNet — 0/80 retenções indevidas em foto de festa real, BENCHMARKS), capacidade
 > (o risco nº 1), LGPD, fases e as decisões do dono.
 >
-> **FECHADO PELO DONO EM 2026-09-12:** (a) **ânus entra no bloqueio**; (b) **peito
-> masculino passa** (piscina, praia); (c) **crianças entram na Fiesta**, com desenho
-> próprio — a criança não é usuária, quem registra e recebe é o responsável, com cláusula
-> em destaque (LGPD art. 14 §1). Isso **altera para a Fiesta** o "menores fora de escopo"
-> da ADR-0029; nos modos fotógrafa e empresa a regra antiga continua. Ver **ADR-0036** e
-> `FIESTA.md` §6.2/§6.4 — a parte de criança depende de parecer jurídico antes de lançar.
+> **FECHADO PELO DONO EM 2026-09-12** (sete decisões): ânus bloqueia · peito masculino
+> passa · **só a dona libera** foto retida (e quem enviou vê "em análise") · a foto é
+> **assinada pelo apelido** de quem enviou · quem **sai da festa deixa as fotos**, perdendo
+> só a própria galeria · **telão fica para a v2** · e **crianças: adiadas** — depois de
+> decidir que entrariam, o dono voltou atrás no mesmo dia, e **a v1 é só para maiores**.
+> O "menores fora de escopo" da ADR-0029 **continua valendo nos três modos**; o desenho de
+> crianças fica guardado na **ADR-0036**, esperando parecer jurídico.
+> **Cuidado com a frase:** "só para maiores" é sobre **quem usa**, não sobre quem aparece —
+> rosto de criança numa foto de festa continua sendo detectado como qualquer outro. Ver
+> `FIESTA.md` §6.2. Única decisão ainda aberta: **preço**.
 >
 > **DECIDIDO PELO DONO (2026-08-30): esta é a versão da Ana.** Ela E os convidados
 > mandam fotos — não a versão "só ela envia". Consequências que ele mesmo apontou:

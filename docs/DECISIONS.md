@@ -689,9 +689,10 @@ cadastra — **continua não existindo**. É documento, não código, e segue pe
 seria LGPD **Art. 14** (consentimento específico de um dos pais) somado ao Art. 11
 (dado sensível) — regime jurídico diferente, que exige decisão antes de qualquer tela.
 
-> ⚠️ **ALTERADO PARA A FIESTA em 2026-09-12 (ADR-0036).** O dono decidiu incluir crianças
-> na Foto'n Fiesta, com desenho próprio: a criança não é usuária, quem registra e recebe é
-> o responsável. **Para os modos fotógrafa e empresa, o parágrafo acima continua valendo.**
+> ⚠️ **Histórico de 2026-09-12:** o dono decidiu incluir crianças na Foto'n Fiesta
+> (ADR-0036) e, no mesmo dia, **voltou atrás** — a v1 é só para maiores. **Este parágrafo
+> continua valendo nos três modos**; a ADR-0036 guarda o desenho para quando houver parecer
+> jurídico.
 
 ---
 
@@ -1144,9 +1145,27 @@ antigo) e o `salva_match` volta a gravar só o par.
 
 ## ADR-0036 — Crianças na Foto'n Fiesta: a criança não é usuária, o responsável é
 
-**Data:** 2026-09-12 · **Estado:** aceita como **direção de produto**; o desenho só vai
-para o ar depois da revisão jurídica (abaixo) · **Altera a ADR-0029 só para a Fiesta** —
-nos modos fotógrafa e empresa, menores continuam fora de escopo
+**Data:** 2026-09-12 · **Estado: desenho aceito, aplicação ADIADA no mesmo dia.** A v1 da
+Fiesta **não registra criança** — vale para maiores. O desenho abaixo fica pronto e volta
+quando houver parecer jurídico. **A ADR-0029 segue valendo integralmente por enquanto**,
+nos três modos.
+
+> **Como isto mudou duas vezes em 12/09/2026, e por que o registro fica assim.**
+> De manhã o dono decidiu incluir crianças, e este ADR foi escrito com o desenho completo.
+> À tarde, depois de uma revisão externa apontar que a regra aceita (valer a declaração do
+> adulto acompanhante) é **mais larga que o art. 14 §1**, que fala em *pais ou responsável
+> legal*, ele voltou atrás: *"por enquanto vamos deixar o Fóton para maiores"*.
+> **Não apaguei a primeira decisão**: uma ADR serve para mostrar o caminho, inclusive
+> quando ele volta. E a segunda decisão está certa — o desenho técnico estava na frente da
+> validação jurídica, e a correção é a validação vir antes, não o código andar assim.
+>
+> **O que "para maiores" NÃO significa:** que nenhum dado de criança seja tocado. Criança
+> aparece em foto de festa, e o motor vetoriza **todo rosto de toda foto** para saber a
+> quem entregar — como já faz hoje. O que a v1 não tem é o **registro da criança como
+> destinatária**. A frase honesta para contrato e venda: *o Fóton não cadastra menores;
+> rosto de menor que apareça numa foto é tratado como qualquer rosto não cadastrado, com a
+> mesma retenção curta, e nunca vira destinatário.* Dizer "não processa criança" seria
+> mentira.
 
 **A decisão do dono (2026-09-12).** *"Crianças na Fiesta pode, e será seguro para elas.
 Outros apps já fazem isso fora do Brasil, vamos adaptar de alguma forma."*
