@@ -182,6 +182,35 @@ dona libera), um classificador que erre um pouco para o lado de reter pode ser a
 **desde que** o número de fotos de festa retidas por engano fique baixo. Se o Freepik
 separar bem os níveis, "alto" vira o gatilho de retenção e "médio" publica.
 
+#### Resultado medido (2026-09-12) — detalhe no BENCHMARKS
+
+Nas mesmas 80 fotos de festa, sem nudez, num núcleo:
+
+| Modelo | Retidas por engano | Custo por foto |
+|---|---|---|
+| Freepik (MIT) | **0/80** | 1.813 ms |
+| Marqo (Apache-2.0) | **1/80** — um vestido de festa estampado | **116 ms** |
+| AdamCodd 4-bit (Apache-2.0) | **27/80 (34 %)** | 980 ms |
+| **Cascata Marqo → Freepik, portão 0,15** | **0/80** | **252 ms** (6 de 80 sobem ao Freepik) |
+
+**Recomendação para a decisão C: cascata Marqo → Freepik**, com duas licenças permissivas
+(Apache-2.0 + MIT), o mesmo zero falso positivo do NudeNet nesta amostra, custo na mesma
+ordem, e o julgamento **sugestivo × explícito** que a regra do dono pede. O Marqo sozinho
+não serve: a única foto que ele reteria é justamente um vestido de festa. O AdamCodd está
+descartado.
+
+**Antes da ADR de moderação — três pendências, nenhuma resolvida por mais leitura:**
+1. **Exportar os dois para ONNX e medir memória e tempo**, porque a VM não tem PyTorch e
+   tem 1 GB de RAM já dividida com o reconhecimento facial. O Freepik pode exigir a VM ARM.
+2. **Falso positivo em traje de banho, piscina e pouca luz** — precisa de fotos cedidas
+   pelo dono, como as de festa. Imagem de pessoa baixada da internet não entra (sem
+   consentimento). **É também onde se descobre se a regra sobrevive à troca de modelo:** o
+   NudeNet dizia "peito masculino exposto" e a política mandava publicar; um classificador
+   da imagem inteira não tem essa classe, e só a foto de piscina mostra se o Freepik chama
+   homem sem camisa de "alto".
+3. **Escolher o portão**, que é decisão de risco: 0,15 custa 252 ms; 0,10 custa 547 ms e
+   deixa menos coisa escapar do Freepik. O recall continua desconhecido nos dois.
+
 ### 3.3 Continuam dependendo de advogado, mesmo sem crianças
 
 Do `FIESTA.md` §6.4, os itens 2 a 4 valem para público adulto:

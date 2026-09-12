@@ -173,7 +173,15 @@ O `/ingest` da fotógrafa **não muda**. Rota que muda dado exige dono ou token 
 
 ### 5.3 Moderação: filtro por PARTE DO CORPO, antes de publicar
 
-**Tecnologia candidata: NudeNet 3.4.2** ([PyPI](https://pypi.org/project/nudenet/)) —
+> **ATUALIZAÇÃO 2026-09-12 — o NudeNet saiu.** Repositório e pesos são AGPL-3.0 (correção
+> abaixo), e o dono pediu licença permissiva. **Candidato atual: cascata Marqo (Apache-2.0)
+> → Freepik (MIT)**, medida nas mesmas 80 fotos: **0 retenções indevidas, 252 ms por foto**
+> num núcleo. Os dois julgam a imagem inteira, mas o Freepik separa sugestivo de explícito.
+> Pendências antes da ADR: exportar para ONNX e medir memória na VM, e testar traje de
+> banho/piscina. Detalhe em `FIESTA-IMPLEMENTACAO.md` §3.4 e no BENCHMARKS. A tabela de
+> classes abaixo continua valendo **como regra**; o que muda é o modelo que a aplica.
+
+**Candidato original (substituído): NudeNet 3.4.2** ([PyPI](https://pypi.org/project/nudenet/)) —
 detector YOLOv8n de 320 px em **ONNX** (roda no `onnxruntime`, que o projeto já usa),
 modelo de **12,2 MB**.
 

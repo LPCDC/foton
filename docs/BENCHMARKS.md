@@ -744,3 +744,69 @@ recortes #74 e #87) — o pipeline real e o experimento concordam.
 
 **Custo em latência: nenhum relevante.** O código trocou `any(...)` por `max(...)` sobre
 os rostos da foto; o pior caso do `any` já percorria todos.
+
+---
+
+## Moderação com licença PERMISSIVA — três candidatos e uma cascata (2026-09-12)
+
+> O candidato anterior (NudeNet) saiu: **repositório e pesos AGPL-3.0**. O dono pediu
+> alternativa MIT/Apache/BSD. Não existe detector permissivo **por parte do corpo** — os
+> que existem julgam a **imagem inteira**. Este experimento mede se algum deles respeita a
+> regra do dono ("decote e vestido de festa passam") mesmo assim.
+> Script: `tests/experimento_moderacao_permissiva.py`. Decisão pendente: FIESTA-IMPLEMENTACAO §3.4.
+
+**Método.** As **mesmas 80 fotos reais de festa, sem nudez nenhuma**, do experimento do
+NudeNet; reduzidas a 2048 px como na produção; processo preso a **1 núcleo** (Ryzen 7800X3D),
+`torch.set_num_threads(1)` e `onnxruntime` com 1 thread. **Toda retenção é falso positivo.**
+Cada modelo usado como documenta o próprio card (desvio declarado: Freepik em float32 na
+CPU; o README usa bfloat16 em GPU).
+
+| Modelo | Licença (API do HF) | Saída | Retidas por engano (score ≥ 0,5) | ≥ 0,3 | Custo p50 · p95 |
+|---|---|---|---|---|---|
+| NudeNet 320n *(referência)* | **AGPL-3.0** | parte do corpo | 0/80 | 0/80 | 181 ms |
+| `Freepik/nsfw_image_detector` | **MIT** | 4 níveis (neutro/baixo/médio/**alto**) | **0/80** (maior "alto": 0,029) | 0/80 | **1.813 · 1.841 ms** |
+| `Marqo/nsfw-image-detection-384` | **Apache-2.0** | binário | **1/80** (0,552) | 3/80 | **116 · 120 ms** |
+| `AdamCodd/vit-base-nsfw-detector` (ONNX 4-bit) | **Apache-2.0** | binário | **27/80 (34 %)** | 37/80 | 980 · 985 ms |
+
+- **AdamCodd** é o "reprovaria metade de um casamento": 34 % das fotos de festa retidas, e
+  11 % mesmo com score ≥ 0,9. Ressalva: só a versão **quantizada em 4 bits** foi medida.
+- **Marqo** é rápido e quase limpo, mas a única retenção dele é reveladora: **vestido
+  estampado na altura do joelho, braços e pernas de fora, luz quente, câmera inclinada** —
+  nenhuma nudez. É exatamente a foto que a regra do dono manda publicar.
+- **Freepik** acerta as 80 e separa sugestivo de explícito, mas custa **10× o Marqo** e
+  **2,6× o reconhecimento facial** (702 ms na mesma máquina).
+
+**Cascata — calculada com os scores e tempos medidos foto a foto, sem rodar nada de novo:**
+Marqo em toda foto; o Freepik só nas que passam do portão; retém se o Freepik der "alto" ≥ 0,5.
+
+| Portão do Marqo | Fotos que sobem ao Freepik | Retidas por engano | Custo médio por foto |
+|---|---|---|---|
+| ≥ 0,05 | 80/80 | 0/80 | 1.931 ms |
+| **≥ 0,10** | 19/80 (23,8 %) | **0/80** | **547 ms** |
+| **≥ 0,15** | 6/80 (7,5 %) | **0/80** | **252 ms** |
+| ≥ 0,20 | 5/80 (6,2 %) | 0/80 | 229 ms |
+| ≥ 0,30 | 3/80 (3,8 %) | 0/80 | 184 ms |
+
+**Leitura:** com portão em 0,15, a cascata tem **o mesmo zero falso positivo do NudeNet, custo
+na mesma ordem (252 contra 181 ms), duas licenças permissivas** e o julgamento em níveis
+que a regra do dono pede.
+
+**O que isto NÃO prova — ressalvas sérias:**
+1. **Recall desconhecido, para todos.** E na cascata há um teto a mais: nudez que o Marqo
+   pontue abaixo do portão **nunca chega ao Freepik**. Portão mais baixo = mais seguro e
+   mais caro (0,10 custa 547 ms). A escolha é de risco, não de desempenho.
+2. **0/80 não é zero**: limite superior de ~3,7 % com 95 % de confiança (regra do três).
+3. **Sem traje de banho, piscina, bebê sem camisa e pouca luz** na amostra — segue
+   obrigatório antes da ADR.
+4. **Custo medido num núcleo de desktop.** Na VM (1/8 OCPU) é `UNKNOWN`; a razão contra o
+   reconhecimento facial fica em ~0,36×.
+5. **Implantação ainda não validada:** a VM **não tem PyTorch**, o auto-update não instala
+   dependência e há **1 GB de RAM**, já ocupada pelo buffalo_s. Os dois modelos precisam ser
+   **exportados para ONNX** (roda no `onnxruntime` que já existe) e medidos em **memória** e
+   tempo antes da ADR. O Freepik (EVA02-base) pode não caber sem a VM ARM.
+
+**Reproduzir** (dependências só do experimento: `torch` CPU, `timm`, `transformers`,
+`huggingface_hub`, `onnxruntime`, `psutil`):
+```bash
+HF_HOME=.venv-experimento/hf-cache python tests/experimento_moderacao_permissiva.py
+```
