@@ -3091,6 +3091,8 @@ async function abrirAdmin(){
           <button class="btn ghost sm" onclick="admSenha('${f.email}')">Trocar senha</button>
           <button class="btn ghost sm" onclick="admRetencao('${f.email}',${f.ret_bio_dias===0?'null':'0'})">${f.ret_bio_dias===0?'Voltar a expirar em 7 dias':'Biometria não expira'}</button>
           <button class="btn ghost sm" onclick="admPerfil('${f.email}','${f.perfil||''}')">Pele: ${f.perfil||'automática'}</button>
+          ${(f.admin_fixo||f.admin) ? '' : `<button class="btn ghost sm" style="border-color:var(--live);color:var(--live)"
+               onclick="admExcluirConta(this,'${f.email}',${f.eventos|0},${f.fotos|0},${f.convidados|0})">Excluir conta e tudo</button>`}
           ${f.admin_fixo
             ? '<span class="note" style="align-self:center">admin pelo servidor</span>'
             : `<button class="btn ghost sm" style="${f.admin?'border-color:var(--warn);color:var(--warn)':''}"
@@ -3270,6 +3272,58 @@ async function admCreditos(email,n){
     if(!r.ok){ toast('Não consegui dar créditos.'); return; }
     const j=await r.json(); toast(`+${n} créditos — agora ${j.credits}`); abrirAdmin();
   }catch(e){ toast('Erro de conexão.'); }
+}
+/* EXCLUIR CONTA E TUDO (2026-09-21). A rota existia (/admin/conta/excluir) e o painel
+   nao tinha botao. Irreversivel, entao a confirmacao e DIGITAR O LOGIN, num campo dentro
+   do proprio cartao — sem prompt()/confirm(), que falham no PWA do Android (BLUEPRINT §7).
+   Depois de apagar, compacta: o SQLite nao devolve o espaco e o conteudo apagado fica nas
+   paginas livres do arquivo ate o VACUUM — "apagar tudo" inclui isso. Admin nao aparece
+   aqui: tirar admin primeiro e decisao a parte. */
+function admExcluirConta(btn, email, eventos, fotos, convidados){
+  const card=btn.closest('.tips'); if(!card)return;
+  const aberto=card.querySelector('.adm-excluir');
+  if(aberto){ aberto.remove(); return; }            // segundo clique no botao fecha
+  const box=document.createElement('div');
+  box.className='adm-excluir';
+  box.style.cssText='margin-top:10px;padding:12px 14px;border:1px solid var(--live);border-radius:10px';
+  const p=document.createElement('p');
+  p.style.cssText='margin:0 0 10px;font-size:15px;line-height:1.45';
+  p.append('Apaga para sempre a conta ');
+  const b=document.createElement('b'); b.textContent=email; p.append(b);
+  p.append(` e tudo dela: ${eventos} evento(s), ${fotos} foto(s), ${convidados} convidado(s), `+
+           'com rostos, entregas e contatos. As cópias de backup somem sozinhas em até 30 dias.');
+  const lab=document.createElement('label');
+  lab.style.cssText='display:block;font-size:14px;margin-bottom:6px';
+  lab.textContent='Para confirmar, digite o login da conta:';
+  const inp=document.createElement('input');
+  inp.autocomplete='off'; inp.spellcheck=false; inp.setAttribute('aria-label','Login da conta a excluir');
+  inp.style.cssText='width:100%;box-sizing:border-box';
+  const acoes=document.createElement('div'); acoes.style.cssText='display:flex;gap:6px;margin-top:10px';
+  const ok=document.createElement('button');
+  ok.className='btn sm'; ok.disabled=true; ok.textContent='Excluir para sempre';
+  ok.style.cssText='background:var(--live);color:var(--ink)';   // preto sobre o vermelho: ~6:1 (branco dava ~3:1)
+  const cancela=document.createElement('button');
+  cancela.className='btn ghost sm'; cancela.textContent='Cancelar';
+  inp.oninput=()=>{ ok.disabled = inp.value.trim().toLowerCase()!==email.toLowerCase(); };
+  cancela.onclick=()=>box.remove();
+  ok.onclick=()=>admConfirmarExclusao(email, inp.value, box, ok);
+  acoes.append(ok, cancela); box.append(p, lab, inp, acoes); card.append(box); inp.focus();
+}
+async function admConfirmarExclusao(email, digitado, box, ok){
+  if(digitado.trim().toLowerCase()!==email.toLowerCase())return;   // a trava vale no clique, nao so no botao
+  ok.disabled=true; ok.textContent='Excluindo…';
+  try{
+    const fd=new FormData(); fd.append('email',email);
+    const r=await fetch(API+'/admin/conta/excluir',{method:'POST',body:fd,headers:auth()});
+    if(!r.ok){ ok.disabled=false; ok.textContent='Excluir para sempre';
+      toast(r.status===404?'Essa conta não existe mais.':'Não consegui excluir. Nada foi apagado.'); return; }
+    ok.textContent='Excluída. Compactando o banco…';
+    let comp='';
+    try{ const c=await fetch(API+'/admin/compactar',{method:'POST',headers:auth()});
+      if(c.ok){ const j=await c.json(); comp=` · banco ${j.antes_mb}→${j.depois_mb} MB`; } }catch(e){}
+    toast(`Conta ${email} excluída com tudo${comp}`);
+    abrirAdmin();
+  }catch(e){ ok.disabled=false; ok.textContent='Excluir para sempre'; toast('Erro de conexão. Confira na lista se a conta ainda existe.'); }
 }
 async function admCompactar(){
   const box=document.getElementById('adm-compacta');

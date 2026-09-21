@@ -901,5 +901,41 @@ checa("contato deixado de proposito NAO e tratado como orfao",
       _s.q("SELECT COUNT(*) n FROM contact WHERE guest_id='g-sumiu'", (), "one")["n"], 1)
 checa("rodar de novo nao acha mais nada", _s.expirar().get("orfaos"), 0)
 
+print("\n[34] Admin exclui conta e TUDO dela — nada sobra, e as outras contas nao sofrem")
+# O [10] so conferia conta, fotos e sessao. "Apagar tudo" (decisao do dono, 2026-09-21,
+# album de uma empresa) inclui o que e mais sensivel: rosto, convidado, entrega, recusa e
+# contato. Montado com todos eles para provar que a cascata alcanca cada um.
+_fa_original = rig._fa
+try:
+    _al = C.post("/signup", data={"email": "album@t.com", "senha": "senha123", "nome": "A"}).json()["token"]
+    C.post("/event", data={"code": "ALB1", "brand": "A"}, headers=h(_al))
+    rig._fa = _Detector(_Rosto(_E0, 300))
+    gA1 = C.post("/selfie", data={"event": "ALB1", "consent": "true", "nome": "Cliente", "contato": "x@y.z"},
+                 files={"file": ("a1.jpg", _jpg((81, 81, 81)), "image/jpeg")}).json()["guest_id"]
+    gA2 = C.post("/selfie", data={"event": "ALB1", "consent": "true"},
+                 files={"file": ("a2.jpg", _jpg((82, 82, 82)), "image/jpeg")}).json()["guest_id"]
+    rig._fa = _Detector(_Rosto(_vet(0.8), 150))
+    pA = C.post("/ingest", data={"event": "ALB1"}, headers=h(_al),
+                files={"file": ("pa.jpg", _jpg((83, 83, 83)), "image/jpeg")}).json()["photo_id"]
+    C.post("/convidado/nao-sou-eu", data={"event": "ALB1", "guest_id": gA2, "photo_id": pA})
+    _conta = lambda: {t: _s.q(f"SELECT COUNT(*) n FROM {t} WHERE {c}", a, "one")["n"] for t, c, a in (
+        ("photo", "event_code=?", ("ALB1",)), ("face", "event_code=?", ("ALB1",)),
+        ("guest", "event_code=?", ("ALB1",)), ("contact", "event_code=?", ("ALB1",)),
+        ("match", "photo_id=?", (pA,)), ("rejeicao", "photo_id=?", (pA,)),
+        ("event", "code=?", ("ALB1",)), ("session", "email=?", ("album@t.com",)),
+        ("photographer", "email=?", ("album@t.com",)))}
+    checa("o cenario tem de tudo antes (foto, rosto, convidado, contato, entrega, recusa)",
+          all(v > 0 for v in _conta().values()), True)
+    _outras_antes = (pN in _feed(gOutro), _s.evento("NSE") is not None)
+    checa("admin exclui", C.post("/admin/conta/excluir", data={"email": "album@t.com"},
+                                 headers=h(chefe)).status_code, 200)
+    checa("NADA da conta sobra (conta, sessao, evento, foto, rosto, convidado, contato, entrega, recusa)",
+          {t: v for t, v in _conta().items() if v}, {})
+    checa("as outras contas nao sofrem", (pN in _feed(gOutro), _s.evento("NSE") is not None), _outras_antes)
+    checa("excluir de novo diz que nao existe", C.post("/admin/conta/excluir", data={"email": "album@t.com"},
+                                                       headers=h(chefe)).status_code, 404)
+finally:
+    rig._fa = _fa_original
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

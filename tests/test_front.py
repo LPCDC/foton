@@ -180,6 +180,21 @@ checa("trocar de foto desarma o primeiro toque",
       "atualizarNaoSouEu();" in js[js.find("function navFoto"):js.find("function navFoto") + 600], True)
 
 print("")
+print("[6f] Admin: excluir conta e tudo — confirmacao digitada, sem dialogo, compacta depois")
+_exc = js[js.find("function admExcluirConta"):js.find("async function admCompactar")]
+checa("recorte das funcoes de exclusao encontrado", 500 < len(_exc) < 6000, True)
+checa("o cartao da conta tem o botao", "onclick=\"admExcluirConta(this," in js, True)
+checa("admin nao ganha o botao (tirar admin e decisao a parte)",
+      "(f.admin_fixo||f.admin) ? '' :" in js, True)
+checa("nao usa dialogo do navegador", ("confirm(" in _exc) or ("prompt(" in _exc), False)
+checa("so libera o botao com o login digitado igual", "inp.value.trim().toLowerCase()!==email.toLowerCase()" in _exc, True)
+checa("confere o login de novo no clique (nao so pelo botao)",
+      "digitado.trim().toLowerCase()!==email.toLowerCase()" in _exc, True)
+checa("apaga e DEPOIS compacta",
+      -1 < _exc.find("/admin/conta/excluir") < _exc.find("/admin/compactar"), True)
+checa("o e-mail entra por textContent, nao por HTML montado", "b.textContent=email" in _exc, True)
+
+print("")
 print("[7] O manifest continua valido (o Compartilhar do Android depende dele)")
 m = json.load(open(os.path.join(WEB, "manifest.webmanifest"), encoding="utf-8"))
 checa("manifest e JSON valido", isinstance(m, dict), True)
