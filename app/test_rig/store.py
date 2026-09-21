@@ -394,7 +394,22 @@ def expirar(dias_biometria=7, dias_fotos=90):
         q("DELETE FROM match WHERE photo_id=?", (p["id"],))
         q("DELETE FROM rejeicao WHERE photo_id=?", (p["id"],))
         q("DELETE FROM photo WHERE id=?", (p["id"],))
-    return {"convidados": len(gs), "fotos": len(ps)}
+    # 4) ORFAOS (ADR-0037, autorizado pelo dono em 2026-09-21): dado derivado cuja base
+    #    ja nao existe. O defeito antigo de apaga_evento deixou entregas de eventos apagados
+    #    no banco, com score; e rosto (embedding = biometria) sem foto e o pior tipo de
+    #    sobra. Nada disto e legitimo: toda exclusao correta apaga o que depende junto.
+    #    NAO entra aqui `contact`: contato deixado de proposito vive mais que a biometria
+    #    do convidado (segue a retencao das fotos, passo 2) — sem convidado nao e orfao.
+    orfaos = 0
+    for tabela, onde in (
+            ("match", "guest_id NOT IN (SELECT id FROM guest) OR photo_id NOT IN (SELECT id FROM photo)"),
+            ("rejeicao", "guest_id NOT IN (SELECT id FROM guest) OR photo_id NOT IN (SELECT id FROM photo)"),
+            ("face", "photo_id NOT IN (SELECT id FROM photo)")):
+        n = q(f"SELECT COUNT(*) FROM {tabela} WHERE {onde}", (), "one")[0]
+        if n:
+            q(f"DELETE FROM {tabela} WHERE {onde}")
+            orfaos += n
+    return {"convidados": len(gs), "fotos": len(ps), "orfaos": orfaos}
 
 def zerar_dados():
     """Apaga TODO o conteudo (fotos, rostos, convidados, matches, contatos, eventos)

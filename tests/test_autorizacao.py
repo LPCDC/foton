@@ -874,5 +874,32 @@ try:
 finally:
     rig._fa = _fa_original
 
+print("\n[33] Expiracao limpa ORFAOS (o que o defeito antigo deixou em producao)")
+# simula exatamente o estado que o apaga_evento antigo deixava: entrega e rosto cuja base
+# sumiu — e, ao lado, dado LEGITIMO que tem que sobreviver
+_s = rig.store
+_s.q("INSERT INTO match(guest_id,photo_id,score) VALUES('g-sumiu','p-sumiu',0.7)")
+_s.q("INSERT INTO match(guest_id,photo_id,score) VALUES(?, 'p-sumiu', 0.6)", (gOutro,))
+_s.q("INSERT INTO rejeicao(guest_id,photo_id,score) VALUES('g-sumiu', ?, 0.5)", (pN,))
+_s.q("INSERT INTO face(photo_id,event_code,emb) VALUES('p-sumiu','X',x'00')")
+_s.q("INSERT INTO contact(event_code,guest_id,nome,contato,ts) VALUES('NSE','g-sumiu','Ana','x',?)", (time.time(),))
+_antes_legit = (pN in _feed(gOutro),
+                _s.q("SELECT COUNT(*) n FROM face WHERE photo_id=?", (pN,), "one")["n"])
+_r = _s.expirar()
+# >= 4, nao == 4: o banco da suite ja tinha um orfao legitimo — a entrega de "legado_teste"
+# gravada na secao [31] para um convidado que nunca existiu. Pega-lo tambem e o correto.
+checa("a expiracao conta os orfaos que limpou (os 4 plantados, pelo menos)", _r.get("orfaos", 0) >= 4, True)
+checa("nao sobra entrega, recusa nem rosto orfao",
+      [_s.q(f"SELECT COUNT(*) n FROM {t} WHERE {c}", (), "one")["n"] for t, c in (
+          ("match", "photo_id='p-sumiu' OR guest_id='g-sumiu'"),
+          ("rejeicao", "guest_id='g-sumiu'"),
+          ("face", "photo_id='p-sumiu'"))], [0, 0, 0])
+checa("dado LEGITIMO sobrevive (entrega e rostos da foto que existe)",
+      (pN in _feed(gOutro), _s.q("SELECT COUNT(*) n FROM face WHERE photo_id=?", (pN,), "one")["n"]),
+      _antes_legit)
+checa("contato deixado de proposito NAO e tratado como orfao",
+      _s.q("SELECT COUNT(*) n FROM contact WHERE guest_id='g-sumiu'", (), "one")["n"], 1)
+checa("rodar de novo nao acha mais nada", _s.expirar().get("orfaos"), 0)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

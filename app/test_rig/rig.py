@@ -296,8 +296,8 @@ async def _lifespan(app: FastAPI):
                 # Loga SEMPRE, inclusive quando nao havia nada a expirar. Sem isto nao ha
                 # como distinguir "rodou e nao tinha nada" de "nunca rodou" — e a segunda
                 # e uma falha de conformidade silenciosa.
-                log.info('{"stage":"lgpd","acao":"expirou","convidados":%d,"fotos":%d}'
-                         % (r["convidados"], r["fotos"]))
+                log.info('{"stage":"lgpd","acao":"expirou","convidados":%d,"fotos":%d,"orfaos":%d}'
+                         % (r["convidados"], r["fotos"], r.get("orfaos", 0)))
             except Exception as e:
                 # Antes: `except Exception: pass`. A expiracao de BIOMETRIA falhava em
                 # SILENCIO — a retencao da politica de privacidade podia estar parada ha

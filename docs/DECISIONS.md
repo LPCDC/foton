@@ -980,6 +980,12 @@ primeiro 502 às 17:07:10 (**1 amostra só**), SHA novo às 17:07:13 → **janel
 | `294dac2` | só documento | 17:07:10 → 17:07:13 | ~3 s (1 amostra) | 1 min 56 s |
 | `668db82` | só documento | 17:09:13 → 17:09:16 | ~3 s (1 amostra) | 51 s |
 | `9266093` | código (limiar, ADR-0034) | 13:30:21 → 13:30:31 | **~10 s** (4 amostras) | 56 s |
+| `c188e60` | só documento | 13:42:09 → 13:42:13 | ~4 s | — |
+| `8666799` | código + tabela nova (ADR-0037) | 11:20:25 → 11:20:37 | **~12 s** — acima da faixa anterior | 28 s |
+
+**Atualizado em 2026-09-21 com seis medições: faixa de ~3 a ~12 s.** O deploy de `8666799`
+passou do teto que estava documentado (10 s). Os três mais longos são os que mexeram em
+código; com n=6 isso **ainda não é prova de causa**, mas já é padrão que vale olhar.
 
 **Conclusão com as quatro:** a janela real fica na faixa de **~3 a ~10 s** (a amostragem é
 de ~2,2 s, então cada número tem essa incerteza). O push leva **de ~1 a ~2 min** até o ar,
@@ -1305,6 +1311,20 @@ mais casaria com ninguém. *Correção:* se a foto não é do evento informado, 
 - Uma recusa que esteja errada (a pessoa **era** ela) tira a foto só da galeria dela; a foto
   continua em Todas, de onde ela pode salvar. Não há "desfazer" nesta versão — YAGNI até
   alguém pedir.
-- **Em aberto, decisão do dono:** as entregas que o defeito 1 já deixou órfãs **em
-  produção** continuam lá. Quantas são é `UNKNOWN` — contar exige consultar o banco de
-  produção (Cloud Shell). Limpar é uma exclusão em produção e pede a sua autorização.
+- ~~**Em aberto:** as entregas que o defeito 1 já deixou órfãs em produção.~~
+  **Resolvido em 2026-09-21, com autorização do dono** ("autorização dada pra apagar o que
+  precisar"). Sem acesso SSH desta máquina (a chave da VM fica no Cloud Shell), a limpeza
+  não foi feita à mão: **virou parte de `expirar()`**, que roda no boot e a cada 12 h. Remove
+  `match` e `rejeicao` cujo convidado **ou** foto não existe, e `face` sem foto — embedding
+  sem dono é biometria sem finalidade. **Não** remove `contact`: contato deixado de propósito
+  vive mais que a biometria do convidado (segue a retenção das fotos), e sem convidado não
+  é órfão. O próprio deploy limpa a produção, e qualquer órfão futuro some sozinho.
+  - Devolve `orfaos` na contagem, e a thread loga
+    `{"stage":"lgpd","acao":"expirou",...,"orfaos":N}` — **é aí que se lê quantos havia em
+    produção** (log da VM, ou `POST /admin/expirar` com login de admin).
+  - Custo medido num banco sintético de 5 mil convidados, 5 mil fotos, 15 mil rostos e ~50
+    mil entregas: **92 ms** limpando 5,5 mil órfãos; **36 ms** sem nada a limpar. Na VM (1/8
+    de OCPU) é `UNKNOWN`, mas roda na thread de limpeza, fora do caminho do boot e do request.
+  - Teste [33]: planta órfãos ao lado de dado legítimo; o legítimo e o contato sobrevivem, os
+    órfãos somem, e a segunda rodada não acha nada. **Vermelho** contra o `store.py` de
+    produção: sobram `[2, 1, 1]`.
