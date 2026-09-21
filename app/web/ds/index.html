@@ -7,9 +7,11 @@
 <meta name="description" content="A gramática visual do Fóton: cores, tipos, formas de estado e componentes, para aprovação antes das telas.">
 <meta name="robots" content="noindex">
 <script>
-  /* aplica tema e perfil antes de pintar, para não piscar */
+  /* aplica tema e perfil antes de pintar, para não piscar.
+     O endereço manda (?tema=noite&perfil=social), para dar para mandar o link certo. */
   try {
-    var t = localStorage.getItem('ds-tema'), p = localStorage.getItem('ds-perfil');
+    var q = new URLSearchParams(location.search);
+    var t = q.get('tema') || localStorage.getItem('ds-tema'), p = q.get('perfil') || localStorage.getItem('ds-perfil');
     if (t === 'dia' || t === 'noite') document.documentElement.dataset.tema = t;
     if (p === 'pro' || p === 'empresa' || p === 'social') document.documentElement.dataset.perfil = p;
   } catch (e) {}

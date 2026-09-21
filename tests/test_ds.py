@@ -51,6 +51,8 @@ qr = re.search(r"\.qr-quadro\s*\{([^}]*)\}", CSS)
 checa("QR tem fundo branco fixo (não segue o tema)", bool(qr and "#FFFFFF" in qr.group(1).upper()), True)
 checa("módulos do QR em preto fixo", ".qr i { background: #000000; }" in VITRINE, True)
 checa("vitrine não carrega imagem nenhuma", re.findall(r"<img\b", VITRINE), [])
+checa("vitrine aceita tema e perfil pelo endereço (link e prints)",
+      "q.get('tema')" in VITRINE and "q.get('perfil')" in VITRINE, True)
 
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)
