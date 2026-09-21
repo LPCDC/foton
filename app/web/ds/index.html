@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="dia" data-perfil="pro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitrine do Fóton</title>
+<meta name="description" content="A gramática visual do Fóton: cores, tipos, formas de estado e componentes, para aprovação antes das telas.">
+<meta name="robots" content="noindex">
+<script>
+  /* aplica tema e perfil antes de pintar, para não piscar */
+  try {
+    var t = localStorage.getItem('ds-tema'), p = localStorage.getItem('ds-perfil');
+    if (t === 'dia' || t === 'noite') document.documentElement.dataset.tema = t;
+    if (p === 'pro' || p === 'empresa' || p === 'social') document.documentElement.dataset.perfil = p;
+  } catch (e) {}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Jost:wght@400..700&display=swap">
+<link rel="stylesheet" href="/ds/foton.css?v=2">
+<style>
+  /* Só o layout da vitrine. Nada aqui é componente: componente mora em foton.css. */
+  .pagina { max-width: 1200px; margin: 0 auto; padding: 0 16px 96px; }
+  @media (min-width: 800px) { .pagina { padding: 0 32px 128px; } }
+
+  .topo { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 2px solid var(--tinta); }
+  .marca-fóton { display: flex; align-items: center; gap: 10px; font: 700 1.5rem/1 var(--f-display); letter-spacing: -.02em; }
+  .marca-fóton i { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--tinta); display: grid; place-items: center; }
+  .marca-fóton i::after { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--marca); }
+  .controles { display: flex; flex-wrap: wrap; gap: 12px; }
+
+  .abertura { display: grid; gap: 32px; padding: 40px 0 56px; }
+  @media (min-width: 900px) { .abertura { grid-template-columns: 7fr 5fr; align-items: center; padding: 64px 0 80px; } }
+  .abertura h1 { font-size: clamp(2.441rem, 6vw, 4.768rem); font-weight: 700; line-height: .95; letter-spacing: -.035em; max-width: 12ch; }
+  .abertura .texto { display: grid; gap: 24px; align-content: start; border-left: 16px solid var(--marca); padding-left: 24px; }
+  .abertura .texto p { font-size: 1.125rem; }
+
+  /* celular de demonstração */
+  .celular { width: min(100%, 340px); justify-self: center; border: 2px solid var(--tinta); background: var(--papel); display: grid; grid-template-rows: auto 1fr; height: 640px; position: relative; overflow: hidden; }
+  .celular__topo { padding: 16px 16px 12px; display: grid; gap: 12px; border-bottom: 2px solid var(--tinta); }
+  .celular__evento { font: 600 .8rem/1.2 var(--f-ui); color: var(--fio); }
+  .celular__titulo { display: flex; justify-content: space-between; align-items: end; gap: 8px; }
+  .celular__titulo h2 { font-size: 1.953rem; }
+  .celular__rolagem { overflow: hidden; padding: 12px; }
+  .grade { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .celular .aviso { position: absolute; left: 12px; right: 12px; bottom: 12px; transform: translateY(140%); transition: transform .35s var(--ease); }
+  .celular .aviso.visivel { transform: none; }
+  .celular .lente { position: absolute; right: 16px; bottom: 16px; }
+  .so-festa { display: none !important; }
+  :root[data-perfil="social"] .so-festa { display: grid !important; }
+  :root[data-perfil="social"] .celular .aviso { bottom: 100px; }
+
+  .secao { display: grid; gap: 24px; padding: 48px 0; border-top: 2px solid var(--tinta); }
+  @media (min-width: 900px) { .secao { grid-template-columns: 4fr 8fr; gap: 48px; } }
+  .secao > header { display: grid; gap: 12px; align-content: start; }
+  .secao > header h2 { font-size: 2.441rem; }
+
+  .cores { display: grid; gap: 0; border: 2px solid var(--tinta); }
+  .cor { display: grid; grid-template-columns: 72px 1fr; border-bottom: 1px solid var(--tinta); }
+  .cor:last-child { border-bottom: 0; }
+  .cor__amostra { border-right: 2px solid var(--tinta); display: grid; place-items: center; font: 700 1.25rem var(--f-display); }
+  .cor__info { padding: 12px 16px; display: grid; gap: 4px; }
+  .cor__nome { font-weight: 700; display: flex; gap: 12px; flex-wrap: wrap; align-items: baseline; }
+  .cor__nome code { font: 400 .8rem var(--f-ui); color: var(--fio); font-variant-numeric: tabular-nums; }
+
+  .tipos { display: grid; gap: 20px; }
+  .tipos .rotulo { font: 500 .8rem/1.2 var(--f-ui); color: var(--fio); margin-bottom: 4px; }
+
+  .estados { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); border: 2px solid var(--tinta); }
+  .estados > div { padding: 20px; display: grid; gap: 12px; align-content: start; border-right: 1px solid var(--tinta); border-bottom: 1px solid var(--tinta); margin: 0 -1px -1px 0; }
+  .estados strong { font: 600 1.25rem/1.1 var(--f-display); }
+
+  .componentes { display: grid; gap: 32px; }
+  .fileira { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .duas { display: grid; gap: 24px; }
+  @media (min-width: 700px) { .duas { grid-template-columns: 1fr 1fr; } }
+  .confirma { border: 2px solid var(--tinta); padding: 16px; display: grid; gap: 12px; }
+
+  .telas { display: grid; gap: 32px; }
+  .selfie { width: min(100%, 300px); border: 2px solid var(--tinta); padding: 24px 20px; display: grid; gap: 20px; justify-items: center; text-align: center; }
+  .selfie__visor { width: 200px; height: 200px; border-radius: 50%; border: 2px solid var(--tinta); background: var(--suave); display: grid; place-items: center; box-shadow: 0 0 0 10px var(--papel), 0 0 0 12px var(--marca); }
+  .selfie__visor::after { content: ""; width: 60%; height: 72%; border-radius: 50%; border: 2px dashed var(--fio); }
+  .selfie .botao { width: 100%; }
+  .qr { width: 132px; height: 132px; display: grid; grid-template-columns: repeat(25, 1fr); }
+  .qr i { background: #000000; }
+  .qr i.o { background: transparent; }
+  .rodape { border-top: 2px solid var(--tinta); padding-top: 24px; color: var(--fio); font-size: .8rem; }
+</style>
+</head>
+<body>
+<div class="pagina">
+
+  <header class="topo">
+    <div class="marca-fóton"><i aria-hidden="true"></i>Fóton</div>
+    <div class="controles">
+      <fieldset class="alternador" id="perfil">
+        <legend>Perfil</legend>
+        <label><input type="radio" name="perfil" value="pro"><span>Fotógrafa</span></label>
+        <label><input type="radio" name="perfil" value="empresa"><span>Empresa</span></label>
+        <label><input type="radio" name="perfil" value="social"><span>Festa</span></label>
+      </fieldset>
+      <fieldset class="alternador" id="tema">
+        <legend>Tema</legend>
+        <label><input type="radio" name="tema" value="dia"><span>Dia</span></label>
+        <label><input type="radio" name="tema" value="noite"><span>Noite</span></label>
+      </fieldset>
+    </div>
+  </header>
+
+  <section class="abertura" aria-labelledby="titulo">
+    <div class="texto">
+      <h1 id="titulo">A foto chega enquanto a festa acontece.</h1>
+      <p>Esta é a gramática visual do Fóton: as mesmas formas e cores para a fotógrafa, para o convidado e para quem opera. Troque o perfil e o tema lá em cima e o sistema inteiro responde.</p>
+      <div class="fileira">
+        <button class="botao botao--marca" id="receber" type="button">Receber outra foto</button>
+        <span class="secundario">A chegada abre como a íris da lente.</span>
+      </div>
+    </div>
+
+    <div class="celular" aria-label="Demonstração: a galeria do convidado">
+      <div class="celular__topo">
+        <span class="celular__evento">Casamento Clara e Davi</span>
+        <div class="celular__titulo">
+          <h2>Suas fotos</h2>
+          <span class="estado estado--entregue num" id="contagem">0 fotos</span>
+        </div>
+        <fieldset class="alternador" style="justify-self:start">
+          <legend>Mostrar</legend>
+          <label><input type="radio" name="aba" checked><span>Minhas</span></label>
+          <label><input type="radio" name="aba"><span>Todas da festa</span></label>
+        </fieldset>
+        <div class="rolo so-festa" aria-label="Você enviou 12 de 50 fotos">
+          <div class="rolo__furos"></div>
+          <span class="rolo__texto">12 / 50 poses</span>
+        </div>
+      </div>
+      <div class="celular__rolagem"><div class="grade" id="grade"></div></div>
+      <div class="aviso" id="aviso" role="status"><span class="glifo glifo--entregue"></span>Chegou uma foto sua</div>
+      <button class="lente so-festa" type="button" aria-label="Tirar foto"></button>
+    </div>
+  </section>
+
+  <section class="secao" aria-labelledby="s-cor">
+    <header>
+      <h2 id="s-cor">Cor</h2>
+      <p class="secundario">Seis cores, cada uma com um papel só. O contraste ao lado é calculado agora, na tela, para o tema escolhido.</p>
+    </header>
+    <div class="cores" id="cores"></div>
+  </section>
+
+  <section class="secao" aria-labelledby="s-tipo">
+    <header>
+      <h2 id="s-tipo">Tipo</h2>
+      <p class="secundario">Jost para o que se lê de longe. Archivo para o que se usa de perto: ela alarga nos títulos e estreita nas tabelas.</p>
+    </header>
+    <div class="tipos">
+      <div><div class="rotulo">Jost 700, cartaz</div><div style="font:700 var(--t6)/.95 var(--f-display);letter-spacing:-.035em">Clara e Davi</div></div>
+      <div><div class="rotulo">Jost 600, título de tela</div><h3 style="font-size:var(--t4)">Mostre o QR para os convidados</h3></div>
+      <div><div class="rotulo">Archivo 400, texto</div><p>O convidado aponta a câmera para o QR, tira uma selfie e as fotos em que ele aparece começam a chegar sozinhas. Não precisa instalar nada.</p></div>
+      <div><div class="rotulo">Archivo condensada, dado</div><p style="font-variation-settings:'wdth' 75" class="num">1.284 fotos, 312 convidados, 4.907 entregas</p></div>
+    </div>
+  </section>
+
+  <section class="secao" aria-labelledby="s-forma">
+    <header>
+      <h2 id="s-forma">Forma é estado</h2>
+      <p class="secundario">Quem não distingue cor distingue forma. Cada estado de uma foto tem uma forma, sempre a mesma, em todas as telas.</p>
+    </header>
+    <div class="estados">
+      <div><span class="glifo glifo--g"></span><strong>Recebida</strong><span class="secundario">A foto chegou ao Fóton.</span></div>
+      <div><span class="glifo glifo--g glifo--analise"></span><strong>Em análise</strong><span class="secundario">A anfitriã revisa quando puder.</span></div>
+      <div><span class="glifo glifo--g glifo--entregue"></span><strong>Entregue</strong><span class="secundario">Entregue a 3 pessoas. Na cor do perfil.</span></div>
+      <div><span class="glifo glifo--g glifo--erro"></span><strong>Erro</strong><span class="secundario">O único quadrado. Diz o que houve e o que fazer.</span></div>
+      <div><span class="glifo glifo--g glifo--carregando"></span><strong>Carregando</strong><span class="secundario">O diafragma abre e fecha. Sem texto.</span></div>
+      <div><span class="glifo glifo--g" style="border-style:dashed"></span><strong>Vazio</strong><span class="secundario">Um convite para agir.</span></div>
+    </div>
+  </section>
+
+  <section class="secao" aria-labelledby="s-comp">
+    <header>
+      <h2 id="s-comp">Componentes</h2>
+      <p class="secundario">Dois raios só: zero e círculo. Estrutura com borda de 2 px. Nenhuma sombra.</p>
+    </header>
+    <div class="componentes">
+      <div class="fileira">
+        <button class="botao botao--marca" type="button">Criar evento</button>
+        <button class="botao" type="button">Mostrar QR</button>
+        <button class="botao botao--perigo" type="button">Excluir para sempre</button>
+        <button class="botao botao--texto" type="button">Não sou eu</button>
+        <button class="botao" type="button" disabled>Enviando…</button>
+      </div>
+      <div class="duas">
+        <div class="campo">
+          <label for="c1">Login</label>
+          <input id="c1" value="ana.fotografia" autocomplete="off">
+          <span class="ajuda">O mesmo login que você usa no celular.</span>
+        </div>
+        <div class="campo campo--erro">
+          <label for="c2">Senha</label>
+          <input id="c2" type="password" value="12345" autocomplete="off">
+          <span class="ajuda">Senha errada. Confira maiúsculas e tente de novo.</span>
+        </div>
+      </div>
+      <div class="duas">
+        <div class="confirma">
+          <strong>Excluir a conta e tudo o que ela tem?</strong>
+          <p class="secundario">São 3 eventos, 412 fotos e 96 convidados. Não dá para desfazer.</p>
+          <div class="campo"><label for="c3">Para confirmar, digite ana.fotografia</label><input id="c3" autocomplete="off"></div>
+          <div class="fileira"><button class="botao botao--perigo" type="button" id="excluir" disabled>Excluir para sempre</button><button class="botao botao--texto" type="button">Cancelar</button></div>
+        </div>
+        <div style="display:grid;gap:16px;align-content:start">
+          <div class="aviso" role="status"><span class="glifo glifo--entregue"></span>Evento criado. Mostre o QR aos convidados.</div>
+          <div class="erro" role="alert"><strong>A foto não subiu.</strong><span>O sinal caiu no meio do envio. Ela está guardada no celular e sobe sozinha quando a internet voltar.</span></div>
+          <div class="vazio"><span class="glifo" style="border-style:dashed"></span><strong style="font:600 var(--t2)/1.1 var(--f-display)">Nenhuma foto sua ainda</strong><span class="secundario">Assim que a fotógrafa te fotografar, a foto aparece aqui.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="secao" aria-labelledby="s-telas">
+    <header>
+      <h2 id="s-telas">Três telas, uma gramática</h2>
+      <p class="secundario">O convidado tira a selfie, a fotógrafa mostra o cartaz da festa, a operação lê o estado de tudo. Os números são de exemplo.</p>
+    </header>
+    <div class="telas">
+      <div class="duas">
+        <div class="selfie" aria-label="Tela do convidado: selfie">
+          <span class="celular__evento">Casamento Clara e Davi</span>
+          <div class="selfie__visor" aria-hidden="true"></div>
+          <h3 style="font-size:var(--t2)">Enquadre seu rosto no círculo</h3>
+          <button class="botao botao--marca" type="button">Tirar selfie</button>
+          <span class="secundario" style="font-size:var(--t-1)">Sua selfie só serve para achar suas fotos nesta festa e é apagada quando o evento termina.</span>
+        </div>
+        <div class="cartaz" aria-label="Tela da fotógrafa: cartaz do evento">
+          <div class="cartaz__bloco">
+            <span style="font-weight:600">Sábado, 17 de outubro</span>
+            <div class="cartaz__nome">Clara e Davi</div>
+            <span class="estado" style="color:inherit">Aberto para convidados</span>
+          </div>
+          <div class="cartaz__qr">
+            <div class="qr-quadro"><div class="qr" id="qr" aria-hidden="true"></div></div>
+            <span class="secundario" style="font-size:var(--t-1)">QR ilustrativo</span>
+          </div>
+        </div>
+      </div>
+      <div style="overflow-x:auto;border:2px solid var(--tinta);padding:8px" aria-label="Tela da operação">
+        <table class="tabela">
+          <thead><tr><th>Evento</th><th>Conta</th><th class="num">Fotos</th><th class="num">Convidados</th><th class="num">Entregas</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td>Clara e Davi</td><td>ana.fotografia</td><td class="num">1.284</td><td class="num">312</td><td class="num">4.907</td><td><span class="estado estado--entregue">Entregando</span></td></tr>
+            <tr><td>Formatura Direito</td><td>ana.fotografia</td><td class="num">96</td><td class="num">41</td><td class="num">203</td><td><span class="estado estado--carregando">Processando</span></td></tr>
+            <tr><td>Aniversário 40</td><td>estudio.lume</td><td class="num">12</td><td class="num">9</td><td class="num">0</td><td><span class="estado estado--analise">3 em análise</span></td></tr>
+            <tr><td>Evento teste</td><td>estudio.lume</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td><span class="estado estado--erro">Envio falhou</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer class="rodape">Design system do Fóton, versão 1. Decisão registrada na ADR-0038. Componentes em /ds/foton.css.</footer>
+</div>
+
+<script>
+(function () {
+  var raiz = document.documentElement;
+
+  function guardar(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function ligar(nome, attr, chave) {
+    var atual = raiz.dataset[attr];
+    document.querySelectorAll('input[name="' + nome + '"]').forEach(function (r) {
+      r.checked = r.value === atual;
+      r.addEventListener('change', function () { raiz.dataset[attr] = r.value; guardar(chave, r.value); pintarCores(); });
+    });
+  }
+  ligar('perfil', 'perfil', 'ds-perfil');
+  ligar('tema', 'tema', 'ds-tema');
+
+  /* ---- contraste calculado a partir das cores que estão na tela agora ---- */
+  function lum(hex) {
+    var c = hex.replace('#', '').match(/../g).map(function (x) {
+      x = parseInt(x, 16) / 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4);
+    });
+    return .2126 * c[0] + .7152 * c[1] + .0722 * c[2];
+  }
+  function razao(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
+  function v(n) { return getComputedStyle(raiz).getPropertyValue('--' + n).trim().toUpperCase(); }
+  function fmt(r) { return r.toFixed(2).replace('.', ','); }
+
+  var CORES = [
+    ['papel', 'Fundo. Branco de verdade de dia, preto de verdade à noite.', 'tinta'],
+    ['tinta', 'Texto e estrutura. Toda borda é tinta.', 'papel'],
+    ['cobalto', 'Assinatura da fotógrafa. Entregue, confiança, link.', 'sobre-cobalto'],
+    ['coral', 'Assinatura da festa. Nunca como cor de texto sobre o branco.', null],
+    ['flash', 'Em análise, destaque. Sobre o branco, só com contorno.', null],
+    ['alarme', 'Erro, e só erro. Separado do coral para a marca nunca parecer erro.', 'sobre-alarme']
+  ];
+  function pintarCores() {
+    var alvo = document.getElementById('cores'); alvo.textContent = '';
+    CORES.forEach(function (c) {
+      var hex = v(c[0]), texto = c[2] ? v(c[2]) : '#000000', fundo = v('papel');
+      var linha = document.createElement('div'); linha.className = 'cor';
+      var am = document.createElement('div'); am.className = 'cor__amostra';
+      am.style.background = hex; am.style.color = texto; am.textContent = 'Aa';
+      var info = document.createElement('div'); info.className = 'cor__info';
+      var nome = document.createElement('div'); nome.className = 'cor__nome';
+      var b = document.createElement('span'); b.textContent = c[0][0].toUpperCase() + c[0].slice(1);
+      var code = document.createElement('code');
+      code.textContent = hex + '   texto sobre ela ' + fmt(razao(hex, texto)) + ':1   ela sobre o fundo ' + fmt(razao(hex, fundo)) + ':1';
+      nome.append(b, code);
+      var p = document.createElement('span'); p.className = 'secundario'; p.textContent = c[1];
+      info.append(nome, p); linha.append(am, info); alvo.append(linha);
+    });
+  }
+  pintarCores();
+
+  /* ---- confirmação digitada: o botão só acende com o login exato ---- */
+  var c3 = document.getElementById('c3'), ex = document.getElementById('excluir');
+  c3.addEventListener('input', function () { ex.disabled = c3.value.trim() !== 'ana.fotografia'; });
+
+  /* ---- QR ilustrativo (não é escaneável) ---- */
+  var qr = document.getElementById('qr'), s = 7;
+  function rnd() { s = (s * 16807) % 2147483647; return s / 2147483647; }
+  function marcador(x, y, ox, oy) { var dx = x - ox, dy = y - oy; if (dx < 0 || dy < 0 || dx > 6 || dy > 6) return null; return (dx === 0 || dy === 0 || dx === 6 || dy === 6 || (dx > 1 && dx < 5 && dy > 1 && dy < 5)); }
+  for (var y = 0; y < 25; y++) for (var x = 0; x < 25; x++) {
+    var m = marcador(x, y, 0, 0); if (m === null) m = marcador(x, y, 18, 0); if (m === null) m = marcador(x, y, 0, 18);
+    var cel = document.createElement('i'); if (!(m === null ? rnd() > .5 : m)) cel.className = 'o'; qr.append(cel);
+  }
+
+  /* ---- fotos de exemplo: luzes de festa fora de foco, nunca uma pessoa ---- */
+  var LUZES = ['255,179,71', '255,111,145', '255,209,102', '110,198,255', '249,132,74', '199,125,255'];
+  function bokeh() {
+    var camadas = [];
+    for (var i = 0; i < 6; i++) {
+      var cor = LUZES[Math.floor(rnd() * LUZES.length)], r = 12 + rnd() * 26;
+      camadas.push('radial-gradient(circle at ' + Math.round(rnd() * 100) + '% ' + Math.round(rnd() * 100) + '%, rgba(' + cor + ',.85) 0, rgba(' + cor + ',.35) ' + Math.round(r * .6) + '%, transparent ' + Math.round(r) + '%)');
+    }
+    camadas.push('linear-gradient(' + Math.round(rnd() * 360) + 'deg, #1b1022, #2c1a12)');
+    return camadas.join(',');
+  }
+  var grade = document.getElementById('grade'), n = 0, aviso = document.getElementById('aviso'), tAviso;
+  function foto(chegou) {
+    var f = document.createElement('figure'); f.className = 'foto' + (chegou ? ' foto--chegou' : '');
+    var im = document.createElement('div'); im.className = 'imagem'; im.style.background = bokeh();
+    var g = document.createElement('span'); g.className = 'glifo glifo--entregue';
+    f.append(im, g); return f;
+  }
+  function contar() { document.getElementById('contagem').textContent = n + (n === 1 ? ' foto' : ' fotos'); }
+  function chegar() {
+    grade.prepend(foto(true)); n++; contar();
+    while (grade.children.length > 8) grade.lastChild.remove();
+    aviso.classList.add('visivel'); clearTimeout(tAviso);
+    tAviso = setTimeout(function () { aviso.classList.remove('visivel'); }, 2600);
+  }
+  for (var k = 0; k < 5; k++) { grade.append(foto(false)); n++; } contar();
+  document.getElementById('receber').addEventListener('click', chegar);
+  setTimeout(chegar, 900);   /* o único movimento que acontece sozinho */
+})();
+</script>
+</body>
+</html>

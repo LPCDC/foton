@@ -1328,3 +1328,58 @@ mais casaria com ninguém. *Correção:* se a foto não é do evento informado, 
   - Teste [33]: planta órfãos ao lado de dado legítimo; o legítimo e o contato sobrevivem, os
     órfãos somem, e a segunda rodada não acha nada. **Vermelho** contra o `store.py` de
     produção: sobram `[2, 1, 1]`.
+
+
+## ADR-0038 — Design system do Fóton: gramática Bauhaus comum, vitrine antes das telas
+
+**Status:** ACEITA como direção (2026-09-21) — **valores visuais aguardando o "aprovo" do
+dono na vitrine**. Nenhuma tela existente mudou.
+
+**Contexto.** Ordem fechada pelo dono em 2026-09-21: (1) design system, (2) Fóton
+redesenhado com ele, (3) Fiesta reaproveitando os mesmos componentes. Pediu para ver o
+visual numa vitrine antes das telas. O app atual é escuro com dourado (ADR-0030); a
+proposta de 12/09 (`docs/FIESTA-IMPLEMENTACAO.md` §5) definiu a gramática Bauhaus.
+
+**Decisão.**
+- **Onde mora:** `app/web/ds/foton.css` (tokens + componentes) e a vitrine em
+  `app/web/ds/index.html` (servida em `/ds/`, `noindex`). Sem framework, sem build, sem
+  dependência nova (espírito da ADR-0016). Fontes pelo Google Fonts, como o app já faz:
+  **Jost** (mantida) e **Archivo** com eixo de largura (nova família, mesmo provedor).
+- **Cor e forma são sintaxe:** círculo = pessoa/estado da foto, retângulo = foto/evento,
+  linha = fila. Estados por forma (vazado, meio círculo, cheio, quadrado, diafragma), não
+  só por cor. Só dois raios (0 e 50%), borda de 2 px, nenhuma sombra difusa.
+- **Três perfis da ADR-0030 continuam trocando só a assinatura** (`--marca`): fotógrafa
+  = cobalto, empresa = tinta, festa = coral. "Entregue" é o círculo cheio **na cor do
+  perfil**.
+- **Dois temas:** dia (papel branco) e **noite** (preto de verdade) — celular na pista
+  escura não pode acender um branco na cara de ninguém.
+
+**Números medidos (não os da proposta).** Contraste WCAG calculado: preto sobre coral
+**6,08** (a proposta dizia ≈6,4); branco sobre cobalto **7,15** (dizia ≈7,5); coral como
+texto sobre branco **3,45** → proibido; flash sobre branco **1,60** → só com contorno. No
+tema noite, cobalto e alarme de dia caem abaixo de 3:1 sobre preto (2,94 e 3,57 como
+texto) → tokens próprios: cobalto `#6F8BFF` (6,81) e alarme `#FF5A6A` (6,92), com texto
+preto sobre eles.
+
+**Duas armadilhas encontradas ao construir.**
+1. **Cache:** `sw.js` guarda `.css` sem revalidar. CSS do sistema é sempre referenciado com
+   versão no endereço (`foton.css?v=N`); sem isso, celular com o app instalado ficaria
+   preso na primeira versão.
+2. **QR invertido:** no tema noite o QR saiu branco sobre preto — muitos leitores falham
+   com código invertido. Regra: **QR é sempre preto sobre branco**, em qualquer tema
+   (`.qr-quadro`).
+
+**Testes.** `tests/test_ds.py` (no `todos.sh`): recalcula 8 pares de contraste para 2
+temas × 3 perfis direto do CSS; raios só 0/50%; nenhuma sombra com desfoque; coral nunca
+como cor de texto; movimento reduzido; versão no endereço do CSS; QR fixo em preto/branco;
+vitrine sem nenhuma `<img>` (fotos de exemplo são luzes desfocadas geradas em CSS — as
+fotos de teste têm gente real e não vão para a web). Prova do vermelho embutida: cópias
+estragadas (branco sobre coral, cinza claro, sombra de cartão) precisam reprovar, e
+reprovam.
+
+**Fica para depois, com ADR própria quando chegar a hora:** hospedar as fontes no próprio
+Fóton (tira a requisição ao Google do celular do convidado); Playwright + axe-core para
+acessibilidade automatizada (dependência nova, ~300 MB).
+
+**Rollback.** Apagar `app/web/ds/` e `tests/test_ds.py`, e tirar `test_ds` do `todos.sh`.
+Nada do app depende disto ainda.

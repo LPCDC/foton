@@ -1,0 +1,197 @@
+/* Fóton — design system (ADR-0038).
+   Gramática Bauhaus: cor e forma são SINTAXE, não enfeite. A cor viva vem das fotos.
+     círculo    = pessoa, rosto, estado de uma foto
+     retângulo  = foto, evento, bloco de conteúdo
+     linha      = fila, progresso, sequência
+   Só dois raios: 0 e 50%. Borda preta de 2px para estrutura, fio de 1px para dado denso.
+   Sem sombra difusa. Base de 8px.
+
+   Três perfis (ADR-0030) trocam SÓ a assinatura (--marca), nunca layout, fluxo ou poder:
+     html[data-perfil="pro"]      fotógrafa  -> cobalto
+     html[data-perfil="empresa"]  empresa    -> tinta
+     html[data-perfil="social"]   festa      -> coral
+   Dois temas: html[data-tema="dia"] (padrão) e html[data-tema="noite"] (celular na pista).
+
+   Contrastes MEDIDOS (WCAG) — tests/test_ds.py recalcula a partir deste arquivo:
+     branco sobre cobalto 7,15 | preto sobre coral 6,08 | preto sobre flash 13,15
+     branco sobre alarme 5,88  | coral como TEXTO sobre branco 3,45 -> PROIBIDO
+     flash sobre branco 1,60 -> só com contorno de tinta
+
+   CACHE: o service worker guarda .css sem revalidar. Este arquivo é sempre referenciado
+   COM versão no endereço (foton.css?v=N) e o N sobe a cada mudança. */
+
+@layer tokens, base, componentes;
+
+@layer tokens {
+  :root {
+    --papel: #FFFFFF;
+    --tinta: #000000;
+    --fio: #6B6B6B;          /* texto secundário: 5,33 sobre papel */
+    --suave: #F0F0F0;        /* superfície de espera (foto ainda não carregou) */
+    --coral: #F2542D;
+    --flash: #FFC400;
+    --cobalto: #2346D8;
+    --alarme: #C8102E;
+    --sobre-cobalto: #FFFFFF;
+    --sobre-alarme: #FFFFFF;
+
+    --marca: var(--cobalto);
+    --sobre-marca: var(--sobre-cobalto);
+
+    --f-display: "Jost", "Futura", "Century Gothic", system-ui, sans-serif;
+    --f-ui: "Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+
+    /* escala 1,25 (terça maior) a partir de 16px */
+    --t-1: .8rem;  --t0: 1rem;  --t1: 1.25rem;  --t2: 1.5625rem;
+    --t3: 1.953rem; --t4: 2.441rem; --t5: 3.052rem; --t6: 3.815rem;
+
+    --u: 8px;
+    --borda: 2px;
+    --alvo: 48px;            /* alvo de toque mínimo */
+    --ease: cubic-bezier(.2, .7, .1, 1);
+  }
+  :root[data-perfil="empresa"] { --marca: var(--tinta); --sobre-marca: var(--papel); }
+  :root[data-perfil="social"]  { --marca: var(--coral); --sobre-marca: #000000; }
+
+  :root[data-tema="noite"] {
+    --papel: #000000;
+    --tinta: #FFFFFF;
+    --fio: #A6A6A6;          /* 8,63 sobre preto */
+    --suave: #141414;
+    --cobalto: #6F8BFF;      /* 6,81 sobre preto; texto preto sobre ele */
+    --alarme: #FF5A6A;       /* 6,92 sobre preto; texto preto sobre ele */
+    --sobre-cobalto: #000000;
+    --sobre-alarme: #000000;
+  }
+}
+
+@layer base {
+  html { background: var(--papel); color: var(--tinta); -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--papel); color: var(--tinta);
+    font: 400 var(--t0)/1.5 var(--f-ui);
+    font-variation-settings: "wdth" 100;
+    -webkit-font-smoothing: antialiased;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  h1, h2, h3 { font-family: var(--f-display); font-weight: 600; line-height: 1.05; margin: 0; letter-spacing: -.02em; }
+  p { margin: 0; max-width: 64ch; }
+  :focus-visible { outline: 3px solid var(--tinta); outline-offset: 3px; }
+  .num { font-variant-numeric: tabular-nums; }
+  .secundario { color: var(--fio); }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+  }
+}
+
+@layer componentes {
+  /* ---------- Botões ---------- */
+  .botao {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--u);
+    min-height: var(--alvo); padding: 0 calc(var(--u) * 3);
+    font: 600 var(--t0)/1 var(--f-ui); letter-spacing: .01em;
+    color: var(--tinta); background: var(--papel);
+    border: var(--borda) solid var(--tinta); border-radius: 0;
+    cursor: pointer; text-decoration: none;
+    transition: background-color .12s, color .12s;
+  }
+  .botao:hover { background: var(--tinta); color: var(--papel); }
+  .botao--marca { background: var(--marca); color: var(--sobre-marca); border-color: var(--marca); }
+  .botao--marca:hover { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
+  .botao--perigo { background: var(--alarme); color: var(--sobre-alarme); border-color: var(--alarme); }
+  .botao--perigo:hover { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
+  .botao--texto { border-color: transparent; background: transparent; padding: 0 var(--u); text-decoration: underline; text-underline-offset: 4px; }
+  .botao--texto:hover { background: transparent; color: var(--tinta); text-decoration-thickness: 3px; }
+  .botao[disabled] { opacity: .45; cursor: not-allowed; }
+  .botao[disabled]:hover { background: var(--papel); color: var(--tinta); }
+
+  /* Botão-lente: o gesto central de quem fotografa. Círculo, embaixo à direita. */
+  .lente {
+    inline-size: 72px; block-size: 72px; border-radius: 50%;
+    background: var(--marca); border: var(--borda) solid var(--tinta);
+    display: grid; place-items: center; cursor: pointer; padding: 0;
+  }
+  .lente::before { content: ""; inline-size: 30px; block-size: 30px; border-radius: 50%; border: 3px solid var(--sobre-marca); transition: inline-size .08s, block-size .08s; }
+  .lente:active::before { inline-size: 22px; block-size: 22px; }
+
+  /* ---------- Campos ---------- */
+  .campo { display: grid; gap: var(--u); }
+  .campo > label { font: 600 var(--t-1)/1.2 var(--f-ui); }
+  .campo > input {
+    min-height: var(--alvo); padding: 0 calc(var(--u) * 2);
+    font: 400 var(--t0) var(--f-ui); color: var(--tinta); background: var(--papel);
+    border: var(--borda) solid var(--tinta); border-radius: 0;
+  }
+  .campo > input:focus-visible { outline: 3px solid var(--marca); outline-offset: 2px; }
+  .campo > .ajuda { font-size: var(--t-1); color: var(--fio); }
+  .campo--erro > input { border-color: var(--alarme); }
+  .campo--erro > .ajuda { color: var(--tinta); }
+  .campo--erro > .ajuda::before { content: ""; display: inline-block; inline-size: .7em; block-size: .7em; background: var(--alarme); margin-inline-end: .5em; }
+
+  /* ---------- Alternador (rádios de verdade, estilizados) ---------- */
+  .alternador { display: inline-flex; border: var(--borda) solid var(--tinta); margin: 0; padding: 0; min-inline-size: 0; }
+  .alternador legend { position: absolute; clip: rect(0 0 0 0); width: 1px; height: 1px; overflow: hidden; }
+  .alternador label { position: relative; }
+  .alternador input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .alternador span { display: grid; place-items: center; min-height: 40px; padding: 0 calc(var(--u) * 2); font: 600 var(--t-1)/1.2 var(--f-ui); }
+  .alternador label + label span { border-inline-start: var(--borda) solid var(--tinta); }
+  .alternador input:checked + span { background: var(--tinta); color: var(--papel); }
+  .alternador input:focus-visible + span { outline: 3px solid var(--marca); outline-offset: -6px; }
+
+  /* ---------- Forma é estado ---------- */
+  .estado { display: inline-flex; align-items: center; gap: var(--u); font: 500 var(--t-1)/1.3 var(--f-ui); }
+  .estado::before, .glifo {
+    content: ""; flex: none; inline-size: 1rem; block-size: 1rem;
+    border: var(--borda) solid var(--tinta); border-radius: 50%; background: transparent;
+  }
+  .estado--analise::before, .glifo--analise { background: linear-gradient(90deg, var(--flash) 50%, transparent 50%); }
+  .estado--entregue::before, .glifo--entregue { background: var(--marca); border-color: var(--marca); }
+  .estado--erro::before, .glifo--erro { border-radius: 0; background: var(--alarme); border-color: var(--alarme); }
+  .estado--carregando::before, .glifo--carregando { border: 0; box-shadow: inset 0 0 0 var(--borda) var(--tinta); animation: diafragma 1.1s var(--ease) infinite alternate; }
+  @keyframes diafragma { from { box-shadow: inset 0 0 0 .5rem var(--tinta); } to { box-shadow: inset 0 0 0 var(--borda) var(--tinta); } }
+  .glifo { display: inline-block; }
+  .glifo--g { inline-size: 2rem; block-size: 2rem; }
+
+  /* ---------- Foto ---------- */
+  .foto { position: relative; aspect-ratio: 4 / 5; background: var(--suave); overflow: hidden; margin: 0; }
+  .foto > img, .foto > .imagem { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; }
+  .foto > .glifo { position: absolute; inset-block-start: var(--u); inset-inline-start: var(--u); outline: 2px solid var(--papel); }
+  /* A chegada: a foto abre como a íris da lente. O único movimento automático do sistema. */
+  .foto--chegou > .imagem, .foto--chegou > img { animation: iris .7s var(--ease) both; }
+  @keyframes iris { from { clip-path: circle(0% at 50% 50%); } to { clip-path: circle(75% at 50% 50%); } }
+
+  /* ---------- Contador em rolo de filme ---------- */
+  .rolo { display: inline-grid; gap: 4px; }
+  .rolo__furos { block-size: 6px; background: repeating-linear-gradient(90deg, var(--tinta) 0 6px, transparent 6px 12px); }
+  .rolo__texto { font: 600 var(--t1)/1 var(--f-display); font-variant-numeric: tabular-nums; }
+
+  /* ---------- Aviso (toast), vazio, erro ---------- */
+  .aviso { display: flex; align-items: center; gap: calc(var(--u) * 1.5); padding: calc(var(--u) * 1.5) calc(var(--u) * 2); background: var(--tinta); color: var(--papel); font-weight: 500; }
+  .aviso .glifo { border-color: var(--papel); }
+  .aviso .glifo--entregue { background: var(--marca); border-color: var(--marca); }
+  .vazio { display: grid; justify-items: start; gap: calc(var(--u) * 2); padding: calc(var(--u) * 3) 0; }
+  .vazio .glifo { inline-size: 3rem; block-size: 3rem; }
+  .erro { display: grid; gap: var(--u); padding: calc(var(--u) * 2); border: var(--borda) solid var(--tinta); border-inline-start: 12px solid var(--alarme); }
+  .erro strong { font-weight: 700; }
+
+  /* ---------- Cartaz do evento (a festa como cartaz) ---------- */
+  .cartaz { display: grid; grid-template-columns: 1fr auto; border: var(--borda) solid var(--tinta); }
+  .cartaz__bloco { background: var(--marca); color: var(--sobre-marca); padding: calc(var(--u) * 3); display: grid; align-content: space-between; gap: calc(var(--u) * 4); min-block-size: 280px; }
+  .cartaz__nome { font: 700 var(--t5)/.95 var(--f-display); letter-spacing: -.03em; }
+  .cartaz__bloco .estado::before { border-color: currentColor; }
+  .cartaz__qr { padding: calc(var(--u) * 3); display: grid; align-content: center; justify-items: center; gap: var(--u); background: var(--papel); border-inline-start: var(--borda) solid var(--tinta); }
+
+  /* QR: SEMPRE preto sobre branco, em qualquer tema. Muitos leitores falham com QR
+     invertido (claro sobre escuro) — no tema noite isso deixaria o convidado de fora. */
+  .qr-quadro { background: #FFFFFF; color: #000000; padding: 12px; outline: var(--borda) solid var(--tinta); }
+  @media (max-width: 560px) {
+    .cartaz { grid-template-columns: 1fr; }
+    .cartaz__qr { border-inline-start: 0; border-block-start: var(--borda) solid var(--tinta); }
+  }
+
+  /* ---------- Tabela densa (operação) ---------- */
+  .tabela { inline-size: 100%; border-collapse: collapse; font: 400 var(--t-1)/1.3 var(--f-ui); font-variation-settings: "wdth" 75; font-variant-numeric: tabular-nums; }
+  .tabela th { text-align: start; font-weight: 700; padding: 6px 8px; border-block-end: var(--borda) solid var(--tinta); }
+  .tabela td { padding: 6px 8px; border-block-end: 1px solid var(--tinta); }
+  .tabela td.num, .tabela th.num { text-align: end; }
+}
