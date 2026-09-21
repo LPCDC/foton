@@ -89,3 +89,6 @@ __pycache__/
 # --- fotos reais para ensaio: NUNCA no repo (ele e publico) ---
 fotos-teste/
 !fotos-teste/LEIA-ME.md
+
+# --- Pacotes da pintura (Higgsfield): imagens pesadas e rascunhos (ADR-0039) ---
+_pintura/

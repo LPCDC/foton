@@ -1383,3 +1383,48 @@ acessibilidade automatizada (dependência nova, ~300 MB).
 
 **Rollback.** Apagar `app/web/ds/` e `tests/test_ds.py`, e tirar `test_ds` do `todos.sh`.
 Nada do app depende disto ainda.
+
+
+## ADR-0039 — Esteira da pintura: o Higgsfield pinta, a alfândega decide o que entra
+
+**Status:** ACEITA (2026-09-21). Método e plano em `docs/plans/2026-09-21-foton-que-cobra.md`;
+manual do dono em `docs/PINTURA.md`.
+
+**Contexto.** O dono arte-finaliza no Higgsfield o que o Claude constrói e devolve um pacote
+com imagens, textos e às vezes patch de código — e isso vai acontecer em toda mudança
+estética. Na GLAMON o ciclo sem controle custou caro: em 14/09 um patch inferido da tela
+(sem o fonte) "corrigia" uma linha já corrigida reintroduzindo o defeito, e uma foto gerada
+de uma pessoa real entrou como se fosse da casa; em 15/09 um deploy de outra cópia apagou
+trabalho publicado.
+
+**Decisão.** Uma esteira com alfândega (`infra/pintura.py`), sem dependência nova:
+- **ida** monta o pacote com brief, a **constituição** (as regras do design system, ADR-0038)
+  e a versão do código;
+- **volta** classifica cada arquivo que retorna: **APROVADO**, **PENDENTE** ou
+  **REPROVADO**. **PENDENTE não é aprovado**: o relatório só diz "pode integrar tudo" quando
+  não há pendente nem reprovado, e o comando sai **0 / 3 / 1** para os três casos;
+- as regras da constituição moram num lugar só (`tests/ds_regras.py`), usado pelo teste do
+  design system e pela alfândega — a pintura é julgada pela mesma régua que o código.
+
+**Regras, cada uma com teste** (`tests/test_pintura.py`):
+imagem sem origem ou sem dizer se há pessoa → reprovado; **imagem gerada de pessoa real →
+reprovado**; foto real de pessoa real → pendente (autorização de imagem); pessoa fictícia →
+aprovado com rótulo de ilustrativa; arquivo fora do manifesto → reprovado; CSS que fere
+contraste, raio ou sombra → reprovado; **patch que não aplica → reprovado, patch que aplica
+→ pendente** (nunca aprovado sozinho); número em texto sem fonte → pendente.
+
+**Limites da V1, escritos de propósito.**
+1. **Volta plana:** subpasta é reprovada sem ser aberta, para nada passar sem ser visto.
+2. **Números por checagem lexical e conservadora:** algarismo com unidade (s, min, %, R$,
+   fotos, convidados, pessoas, x). Número por extenso escapa — há um teste que **trava esse
+   limite**, para que uma melhoria futura mude o teste de propósito e não por acidente. O
+   brief pede números sempre com algarismos.
+
+**O que a esteira não faz.** Não publica, não aplica patch, não integra. Publicar continua
+sendo só `git push` com a suíte verde e o `/health` batendo com o SHA.
+
+**Prova do vermelho.** Com a regra "pessoa real gerada" desligada, o teste acusa 3 falhas
+(veredito, código de saída e relatório); religada, verde.
+
+**Rollback.** Apagar `infra/pintura.py` e `tests/test_pintura.py`, tirar `test_pintura` do
+`todos.sh`; `tests/ds_regras.py` pode ficar (o `test_ds` usa).
