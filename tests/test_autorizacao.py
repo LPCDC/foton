@@ -804,5 +804,75 @@ try:
 finally:
     rig._fa = _fa_original
 
+print("\n[32] \"Nao sou eu\" (ADR-0037) + dois defeitos antigos de exclusao corrigidos")
+_fa_original = rig._fa
+try:
+    C.post("/event", data={"code": "NSE", "brand": "L"}, headers=h(_lt))
+    rig._fa = _Detector(_Rosto(_E0, 300))
+    gN = C.post("/selfie", data={"event": "NSE", "consent": "true"},
+                files={"file": ("n1.jpg", _jpg((61, 61, 61)), "image/jpeg")}).json()["guest_id"]
+    gOutro = C.post("/selfie", data={"event": "NSE", "consent": "true"},
+                    files={"file": ("n2.jpg", _jpg((62, 62, 62)), "image/jpeg")}).json()["guest_id"]
+    rig._fa = _Detector(_Rosto(_vet(0.46), 150))
+    pN = C.post("/ingest", data={"event": "NSE"}, headers=h(_lt),
+                files={"file": ("pn.jpg", _jpg((63, 63, 63)), "image/jpeg")}).json()["photo_id"]
+    _feed = lambda g: C.get(f"/feed?event=NSE&guest_id={g}").json()["photos"]
+    checa("a foto chegou para as duas convidadas", pN in _feed(gN) and pN in _feed(gOutro), True)
+
+    _nse = lambda **d: C.post("/convidado/nao-sou-eu", data=d)
+    checa("convidado de outro evento nao recusa aqui",
+          _nse(event="NSE", guest_id=g1, photo_id=pN).status_code, 404)
+    checa("foto que nao e do evento nao se recusa",
+          _nse(event="NSE", guest_id=gN, photo_id="nao-existe").status_code, 404)
+    checa("evento inexistente nao e criado pela recusa",
+          (_nse(event="NAOEXISTE", guest_id=gN, photo_id=pN).status_code,
+           rig.store.evento("NAOEXISTE")), (404, None))
+
+    checa("recusa aceita", _nse(event="NSE", guest_id=gN, photo_id=pN).status_code, 200)
+    checa("a foto SAI da galeria de quem recusou", pN in _feed(gN), False)
+    checa("...e FICA na de quem nao recusou", pN in _feed(gOutro), True)
+    checa("...e continua na festa (aba Todas)",
+          any(p["id"] == pN for p in C.get("/photos?event=NSE").json()["photos"]), True)
+    checa("recusar de novo nao quebra (ja nao esta na galeria)",
+          _nse(event="NSE", guest_id=gN, photo_id=pN).status_code, 404)
+
+    _r = [r for r in rig.store.rejeicoes_de("NSE") if r["guest_id"] == gN]
+    checa("a recusa guarda o score que fez a foto chegar (dado de calibragem)",
+          (len(_r), round(_r[0]["score"], 2) if _r else None, _r[0]["limiar"] if _r else None),
+          (1, 0.46, 0.40))
+    _aud = C.get("/admin/entregas?event=NSE", headers=h(chefe)).json()
+    checa("o admin ve a recusa ao lado das entregas", (_aud["recusadas"], _aud["entregas"]), (1, 1))
+
+    # trava ESTRUTURAL: nenhum caminho que decide entrega pode devolver uma foto recusada
+    rig.store.salva_match(gN, pN, 0.99, 0.40, "buffalo_s", "ingest")
+    checa("entrega recusada nunca volta, nem gravando direto", pN in _feed(gN), False)
+
+    # LGPD: a recusa carrega score derivado de biometria -> sai com o titular
+    C.post("/convidado/excluir", data={"guest_id": gN})
+    checa("a recusa some quando o titular exerce o direito de exclusao",
+          any(r["guest_id"] == gN for r in rig.store.rejeicoes_de("NSE")), False)
+
+    # DEFEITO ANTIGO 1: apagar o evento deixava as entregas orfas no banco, com score
+    C.post("/event", data={"code": "ORFA", "brand": "L"}, headers=h(_lt))
+    rig._fa = _Detector(_Rosto(_E0, 300))
+    gO = C.post("/selfie", data={"event": "ORFA", "consent": "true"},
+                files={"file": ("o1.jpg", _jpg((71, 71, 71)), "image/jpeg")}).json()["guest_id"]
+    rig._fa = _Detector(_Rosto(_vet(0.9), 150))
+    pO = C.post("/ingest", data={"event": "ORFA"}, headers=h(_lt),
+                files={"file": ("po.jpg", _jpg((72, 72, 72)), "image/jpeg")}).json()["photo_id"]
+    C.post("/event/delete", data={"code": "ORFA"}, headers=h(_lt))
+    checa("apagar o evento apaga as entregas dele (antes ficavam orfas, com score)",
+          rig.store.q("SELECT COUNT(*) n FROM match WHERE guest_id=? OR photo_id=?", (gO, pO), "one")["n"], 0)
+
+    # DEFEITO ANTIGO 2: a dona do evento A apagava rostos e entregas de uma foto do evento B
+    _outra = C.post("/signup", data={"email": "vizinha@t.com", "senha": "senha123", "nome": "V"}).json()["token"]
+    C.post("/event", data={"code": "VIZ", "brand": "V"}, headers=h(_outra))
+    C.post("/photo/delete", data={"event": "VIZ", "photo_id": pN}, headers=h(_outra))
+    checa("apagar com o id de foto de OUTRO evento nao toca na foto alheia",
+          (pN in _feed(gOutro), rig.store.q("SELECT COUNT(*) n FROM face WHERE photo_id=?", (pN,), "one")["n"] > 0),
+          (True, True))
+finally:
+    rig._fa = _fa_original
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

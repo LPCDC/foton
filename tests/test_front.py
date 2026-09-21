@@ -162,6 +162,24 @@ checa("os tokens de cor dos perfis existem no CSS",
       "perfil-empresa" in html and "perfil-social" in html, True)
 
 print("")
+print("[6e] \"Nao sou eu\" (ADR-0037): so na galeria propria, dois toques, sem dialogo")
+_nse = js[js.find("async function naoSouEu"):]
+_nse = _nse[:_nse.find("function fecharFoto")]    # ancora, nao "\n}\n": o arquivo pode ter CRLF
+checa("recorte da funcao naoSouEu encontrado", 300 < len(_nse) < 4000, True)
+checa("o botao existe no visualizador e comeca escondido",
+      'id="lb-nsu"' in html and 'onclick="naoSouEu()" style="display:none"' in html, True)
+checa("a galeria abre a foto dizendo se e a aba Minhas",
+      "abrirFoto(ordem,i,{naoSouEu:!todasAba})" in js, True)
+checa("chama a rota do servidor", "/convidado/nao-sou-eu" in _nse, True)
+# prompt()/confirm() nao sao confiaveis no PWA do Android (BLUEPRINT §7) — a confirmacao
+# e o segundo toque no proprio botao
+checa("nao usa dialogo do navegador", ("confirm(" in _nse) or ("prompt(" in _nse), False)
+checa("so tira da tela DEPOIS de o servidor confirmar",
+      _nse.find("r.ok") != -1 and _nse.find("r.ok") < _nse.find("guestState.photos=guestState.photos.filter"), True)
+checa("trocar de foto desarma o primeiro toque",
+      "atualizarNaoSouEu();" in js[js.find("function navFoto"):js.find("function navFoto") + 600], True)
+
+print("")
 print("[7] O manifest continua valido (o Compartilhar do Android depende dele)")
 m = json.load(open(os.path.join(WEB, "manifest.webmanifest"), encoding="utf-8"))
 checa("manifest e JSON valido", isinstance(m, dict), True)

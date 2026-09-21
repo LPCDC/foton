@@ -174,6 +174,8 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/foton.key ubuntu@152.67.46.113 '...'
 | **Lib de smooth-scroll quebrou a rolagem** | Lenis sequestrava a roda do mouse. Removido (ADR-0027). Ao arrancar, quase foi junto `gsap.ticker.lagSmoothing(0)`, que morava no bloco dela sem ser dela. **Ao remover dependência, conferir linha a linha o que estava no bloco por acaso.** |
 | **`scroll-behavior:smooth` ignora `prefers-reduced-motion`** | Precisou de media query explícita. **Nem toda propriedade de movimento se auto-desliga.** |
 | **Overlay de tela cheia sem rede de segurança** | Animação de abertura quebrada = tela preta. `setTimeout` de 4 s força a saída. **Todo overlay que cobre a tela sai sem depender da animação terminar.** |
+| **Exclusão na ordem errada deixava dado órfão** | `apaga_evento` apagava os convidados e **depois** buscava as entregas *pelos convidados já apagados*: nada saía, e toda entrega de evento apagado ficou no banco para sempre (ADR-0037). **Ao apagar em cascata: primeiro o que depende, depois a base — e prove com um teste que conta o que sobrou.** |
+| **Rota autorizava por um id e apagava por outro** | `/photo/delete` conferia a dona do **evento** informado e apagava rostos e entregas pelo **id da foto** — que é público. A dona de A apagava a foto de B por dentro (ADR-0037). **Todo id que a rota recebe tem que ser conferido contra o recurso que a autorização liberou.** |
 | **Segurar em texto abria "Pesquisar no Google"** | `user-select:none` global, exceção para `input`/`textarea`/`.selecionavel`. Texto de app não é texto de página. |
 
 ## 8. Estado atual — o que funciona HOJE (inventário de features)
@@ -197,7 +199,10 @@ minhas/todas · animação de chegada + "Chegou uma foto sua!" · espera viva ·
 salvar/compartilhar/ZIP · seleção múltipla por toque longo · QR por foto (ADR-0020) ·
 **sessão persistente 24h de verdade** (volta pra galeria mesmo sem link) · **"Apagar
 minha selfie e sair"** visível na galeria (LGPD Art. 18, testado — ADR-0029) · PWA ·
-pré-cadastro funciona (criador sobe fotos antes → reconhecido na 1ª selfie).
+pré-cadastro funciona (criador sobe fotos antes → reconhecido na 1ª selfie) · **"Não sou
+eu"** na foto aberta (aba Minhas): tira a foto da galeria dela, que continua em Todas, e
+registra o falso positivo com o score que o causou — dado real para calibrar o limiar
+(ADR-0037).
 
 **Admin:** resumo · disco · contas + histórico de crédito · **criar conta já com a pele
 escolhida** (`/admin/conta/criar`, 2026-08-31 — extensão da ADR-0030, perfil continua
@@ -222,7 +227,23 @@ fora de escopo (decisão do dono).
 simultâneas P95 8,2 s (gargalo real) · look +2–9 ms · `/health` 80–150 ms após o
 despejo GLAMON de fotos 2000×2000 (2026-08-31). **TTFR fim a fim: nunca medido.**
 
+> ⚠️ **Afirmação pública não medida — mantida por decisão do dono (2026-09-21).** O site
+> (`site/index.html`, bloco "10s") diz que o produto *"mede em cada foto: menos de dez
+> segundos entre você apertar o botão e a foto estar no celular"*. O que se mede por foto é
+> o **servidor** (`/admin/latencias`); o ponta a ponta **nunca foi medido** (linha acima).
+> Foi proposto corrigir e o dono decidiu manter. **Não alterar sem perguntar** — e o dia em
+> que o TTFR for medido é o dia de reabrir.
+
 ## 9. Backlog — o que falta, em ordem (detalhe vivo no PROMPT-PROXIMA-SESSAO.md)
+
+> **FOCO DECIDIDO PELO DONO (2026-09-21): a fotógrafa primeiro.** O próximo piloto é o da
+> Patrícia, porque o motor dela está no ar; a **Foto'n Fiesta segue em trilho paralelo de
+> ADR e medição, sem data** (`docs/FIESTA-IMPLEMENTACAO.md`). Ordem aprovada, depois de uma
+> análise externa de mercado: ~~corrigir a promessa de 10 s no site~~ (dono decidiu manter,
+> §8) → ~~**"Não sou eu"**~~ (**feito**, ADR-0037) → **medir o tempo real com a R8 e o
+> celular da Patrícia** → **demo pública** no formato "fotografe você mesmo" → página de
+> privacidade concreta (inclui onde fica o backup, ver BACKUP.md) → WhatsApp em fatias →
+> preço por evento. A lista abaixo é anterior a essa decisão.
 
 1. **Relatório do despejo GLAMON** (números de dentro — comando do dono) → decide R2.
 2. **Galeria 50 + "Mostrar mais"** · **sort data/pessoas** (`n_faces` já existe) ·

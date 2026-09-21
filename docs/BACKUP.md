@@ -93,6 +93,12 @@ depende de alguém lembrar.
 
 **Medido (2026-08-31):** tamanho real do banco em produção = **54 MB** (era `UNKNOWN`).
 
+`UNKNOWN — REQUIRES VERIFICATION` (anotado em 2026-09-21): **onde, fisicamente, fica o
+bucket `foton-backup`.** Ele foi criado com **região automática** (ADR-0031). O banco de
+produção está em São Paulo, mas a cópia no R2 pode estar fora do Brasil — o que é
+**transferência internacional de dados** (LGPD art. 33) e precisa aparecer na política de
+privacidade. Conferir no painel da Cloudflare (R2 → bucket → localização).
+
 `UNKNOWN — REQUIRES EXPERIMENT`: quanto tempo leva uma restauração completa **a partir
 do R2** em produção (aqui, num banco sintético local, foi instantâneo — não é a mesma
 coisa que puxar de volta da nuvem).

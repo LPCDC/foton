@@ -564,6 +564,14 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 .lb-x{position:absolute;top:calc(14px + env(safe-area-inset-top));right:16px;width:40px;height:40px;border-radius:50%;
   background:rgba(255,255,255,.1);color:#fff;font-size:27px;line-height:1;display:grid;place-items:center;z-index:2}
 .lb-x:active{transform:scale(.92)}
+/* "Nao sou eu" (ADR-0037): canto oposto ao fechar e longe de Salvar/Compartilhar — e uma
+   correcao, nao uma acao principal, e um toque acidental nao pode acontecer por vizinhanca.
+   Armado (1o toque), vira aviso; o 2o toque confirma. Sem confirm(): nada de dialogo. */
+.lb-nsu{position:absolute;top:calc(14px + env(safe-area-inset-top));left:16px;height:40px;padding:0 14px;
+  border-radius:20px;background:rgba(255,255,255,.1);color:#fff;font-size:14px;font-weight:600;z-index:2}
+.lb-nsu.armado{background:#fff;color:#141014}
+.lb-nsu:active{transform:scale(.96)}
+.lb-nsu:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:64px;border-radius:12px;
   background:rgba(255,255,255,.07);color:#fff;font-size:30px;line-height:1;display:grid;place-items:center;z-index:2}
 .lb-nav.prev{left:8px} .lb-nav.next{right:8px}
@@ -1172,6 +1180,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 <!-- VISUALIZADOR de foto (lightbox) -->
 <div class="lb" id="lb" onclick="if(event.target===this)fecharFoto()">
   <button class="lb-x" onclick="fecharFoto()" aria-label="Fechar">×</button>
+  <button class="lb-nsu" id="lb-nsu" onclick="naoSouEu()" style="display:none">Não sou eu</button>
   <button class="lb-nav prev" onclick="navFoto(-1)" aria-label="Anterior">‹</button>
   <img id="lb-img" alt="">
   <button class="lb-nav next" onclick="navFoto(1)" aria-label="Próxima">›</button>
@@ -2895,7 +2904,7 @@ function renderGuestGrid(){
       d.className='ph'+(p._nova?' nova':'')+(marcada?' sel':'');
       // fora do modo seleção o toque abre a FOTO (não o menu); dentro dele, marca.
       // abrirFoto recebe a lista CHEIA (ordem): o lightbox navega alem do teto.
-      d.onclick=()=> SEL ? alternarSel(p.src) : abrirFoto(ordem,i);
+      d.onclick=()=> SEL ? alternarSel(p.src) : abrirFoto(ordem,i,{naoSouEu:!todasAba});
       // segurar entra no modo selecao JA com esta foto marcada
       armarToqueLongo(d, ()=>{ if(!SEL) SEL=new Set(); SEL.add(p.src); renderGuestGrid(); barraSel(); });
       d.innerHTML=`<img src="${mini(p.src)}" alt="Foto ${i+1}" loading="lazy">`
@@ -3328,14 +3337,56 @@ async function admTestarFoto(e){
 
 /* ===================== VISUALIZADOR DE FOTO (lightbox) ===================== */
 let lbLista=[], lbIdx=0;
-function abrirFoto(lista, idx){
-  lbLista=lista; lbIdx=idx; sheetTarget=lista[idx];
+let lbOpcoes={};
+function abrirFoto(lista, idx, opcoes){
+  lbLista=lista; lbIdx=idx; sheetTarget=lista[idx]; lbOpcoes=opcoes||{};
   document.getElementById('lb-img').src=lista[idx].src;
   document.getElementById('lb-count').textContent=`${idx+1} / ${lista.length}`;
   const nav=lista.length>1?'':'none';
   document.querySelectorAll('.lb-nav').forEach(b=>b.style.display=nav);
   atualizarBotaoQR();
+  atualizarNaoSouEu();
   document.getElementById('lb').classList.add('show');
+}
+/* ============== "NAO SOU EU" (ADR-0037) ==============
+   So aparece na galeria PROPRIA do convidado (aba Minhas): e ali que o reconhecimento
+   pode ter errado por ele. Tira a foto da galeria dele — ela continua em Todas — e o
+   servidor guarda a entrega recusada: e o unico dado de falso positivo REAL que existe
+   para calibrar o limiar. Dois toques, sem confirm() (dialogo nao e confiavel no PWA). */
+let _naoSouEuArmado=null;
+function atualizarNaoSouEu(){
+  const b=document.getElementById('lb-nsu'); if(!b)return;
+  const atual=lbLista[lbIdx];
+  const minha=!!(lbOpcoes.naoSouEu && guestState.id && atual &&
+                 guestState.photos.some(p=>p.src===atual.src));
+  _naoSouEuArmado=null; clearTimeout(b._t);
+  b.classList.remove('armado'); b.textContent='Não sou eu';
+  b.style.display=minha?'':'none';
+}
+async function naoSouEu(){
+  const b=document.getElementById('lb-nsu'); const atual=lbLista[lbIdx];
+  if(!atual||!guestState.id)return;
+  if(_naoSouEuArmado!==atual.src){            // 1o toque: arma e explica o que vai acontecer
+    _naoSouEuArmado=atual.src; b.classList.add('armado');
+    b.textContent='Tirar da minha galeria?';
+    clearTimeout(b._t); b._t=setTimeout(atualizarNaoSouEu,4000);
+    return;
+  }
+  const pid=(atual.src.match(/\/([^\/?#]+)\.jpg/)||[])[1];
+  if(LIVE){
+    try{
+      const fd=new FormData();
+      fd.append('event',guestState.event); fd.append('guest_id',guestState.id); fd.append('photo_id',pid||'');
+      const r=await fetch(API+'/convidado/nao-sou-eu',{method:'POST',body:fd});
+      if(!r.ok){ toast('Não consegui tirar esta foto. Tente de novo.'); atualizarNaoSouEu(); return; }
+    }catch(e){ toast('Sem conexão. Tente de novo quando a internet voltar.'); atualizarNaoSouEu(); return; }
+  }
+  guestState.photos=guestState.photos.filter(p=>p.src!==atual.src);
+  lbLista=lbLista.filter(p=>p.src!==atual.src);
+  renderGuestGrid();
+  toast('Tirada da sua galeria. Ela continua em Todas.');
+  if(!lbLista.length){ fecharFoto(); return; }
+  abrirFoto(lbLista, Math.min(lbIdx, lbLista.length-1), lbOpcoes);
 }
 function fecharFoto(){ fecharQRFoto(); if(window.zerarZoomFoto)zerarZoomFoto();
   document.getElementById('lb').classList.remove('show'); }
@@ -3347,6 +3398,7 @@ function navFoto(d){
   document.getElementById('lb-img').src=lbLista[lbIdx].src;
   document.getElementById('lb-count').textContent=`${lbIdx+1} / ${lbLista.length}`;
   atualizarBotaoQR();
+  atualizarNaoSouEu();                        // trocar de foto desarma o 1o toque
 }
 /* teclado + swipe */
 document.addEventListener('keydown',e=>{

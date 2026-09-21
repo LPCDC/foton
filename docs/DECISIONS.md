@@ -1229,3 +1229,82 @@ assinatura virando anônima, porque quem pediu para sair não continua estampado
 **Consequências.** O risco muda de lugar: deixa de ser *"e se aparecer criança?"* e passa
 a ser *"o consentimento do responsável se sustenta?"*. Em troca, a Fiesta deixa de ter um
 buraco que a realidade abriria de qualquer jeito — numa festa, criança aparece.
+
+---
+
+## ADR-0037 — "Não sou eu": o convidado corrige o reconhecimento (e dois defeitos antigos de exclusão)
+
+**Data:** 2026-09-21 · **Estado:** aceita · **Vale para todos os modos**
+
+**Contexto.** Decisão do dono em 2026-09-21: **foco na fotógrafa primeiro** — a Fiesta
+segue em trilho paralelo de ADR e medição, sem data. Na ordem aprovada, este é o primeiro
+item que mexe no produto. Duas razões para ele vir antes dos outros:
+1. **Para o convidado:** a pior falha do piloto é foto de um estranho chegando no celular
+   dele (ADR-0034). Até aqui ele não tinha o que fazer além de sair do evento inteiro.
+2. **Para o limiar:** o 0,40 da ADR-0034 foi escolhido com foto de teste, e a validação em
+   evento real ficou `UNKNOWN`. Com a auditoria da ADR-0035, **cada toque neste botão
+   registra o score exato em que o reconhecimento errou num evento de verdade.** É o único
+   dado de falso positivo real que o Fóton pode ter — e ele passa a coletá-lo sozinho.
+
+**Declaração antes do código (regra da casa):**
+
+| | |
+|---|---|
+| **Entidade** | tabela nova `rejeicao(guest_id, photo_id, score, limiar, modelo, via, ts_entrega, ts)`, chave `(guest_id, photo_id)`. Guarda a entrega recusada **com a razão dela**, copiada de `match` |
+| **Migração** | `CREATE TABLE IF NOT EXISTS`, aditiva. Nada existente muda de significado |
+| **Regra estrutural** | **entrega recusada nunca volta.** A trava fica em `salva_match` (`INSERT … WHERE NOT EXISTS rejeicao`), e não na tela — vale para qualquer caminho que decida entrega, hoje e amanhã (reencontro, reprocessamento) |
+| **LGPD** | o score deriva de comparação biométrica → a recusa **morre com o convidado**: exclusão do titular, expiração da biometria e da foto, apagar foto, apagar evento e zerar dados |
+| **Autorização** | pelo `guest_id`, como `/feed` e `/convidado/excluir` (modelo legado; a Fiesta usa token — invariante 3). Pior dano de um id vazado: tirar fotos da galeria do dono dele, que continuam em **Todas** |
+| **Rollback** | `git revert`; a tabela fica inerte e o `salva_match` volta a ignorá-la |
+
+**Decisão — o que o convidado vê.** Na foto aberta, **só na aba Minhas**, um botão "Não sou
+eu" no canto superior esquerdo — oposto ao fechar e longe de Salvar e Compartilhar, porque
+é correção, não ação principal. **Dois toques:** o primeiro arma e explica ("Tirar da minha
+galeria?"), o segundo confirma; desarma sozinho em 4 s ou ao trocar de foto. **Sem
+`confirm()`**: diálogo do navegador não é confiável no PWA do Android (BLUEPRINT §7). A foto
+só sai da tela **depois** de o servidor confirmar. Aviso final: *"Tirada da sua galeria. Ela
+continua em Todas."*
+
+**O que o admin vê.** `/admin/entregas` passa a trazer `recusadas` e a lista `recusas`, com o
+score de cada uma, ao lado das entregas que ficaram — é para isso que o dado existe:
+comparar onde o reconhecimento erra com onde ele acerta.
+
+### Dois defeitos antigos, encontrados no caminho e corrigidos junto
+
+Ambos em código de exclusão que esta ADR precisava tocar. **Ambos reproduzidos com o
+código de produção antes da correção** — não são hipótese.
+
+**1. Apagar um evento deixava as entregas dele órfãs no banco, para sempre.** `apaga_evento`
+apagava os convidados **antes** das entregas, e buscava as entregas por uma subconsulta
+*nos convidados que acabara de apagar* — a subconsulta voltava vazia e nada era apagado. A
+expiração também não pegava essas linhas, porque procura pelo convidado. Desde a ADR-0035 a
+entrega carrega o score, derivado de biometria. Reprodução com o `store.py` de produção:
+evento e convidado apagados, entrega `('g1','p1', 0.7)` ainda no banco.
+*Correção:* primeiro o que depende, depois a base — e pelos dois lados (convidado do evento
+**ou** foto do evento). **Não limpa o que já ficou órfão em produção:** isso exige tocar o
+banco de produção e é decisão separada (abaixo).
+
+**2. A dona do evento A apagava os rostos e as entregas de uma foto do evento B.** A rota
+`/photo/delete` autoriza pelo evento **informado**, e `apaga_foto` apagava rostos e entregas
+**pelo id da foto**, sem conferir de que evento ela era. O id da foto é público — está na
+URL da imagem, visível para qualquer um com o QR. Reprodução com o código de produção: a
+foto de B continuou, com **0 rostos e 0 entregas** — sumiu da galeria de todo mundo e nunca
+mais casaria com ninguém. *Correção:* se a foto não é do evento informado, nada é apagado.
+
+**Prova (rodada e lida, 2026-09-21):**
+- **Suíte: 389 verdes** (eram 367): **15** na seção [32] do contrato e **7** na [6e] do front.
+- **Prova do vermelho:** contra o código de produção, o contrato falha já na rota (405) e
+  derruba a seção ao procurar `rejeicoes_de`; o front falha em 6 das 7. Os dois defeitos
+  foram reproduzidos isoladamente contra o `store.py` de produção (acima).
+- **Ponta a ponta com o modelo real** (uvicorn + buffalo_s + foto real de 6 rostos): entregue →
+  "Não sou eu" → **sai da galeria dela e continua na festa** → o admin vê a recusa com
+  **score 0,655, limiar 0,40, via `ingest`** (o mesmo valor medido para essa pessoa em 11/09).
+
+**Consequências.**
+- O primeiro evento real passa a medir o próprio limiar: **quantas recusas, em que score**.
+- Uma recusa que esteja errada (a pessoa **era** ela) tira a foto só da galeria dela; a foto
+  continua em Todas, de onde ela pode salvar. Não há "desfazer" nesta versão — YAGNI até
+  alguém pedir.
+- **Em aberto, decisão do dono:** as entregas que o defeito 1 já deixou órfãs **em
+  produção** continuam lá. Quantas são é `UNKNOWN` — contar exige consultar o banco de
+  produção (Cloud Shell). Limpar é uma exclusão em produção e pede a sua autorização.

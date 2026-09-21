@@ -1,5 +1,10 @@
 # FIESTA-IMPLEMENTACAO.md — Proposta de implementação
 
+> **EM TRILHO PARALELO, SEM DATA — decisão do dono em 2026-09-21: a fotógrafa vem
+> primeiro** (BLUEPRINT §9). Esta proposta continua valendo como plano; a Fiesta avança só
+> em ADR e medição até a fotógrafa ter piloto. A **decisão C (moderação) segue aberta**: a
+> recomendação é a cascata Marqo → Freepik INT8 (§3.4), ainda sem o "aprovo" do dono.
+>
 > **PROPOSTA — aguardando aprovação do dono. Nenhuma linha de produto foi escrita.**
 > Escrita em 2026-09-12 a partir do pedido "transformar o Fóton Fiesta em produto pronto
 > para piloto real e arquitetado para monetização futura", seguindo o processo que o dono

@@ -105,6 +105,14 @@ def conn():
                             ("via", "TEXT"), ("ts", "REAL")):
             try: _conn.execute(f"ALTER TABLE match ADD COLUMN {_col} {_tipo}")
             except sqlite3.OperationalError: pass
+
+        # "NAO SOU EU" (ADR-0037): entrega que o proprio convidado recusou. Guarda a razao
+        # da entrega recusada (copiada de `match`) — e o unico dado que existe sobre FALSO
+        # POSITIVO real, que e o que calibra o limiar da ADR-0034. A chave primaria impede
+        # que a mesma recusa conte duas vezes. Morre com o convidado, como `match`.
+        _conn.execute("""CREATE TABLE IF NOT EXISTS rejeicao(
+            guest_id TEXT, photo_id TEXT, score REAL, limiar REAL, modelo TEXT,
+            via TEXT, ts_entrega REAL, ts REAL, PRIMARY KEY(guest_id, photo_id))""")
         _conn.commit()
     return _conn
 
@@ -375,6 +383,7 @@ def expirar(dias_biometria=7, dias_fotos=90):
             gs.append(g)
     for g in gs:
         q("DELETE FROM match WHERE guest_id=?", (g["id"],))
+        q("DELETE FROM rejeicao WHERE guest_id=?", (g["id"],))
         q("DELETE FROM guest WHERE id=?", (g["id"],))
     # 2) contatos deixados voluntariamente seguem a retenção das fotos
     q("DELETE FROM contact WHERE ts < ?", (lim_fot,))
@@ -383,6 +392,7 @@ def expirar(dias_biometria=7, dias_fotos=90):
     for p in ps:
         q("DELETE FROM face WHERE photo_id=?", (p["id"],))
         q("DELETE FROM match WHERE photo_id=?", (p["id"],))
+        q("DELETE FROM rejeicao WHERE photo_id=?", (p["id"],))
         q("DELETE FROM photo WHERE id=?", (p["id"],))
     return {"convidados": len(gs), "fotos": len(ps)}
 
@@ -397,7 +407,7 @@ def zerar_dados():
     antes = tamanho_no_disco()
     contagem = {t: (q("SELECT COUNT(*) FROM " + t, (), "one") or [0])[0]
                 for t in ("photo", "face", "guest", "match", "contact", "event")}
-    for t in ("match", "face", "photo", "guest", "contact", "event"):
+    for t in ("match", "rejeicao", "face", "photo", "guest", "contact", "event"):
         q("DELETE FROM " + t)
     depois = compacta()
     return {**contagem, "bytes_antes": antes, "bytes_depois": depois}
@@ -439,6 +449,7 @@ def apagar_dados_do_convidado(gid):
     """Direito de exclusão (LGPD Art. 18): o titular pede e sai tudo dele."""
     achou = bool(q("SELECT 1 FROM guest WHERE id=?", (gid,), "one"))
     q("DELETE FROM match WHERE guest_id=?", (gid,))
+    q("DELETE FROM rejeicao WHERE guest_id=?", (gid,))     # score e derivado de biometria
     q("DELETE FROM contact WHERE guest_id=?", (gid,))
     q("DELETE FROM guest WHERE id=?", (gid,))
     return achou
@@ -464,9 +475,17 @@ def apaga_conta(email):
     return True
 
 def apaga_evento(code):
+    # ORDEM IMPORTA (defeito corrigido em 2026-09-21, ADR-0037): as entregas eram buscadas
+    # por subconsulta em `guest` DEPOIS de os convidados serem apagados — a subconsulta
+    # voltava vazia e TODA entrega do evento ficava orfa no banco, para sempre (a
+    # expiracao procura pelo convidado, que ja nao existia). Desde a ADR-0035 a entrega
+    # carrega score derivado de biometria. Agora: primeiro o que depende, depois a base —
+    # e pelos dois lados (convidado do evento OU foto do evento).
+    for t in ("match", "rejeicao"):
+        q(f"""DELETE FROM {t} WHERE guest_id IN (SELECT id FROM guest WHERE event_code=?)
+                               OR photo_id IN (SELECT id FROM photo WHERE event_code=?)""", (code, code))
     for t in ("photo", "face", "guest", "contact"):
         q(f"DELETE FROM {t} WHERE event_code=?", (code,))
-    q("DELETE FROM match WHERE guest_id IN (SELECT id FROM guest WHERE event_code=?)", (code,))
     q("DELETE FROM event WHERE code=?", (code,))
 
 def encerra_evento(code):
@@ -521,10 +540,20 @@ def fotos_de(code):
     rs = q("SELECT id,n_faces FROM photo WHERE event_code=? ORDER BY criado", (code,), "all")
     return [dict(r) for r in rs]
 
+def foto_do_evento(code, pid):
+    return bool(q("SELECT 1 FROM photo WHERE id=? AND event_code=?", (pid, code), "one"))
+
 def apaga_foto(code, pid):
+    # So apaga o que depende da foto SE a foto era deste evento. Defeito corrigido em
+    # 2026-09-21 (ADR-0037): a rota autoriza pelo evento informado, e antes a dona do
+    # evento A que passasse o id de uma foto do evento B (o id e publico, esta na URL da
+    # imagem) apagava os rostos e as entregas da foto de B — a foto ficava, sem dono de nada.
+    if not foto_do_evento(code, pid):
+        return
     q("DELETE FROM photo WHERE id=? AND event_code=?", (pid, code))
     q("DELETE FROM face WHERE photo_id=?", (pid,))
     q("DELETE FROM match WHERE photo_id=?", (pid,))
+    q("DELETE FROM rejeicao WHERE photo_id=?", (pid,))
 
 def rostos_de(code):
     rs = q("SELECT photo_id, emb FROM face WHERE event_code=?", (code,), "all")
@@ -552,9 +581,32 @@ def salva_match(gid, pid, score=None, limiar=None, modelo=None, via=None):
     entregue a esta pessoa, o score da primeira vez nao e reescrito — e ele que explica
     por que ela chegou. Os argumentos sao opcionais para nao quebrar chamador antigo."""
     import time as _t
+    # ...e uma entrega que o convidado ja recusou ("Nao sou eu", ADR-0037) NUNCA volta.
+    # A trava mora aqui, e nao na tela, para valer em qualquer caminho que decida entrega
+    # — hoje e amanha (reencontro por selfie, reprocessamento).
     q("""INSERT OR IGNORE INTO match(guest_id,photo_id,score,limiar,modelo,via,ts)
-         VALUES(?,?,?,?,?,?,?)""",
-      (gid, pid, score, limiar, modelo, via, _t.time() if score is not None else None))
+         SELECT ?,?,?,?,?,?,?
+         WHERE NOT EXISTS (SELECT 1 FROM rejeicao WHERE guest_id=? AND photo_id=?)""",
+      (gid, pid, score, limiar, modelo, via, _t.time() if score is not None else None, gid, pid))
+
+def recusar_entrega(gid, pid):
+    """O convidado diz "nao sou eu" nesta foto (ADR-0037). Move a entrega de `match` para
+    `rejeicao`, com a razao dela. Devolve False se a foto nao estava na galeria dele."""
+    import time as _t
+    m = q("SELECT * FROM match WHERE guest_id=? AND photo_id=?", (gid, pid), "one")
+    if not m:
+        return False
+    q("""INSERT OR IGNORE INTO rejeicao(guest_id,photo_id,score,limiar,modelo,via,ts_entrega,ts)
+         VALUES(?,?,?,?,?,?,?,?)""",
+      (gid, pid, m["score"], m["limiar"], m["modelo"], m["via"], m["ts"], _t.time()))
+    q("DELETE FROM match WHERE guest_id=? AND photo_id=?", (gid, pid))
+    return True
+
+def rejeicoes_de(code):
+    """Falsos positivos reportados num evento, com o score que os fez chegar."""
+    return q("""SELECT r.guest_id, r.photo_id, r.score, r.limiar, r.modelo, r.via, r.ts
+                FROM rejeicao r JOIN photo p ON p.id = r.photo_id
+                WHERE p.event_code = ? ORDER BY r.ts DESC""", (code,), "all") or []
 
 def matches_de(gid):
     rs = q("SELECT photo_id FROM match WHERE guest_id=?", (gid,), "all")

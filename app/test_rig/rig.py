@@ -900,12 +900,17 @@ def admin_entregas(event: str, authorization: str = Header(None)):
     _admin(authorization)
     rs = [dict(r) for r in store.entregas_de(event)]
     scores = sorted(r["score"] for r in rs if r["score"] is not None)
+    # "Nao sou eu" (ADR-0037): entregas que o proprio convidado disse estarem erradas.
+    # Junto do resumo porque e para isso que servem — comparar o score dos erros com o
+    # das entregas que ficaram e ver se o limiar esta frouxo.
+    rej = [dict(r) for r in store.rejeicoes_de(event)]
     return {"event": event, "entregas": len(rs),
             "sem_razao_registrada": sum(1 for r in rs if r["score"] is None),
             "score": {"min": round(scores[0], 4) if scores else None,
                       "p50": round(scores[len(scores) // 2], 4) if scores else None,
                       "max": round(scores[-1], 4) if scores else None},
-            "limiar_atual": THRESH, "modelo": MODELO, "lista": rs}
+            "limiar_atual": THRESH, "modelo": MODELO, "lista": rs,
+            "recusadas": len(rej), "recusas": rej}
 
 def _mascara_nome(n):
     """"Ana Carolina Souza" -> "Ana C. S." — da para reconhecer o formato, nao a pessoa."""
@@ -1235,6 +1240,28 @@ def privacidade():
         "como_excluir": "POST /convidado/excluir com o seu guest_id, ou peça pelo contato acima",
         "servidores": "Brasil (São Paulo)",
     }
+
+@app.post("/convidado/nao-sou-eu")
+def convidado_nao_sou_eu(event: str = Form(...), guest_id: str = Form(...), photo_id: str = Form(...)):
+    """"Nao sou eu nesta foto" (ADR-0037). Tira a foto da galeria do convidado — ela
+    continua na festa, na aba Todas — e guarda a entrega recusada com a razao dela.
+
+    Por que importa alem do convidado: e o UNICO dado de falso positivo REAL que o Foton
+    pode ter. O limiar de 0,40 (ADR-0034) foi escolhido com foto de teste; cada toque aqui
+    diz em que score o reconhecimento erra num evento de verdade.
+
+    Identidade pelo guest_id, como /feed e /convidado/excluir (modelo legado; a Fiesta usa
+    token — invariante 3). Pior dano de um guest_id vazado: tirar fotos da galeria do dono
+    dele, que continuam em Todas. Mesma classe de risco da rota de saida, que apaga tudo."""
+    _ev(event, create=False)                          # recusa nao cria evento (leitura/escrita
+    if not store.convidado_existe(event, guest_id):   # de convidado nunca cria)
+        raise HTTPException(404, "convidado nao encontrado neste evento")
+    if not store.foto_do_evento(event, photo_id):
+        raise HTTPException(404, "foto nao encontrada neste evento")
+    if not store.recusar_entrega(guest_id, photo_id):
+        raise HTTPException(404, "essa foto nao esta na sua galeria")
+    log.info('{"stage":"rejeicao","photo_id":"%s","status":"nao_sou_eu"}' % photo_id)
+    return {"ok": True}
 
 @app.post("/convidado/excluir")
 def convidado_excluir(guest_id: str = Form(...)):
