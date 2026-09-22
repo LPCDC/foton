@@ -85,3 +85,75 @@ Cada auditoria viu uma versão diferente. Registro o que cada uma viu e o desfec
    metade da lista depende dele.
 3. **Os três "UNKNOWN" que viram trabalho perdido se ficarem abertos:** tempo real de
    entrega, teto da VM e se o filtro mexe no reconhecimento.
+
+---
+
+## 5. Fechamento do dono (2026-09-22) — vale sobre a ordem do §2
+
+**Aprovado:** portfólio 70/30. **Tema do trimestre: A** (a fotógrafa fecha negócio).
+**Tema de proteção: C** (produto coerente e acessível). **Tema de prova: B** (evidência antes
+de prometer). Quatro ajustes, todos incorporados:
+
+### 5.1 O plano 1 vira dois, com aceites separados
+
+Apetite total continua uma sessão, mas **app e site são produtos diferentes e não se
+verificam juntos**:
+
+- **1A · App:** zoom liberado, foco visível, ícones rotulados, contraste do texto sobre foto,
+  teclado e toque.
+- **1B · Site:** menu no celular, foco visível, ícones rotulados, navegação e chamada.
+
+`user-scalable=no` **sai**, salvo razão operacional específica registrada em ADR. Impedir
+zoom é exclusão, e não se usa para segurar layout.
+
+### 5.2 O plano 4 é portão, não tarefa
+
+A verificação em Android e iPhone roda **depois de 1–3**, **antes de dar 2 ou 3 por
+encerrados**, e **de novo a cada mudança grande**. Frota mínima: Android Chrome e iPhone
+Safari, tela pequena e grande, em pé, teclado aberto, conexão lenta, mídia carregando e mídia
+indisponível. O critério de aceite não é estético:
+
+> **O convidado consegue entrar, entender, consentir, enviar a selfie e chegar à galeria sem
+> ajuda?**
+
+### 5.3 O plano 6 é portão de decisão, não só medição
+
+Depois do TTFR medido:
+
+| Resultado | O que o site pode dizer |
+|---|---|
+| P95 bom | comunica velocidade, com o número medido |
+| P95 aceitável | comunica "durante o evento", **sem número** |
+| P95 ruim | corrige o caminho **antes** de vender a promessa |
+| medição não aconteceu | **nenhum número de tempo** no site |
+
+Mesma regra para o teste de carga (plano 11): **não vender capacidade de 300 convidados** até
+existir evidência.
+
+### 5.4 O site completo espera; a página de piloto não
+
+O plano 12 encolhe para uma **página mínima de piloto**, depois dos planos 2 e 3: demonstração
+real do fluxo, três telas do produto, chamada clara para fotógrafas, privacidade em duas
+linhas, convite ao piloto e **nenhum número sem lastro**. O site completo só depois do
+primeiro evento e da primeira conversa comercial.
+
+### 5.5 Cobrar sobe: logo depois do primeiro piloto
+
+Mesmo manual, por PIX, com ativação feita por nós. A pergunta que vale mais que um checkout
+elegante: **uma fotógrafa aceita pagar por isso?**
+
+### 5.6 A sequência que passa a valer
+
+| Bloco | Ordem |
+|---|---|
+| **1 · Remover risco barato** | 1A app · 1B site · 3 entrada por papel · 2 jornada do convidado · **4 validação em celular real (portão)** |
+| **2 · Provar o produto** | 5 filtro × reconhecimento · 6 TTFR (**portão de decisão**) · 11 carga · 7 WhatsApp v1 |
+| **3 · Fazer a fotógrafa operar** | 10 painel + cartaz · 8 filtros pós-clique · 9 matriz DS → app |
+| **4 · Converter** | 12-mínimo página de piloto · 13 primeira cobrança por PIX · 12-completo site |
+| **Paralelo** | 14 Fiesta, só depois de o piloto provar operação |
+
+### 5.7 O que falta para travar o cronograma
+
+**A data com a Patrícia para o teste de campo.** Sem ela, o plano 6 não anda, e o cronograma
+não pode fingir que anda. Enquanto não houver data, os blocos 1 e 2 seguem pelo que não
+depende dela.
