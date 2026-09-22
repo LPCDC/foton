@@ -269,7 +269,11 @@ checa("voltar do evento nao chama stopEvent", "'event':       ()=>{ clearInterva
 checa("enviar fotos vem antes do QR", _i.find('id="ev-shoot"') < _i.find('class="ticket"'), True)
 checa("o seletor de arquivo veio junto", _i.find('id="live-upload"') < _i.find('class="ticket"'), True)
 checa("rotulo nao exclui quem usa o celular", "da câmera':'Simular" in _i, False)
-checa("a landing fala com quem usa o celular", "Com câmera ou com o celular mesmo" in _i, True)
+# A invariante e o SENTIDO, nao a frase: a porta de quem fotografa precisa dizer que da
+# para trabalhar so com o celular (a Patricia as vezes usa aparelho emprestado). A frase
+# exata mudou no plano 3 (ADR-0040) e o teste cobrava a antiga, ao pe da letra.
+_porta_foto = _i[_i.find('entrarComoFotografo()'):][:400]
+checa("a landing fala com quem usa o celular", "celular" in _porta_foto, True)
 
 print("")
 print("[15] Painel do admin: numeros por conta e contatos — e o portao continua fechado")

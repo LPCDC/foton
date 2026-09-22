@@ -255,5 +255,19 @@ icones_soltos = [t[:60] for t in re.findall(r"<svg[^>]*>", _sem_comentarios(HTM
 checa("icone svg sem aria-hidden nem rotulo", icones_soltos, [])
 
 print("")
+print("[10] o app veste o design system (plano 3, ADR-0040)")
+ds_ref = re.findall(r'href="(/ds/foton\.css[^"]*)"', HTML)
+checa("app carrega o design system", len(ds_ref), 1)
+checa("com versao no endereco (o sw.js nao revalida .css)",
+      all(re.search(r"\?v=\d+$", r) for r in ds_ref), True)
+checa("html declara tema e perfil", bool(re.search(r'<html[^>]*data-tema="[a-z]+"[^>]*data-perfil="[a-z]+"', HTML)), True)
+checa("entrada usa as portas do sistema", HTML.count('class="porta') >= 3, True)
+checa("cada porta declara o resultado", HTML.count('class="porta__fim"') >= 3, True)
+checa("o reset de button nao mata componente do sistema",
+      bool(re.search(r'button:not\(\[class\*="porta"\]\)', HTML)), True)
+checa("fotos de demonstracao creditadas (licenca Creative Commons)",
+      "assets/CREDITS.txt" in HTML, True)
+
+print("")
 print("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}")
 sys.exit(1 if FALHAS else 0)

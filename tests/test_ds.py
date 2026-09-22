@@ -61,6 +61,8 @@ checa("a vitrine só usa imagem que existe e tem procedência", [n for n in usad
 checa("pessoa fictícia na página => rótulo de ilustrativa",
       (not any(PROC.get(n, {}).get("pessoa") == "ficticia" for n in usadas)) or "Fotos ilustrativas, geradas por IA" in VITRINE, True)
 checa("vitrine usa as fotos pintadas", len(usadas) >= 1, True)
+checa("componente porta documentado na vitrine", VITRINE.count('class="porta') >= 2, True)
+checa("porta existe no design system", ".porta {" in CSS, True)
 checa("vitrine aceita tema e perfil pelo endereço (link e prints)",
       "q.get('tema')" in VITRINE and "q.get('perfil')" in VITRINE, True)
 

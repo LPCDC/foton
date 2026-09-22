@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-tema="noite" data-perfil="pro">
 <head>
 <meta charset="utf-8">
 <!-- O zoom do navegador fica LIVRE (plano 1A, 2026-09-22). Tinha `user-scalable=no,
@@ -17,6 +17,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Satisfy&family=Instrument+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Design system (ADR-0038/0040). Entra em @layer: pela cascata do CSS, estilo SEM
+     camada vence estilo em camada, entao as telas antigas deste arquivo continuam
+     exatamente como estao e o sistema so age onde ninguem disputa. Conferido no
+     navegador antes de entrar. A versao no endereco e obrigatoria: o sw.js guarda
+     .css sem revalidar. -->
+<link rel="stylesheet" href="/ds/foton.css?v=3">
 <style>
 /* ============================================================
    Foto na Hora — identidade "premium escuro / fotografia"
@@ -61,7 +67,10 @@ body{
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
   overscroll-behavior:none;
 }
-button{font-family:inherit;cursor:pointer;border:none;color:inherit;background:none}
+/* O reset nao vale para componentes do design system: `button` sem camada vencia o
+   `.porta` de foton.css (@layer), e a porta saía sem borda nem cor. Excluir as classes
+   do sistema aqui e o que permite o DS agir dentro do app antigo. */
+button:not([class*="porta"]):not([class*="botao"]){font-family:inherit;cursor:pointer;border:none;color:inherit;background:none}
 input{font-family:inherit}
 ::selection{background:var(--accent);color:#180a06}
 
@@ -119,6 +128,29 @@ input{font-family:inherit}
 .stage-fade{position:fixed;inset:0;background:
   linear-gradient(180deg, rgba(11,10,13,.55) 0%, rgba(11,10,13,.72) 42%, rgba(11,10,13,.95) 78%, var(--ink) 100%)}
 .stage-body{position:relative;z-index:2;padding-top:1vh}
+
+/* ---- Entrada por papel (plano 3, ADR-0040) ----
+   A foto virou FAIXA com altura declarada. Antes ela cobria a tela inteira e ditava o
+   contraste de tudo o que estava por cima: texto claro sobre cena escura, que muda a
+   cada carregamento. Agora o texto e as portas ficam sobre superfície do sistema, e a
+   tela continua certa se a foto nao carregar (a faixa fica na cor de espera). */
+#s-landing{background:var(--papel)}
+/* Sem `scale`/`drift` aqui: a ampliacao empurrava 8px para fora da tela (medido:
+   scrollWidth 383 num viewport de 375) e criava rolagem lateral na home. Alem disso,
+   movimento decorativo continuo contraria a regra de um movimento automatico por tela. */
+#s-landing .stage-bg{inset:0 0 auto 0;height:38vh;background-color:var(--suave);
+  transform:none;animation:none}
+#s-landing .stage-fade{inset:0 0 auto 0;height:29vh;background:
+  linear-gradient(180deg, rgba(0,0,0,.18) 0%, rgba(0,0,0,.55) 62%, var(--papel) 100%)}
+#s-landing .stage-body{padding-top:calc(26vh - 46px)}
+/* Faixa e marca encolhem na entrada para as TRES portas caberem sem rolar: medido num
+   iPhone de 812px, a terceira porta terminava em 963px — ficava escondida, e escolha
+   que nao se ve nao e escolha. */
+#s-landing .stage-bg{height:26vh}
+#s-landing .brand-badge{width:min(230px,52vw,15vh);margin-bottom:6px}
+#s-landing .display{color:var(--tinta)}
+#s-landing .lede{color:var(--fio)}
+#s-landing .entry{gap:8px;margin-top:14px}
 .entry{display:flex;flex-direction:column;gap:8px;margin-top:16px}
 .entry-card{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;text-align:left;
   padding:13px 18px;border-radius:16px;background:var(--grad);color:#1a1608;border:1px solid transparent;
@@ -620,20 +652,22 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
         <h1 class="display">A foto no celular do convidado, <em>na hora.</em></h1>
         <p class="lede">Você fotografa. Quem aparece na foto recebe, sozinho, durante o evento.</p>
         <div class="entry">
-          <button class="entry-card" onclick="entrarComoFotografo()">
-            <span class="ec-t">Vou fotografar</span>
-            <span class="ec-s">Com câmera ou com o celular mesmo</span>
-            <span class="ec-go">→</span>
+          <!-- Portas do design system (ADR-0040): cada uma declara o RESULTADO numa
+               linha, para ninguém precisar decodificar o produto antes de tocar. -->
+          <button class="porta porta--marca" onclick="entrarComoFotografo()">
+            <span class="porta__nome">Vou fotografar</span>
+            <span class="porta__fim">Criar o evento e fotografar: câmera ou só o celular</span>
+            <span class="porta__seta" aria-hidden="true"></span>
           </button>
-          <button class="entry-card ghost" onclick="entrarConvidado()">
-            <span class="ec-t">Sou convidado</span>
-            <span class="ec-s">Entrar e receber minhas fotos</span>
-            <span class="ec-go">→</span>
+          <button class="porta" onclick="entrarConvidado()">
+            <span class="porta__nome">Sou convidado</span>
+            <span class="porta__fim">Tirar a selfie e receber minhas fotos</span>
+            <span class="porta__seta" aria-hidden="true"></span>
           </button>
-          <button class="entry-card ghost" onclick="entrarComoEmpresa()">
-            <span class="ec-t">Sou empresa</span>
-            <span class="ec-s">Ver a galeria da minha equipe</span>
-            <span class="ec-go">→</span>
+          <button class="porta" onclick="entrarComoEmpresa()">
+            <span class="porta__nome">Sou empresa</span>
+            <span class="porta__fim">Ver a galeria da minha equipe</span>
+            <span class="porta__seta" aria-hidden="true"></span>
           </button>
         </div>
         <!-- Texto encurtado: "Como conectar minha câmera ao Fóton" quebrava em 2
@@ -644,6 +678,11 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
         </p>
         <p class="note" style="margin-top:5px">
           <button class="link" style="color:var(--dim);font-weight:500" onclick="abrirPrivacidade()">Privacidade e seus dados</button>
+        </p>
+        <!-- Credito das fotos de demonstracao: elas sao do Openverse, em licenca
+             Creative Commons, que EXIGE atribuicao. Estavam no ar sem credito. -->
+        <p class="note" style="margin-top:5px">
+          <a class="link" style="color:var(--dim);font-weight:500;text-decoration:none" href="assets/CREDITS.txt" target="_blank" rel="noopener">Fotos de demonstração: Openverse (Creative Commons)</a>
         </p>
         <p class="note" id="home-sair" style="margin-top:12px;display:none">
           <button class="btn xs" style="display:inline-flex;background:#e3dfda;color:#2b2830;box-shadow:none" onclick="logout()">Sair da conta<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>

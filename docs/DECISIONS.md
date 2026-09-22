@@ -1437,3 +1437,61 @@ como "sem pessoa". O `test_ds` passou a exigir: procedência para toda imagem pu
 nenhuma `pessoa: real`, a página só usa imagem com procedência, e pessoa fictícia na página
 obriga o rótulo "Fotos ilustrativas, geradas por IA". A troca foi feita **só** depois do
 "aprovo" do dono, porque remover uma checagem de privacidade é decisão dele.
+
+## ADR-0040 — O design system entra no app: @layer, portas de papel e a foto como faixa
+
+**Status:** ACEITA (2026-09-22). Plano 3 da lista de 2026-09-22. Fecha dois pontos das
+auditorias: "o app não segue o design system" e "o app depende de texto claro sobre foto".
+
+**Contexto.** O app tem CSS próprio de ~600 linhas, escuro e dourado (ADR-0030). O design
+system (ADR-0038) é branco/preto com cobalto. Reescrever o app inteiro de uma vez seria
+arriscar a única coisa que já funciona em produção.
+
+**Decisão 1 — como o sistema entra sem quebrar o que existe.** `app/web/index.html` carrega
+`/ds/foton.css?v=3`. Todo o sistema vive em `@layer`, e **estilo sem camada vence estilo em
+camada** — conferido no navegador antes de decidir:
+
+```
+.x { color: laranja }            /* sem camada */
+@layer t { .x { color: azul } }  /* em camada  */
+-> computed: laranja
+```
+
+Logo, as telas antigas continuam idênticas, e o sistema só age onde ninguém disputa. O
+`<html>` ganhou `data-tema="noite" data-perfil="pro"` para os tokens resolverem.
+
+**Consequência achada na prática:** o reset `button{border:none;background:none}`, sem
+camada, apagava o componente `.porta`. Corrigido com
+`button:not([class*="porta"]):not([class*="botao"])`. **Regra geral: reset do app não vale
+para classe do sistema.**
+
+**Decisão 2 — porta, o componente da escolha de papel.** Retângulo com nome e **o resultado
+numa linha** ("Criar o evento, mostrar o QR e fotografar"), porque a auditoria mostrou que o
+visitante precisava decodificar o produto antes de tocar. Só a principal leva a cor do
+perfil. Documentada na vitrine.
+
+**Decisão 3 — a foto vira faixa.** Era fundo de tela inteira e definia o contraste de tudo
+o que estava por cima, variando a cada carregamento. Agora é uma faixa de 26vh com altura
+declarada; texto e portas ficam sobre superfície do sistema, e a tela continua correta
+**quando a foto não carrega** (a faixa fica na cor de espera).
+
+**Números medidos no caminho (viewport de 375×812):**
+- a animação que ampliava a foto empurrava o layout para 383 px de largura e criava rolagem
+  lateral na home → removida (também contrariava "um movimento automático por tela");
+- com a faixa de 38vh e a marca grande, a terceira porta terminava em **963 px** — fora da
+  tela. Faixa em 26vh e marca menor: termina em **805 px**, dentro dos 812. Alvo de toque de
+  cada porta: **72 px**.
+
+**Crédito das fotos.** As fotos de demonstração (`app/web/assets/p01–p11`) são do Openverse,
+em Creative Commons, e estavam no ar **sem atribuição**. A entrada agora traz o link para
+`assets/CREDITS.txt`. Ressalva registrada: o CREDITS lista os arquivos como `e1…e12` e a
+pasta tem `p01…p11` — **o mapa entre foto e autor se perdeu**; citar a lista inteira resolve
+a atribuição, e duas das licenças são "compartilhe igual".
+
+**Testes.** `test_front` [10]: o app carrega o DS com versão no endereço, o `<html>` declara
+tema e perfil, a entrada usa três portas, cada uma com resultado, o reset não mata
+componente do sistema e o crédito das fotos existe. `test_ds`: a porta está no CSS e
+documentada na vitrine.
+
+**Rollback.** Tirar o `<link>` do DS, voltar o reset de `button` e o bloco `#s-landing` do
+CSS, e restaurar os três `.entry-card`. Nenhuma outra tela depende disto.
