@@ -92,6 +92,12 @@ bash infra/conferir-dns.sh
 
 ## Passo 5 — certificado (ANTES DE 28/10/2026, não precisa ser hoje)
 
+> **FEITO em 2026-09-22** (dono, pelo Cloud Shell). Certificado renovado só para
+> `app.foton.app.br` + `getfoton.duckdns.org`, **válido até 2026-12-21**, e
+> `certbot renew --dry-run` sem erro ("all simulated renewals succeeded"). Conferido de fora
+> com `openssl s_client`: SAN = os 2 nomes, `notAfter=Dec 21 15:50:00 2026 GMT`. O prazo de
+> 28/10 deixou de existir; a renovação automática passa a funcionar sem a raiz e o `www`.
+
 Depois que a raiz e o `www` já estiverem no Netlify, encolher o certificado da VM para só
 o que ela ainda serve:
 
