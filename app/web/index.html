@@ -2,7 +2,11 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- O zoom do navegador fica LIVRE (plano 1A, 2026-09-22). Tinha `user-scalable=no,
+     maximum-scale=1` por gosto — "senao a interface fica bamba" — e isso e exclusao:
+     quem enxerga pouco perde o acesso. `touch-action:manipulation` continua matando o
+     zoom por duplo-toque, entao a interface segue firme no uso normal. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0a0d">
 <title>Fóton</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -399,13 +403,16 @@ input{font-family:inherit}
 .btn-camera .bc-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
 .btn-camera .bc-txt b{font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:-.01em}
 .btn-camera .bc-txt small{font-size:14px;font-weight:500;opacity:.72;line-height:1.3}
+/* Foco visivel em TODO controle (plano 1A). Antes so alguns elementos tinham regra, e
+   o resto ficava com o contorno padrao do navegador, invisivel sobre fundo escuro:
+   quem navega por teclado nao sabia onde estava. */
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:2px}
 html{touch-action:manipulation}
 body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
-/* A FOTO aberta tem zoom — mas NAO via `touch-action:pinch-zoom`, que era inerte aqui:
-   o <meta viewport> tem `user-scalable=no, maximum-scale=1` (proposital, senao a
-   interface inteira fica bamba), e isso desliga o pinch do navegador em toda a pagina,
-   inclusive nesta imagem. O zoom real e feito no JS (pinchZoomLightbox), com transform.
-   `touch-action:none` aqui e o que ENTREGA os dois dedos ao nosso handler. */
+/* A FOTO aberta tem zoom PROPRIO (pinchZoomLightbox, por transform), e nao o do
+   navegador: `touch-action:none` entrega os dois dedos ao nosso handler, que sabe
+   arrastar, limitar e voltar ao lugar. Desde 2026-09-22 o zoom do navegador esta
+   liberado no resto da pagina (plano 1A) — aqui continua sendo o nosso, de proposito. */
 .lb img{touch-action:none;will-change:transform}
 .c-row{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;
   border-bottom:1px solid var(--line-soft);font-size:17px}

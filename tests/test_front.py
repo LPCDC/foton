@@ -18,6 +18,11 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB = os.path.join(RAIZ, "app", "web")
 IDX = os.path.join(WEB, "index.html")
 
+def _sem_comentarios(html):
+    """Tira comentario HTML e de bloco JS: <img> citado em comentario nao e <img> na tela."""
+    html = re.sub(r"<!--.*?-->", "", html, flags=re.S)
+    return re.sub(r"/\*.*?\*/", "", html, flags=re.S)
+
 FALHAS = []
 def checa(nome, obtido, esperado):
     ok = obtido == esperado
@@ -223,6 +228,31 @@ for raiz, dirs, arqs in os.walk(RAIZ):
                 continue
             suspeitos.append(os.path.relpath(os.path.join(raiz, a), RAIZ) + ": " + v[:3] + "...")
 checa("senha escrita em arquivo do repo", suspeitos, [])
+
+print("")
+print("[9] acessibilidade do app (plano 1A) — o que exclui gente, nao o que e feio")
+HTML = io.open(IDX, encoding="utf-8").read()
+
+vp = re.search(r'<meta name="viewport" content="([^"]+)"', HTML)
+vp_txt = vp.group(1) if vp else ""
+checa("viewport nao bloqueia zoom (user-scalable)", "user-scalable=no" in vp_txt.replace(" ", ""), False)
+checa("viewport nao limita zoom (maximum-scale)", "maximum-scale=1" in vp_txt.replace(" ", ""), False)
+checa("viewport mantem area segura do iPhone", "viewport-fit=cover" in vp_txt, True)
+
+checa("existe regra global de foco visivel", bool(re.search(r"(^|[}\s])\:focus-visible\s*\{", HTML)), True)
+
+sem_alt = [t for t in re.findall(r"<img[^>]*>", _sem_comentarios(HTML)) if "alt=" not in t]
+checa("imagem sem texto alternativo", sem_alt, [])
+
+sem_nome = []
+for m in re.finditer(r"<button([^>]*)>(.*?)</button>", _sem_comentarios(HTML), re.S):
+    if not re.sub(r"<[^>]+>", "", m.group(2)).strip() and "aria-label" not in m.group(1):
+        sem_nome.append(m.group(1).strip()[:60])
+checa("botao sem nome acessivel", sem_nome, [])
+
+icones_soltos = [t[:60] for t in re.findall(r"<svg[^>]*>", _sem_comentarios(HTML))
+                 if "aria-hidden" not in t and "aria-label" not in t]
+checa("icone svg sem aria-hidden nem rotulo", icones_soltos, [])
 
 print("")
 print("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}")
