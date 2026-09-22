@@ -157,3 +157,26 @@ elegante: **uma fotógrafa aceita pagar por isso?**
 **A data com a Patrícia para o teste de campo.** Sem ela, o plano 6 não anda, e o cronograma
 não pode fingir que anda. Enquanto não houver data, os blocos 1 e 2 seguem pelo que não
 depende dela.
+
+---
+
+## 6. Sem teste de campo (decisão do dono, 2026-09-22)
+
+**Não haverá medição com a Patrícia.** O plano 6 como estava — clique da R8 até o celular do
+convidado, em evento real — **sai**. Consequências, sem rodeio:
+
+1. **O trecho câmera → nuvem continua `UNKNOWN` e vai continuar.** É o único pedaço que exige
+   a câmera dela e o 4G do salão. Nenhum experimento nosso substitui isso.
+2. **O site não pode citar tempo.** Pela regra 5.3, medição que não aconteceu significa
+   **nenhum número de tempo** no site — inclusive a frase de "menos de 10 segundos" que já
+   está no ar e que o dono decidiu manter em 2026-09-21. Ela permanece uma **afirmação não
+   medida**, agora sem previsão de virar medida.
+3. **O que passa a valer é o que medimos sozinhos (plano 6′):** do momento em que a foto
+   chega ao servidor até ela aparecer na galeria do convidado — com fotos reais de
+   `fotos-teste/`, contra a produção, repetido o bastante para ter P50 e P95. Isso cobre
+   recebida → entregue, que é a parte que o Fóton controla, e **não** cobre o clique.
+4. **A demonstração de mesa continua possível** sem ela: qualquer pessoa na mesa serve de
+   convidado, e o celular do dono serve de câmera.
+
+**Nova ordem do bloco 2:** 5 (filtro × reconhecimento) · **6′ (recebida → entregue, medido
+por nós)** · 11 (carga na VM) · 7 (WhatsApp v1).
