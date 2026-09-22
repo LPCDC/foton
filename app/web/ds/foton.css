@@ -105,6 +105,24 @@
   .botao[disabled] { opacity: .45; cursor: not-allowed; }
   .botao[disabled]:hover { background: var(--papel); color: var(--tinta); }
 
+  /* Largura cheia: no celular, a ação principal ocupa a linha inteira. */
+  .botao--bloco { inline-size: 100%; }
+
+  /* Visor da selfie: círculo, porque círculo é rosto na gramática. O anel na cor do
+     perfil diz "é aqui"; o tracejado interno mostra onde o rosto cabe. Sem sombra:
+     os anéis são spreads sólidos, não desfoque. */
+  .visor {
+    inline-size: min(64vw, 240px); aspect-ratio: 1; border-radius: 50%;
+    background: var(--suave); border: var(--borda) solid var(--tinta);
+    display: grid; place-items: center; overflow: hidden; position: relative;
+    box-shadow: 0 0 0 8px var(--papel), 0 0 0 10px var(--marca);
+  }
+  .visor > video, .visor > img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; }
+  /* Absoluto, nao item de grade: com o texto de instrução dentro do visor, o guia
+     tracejado era empurrado para baixo e saía do centro do círculo. */
+  .visor::after { content: ""; position: absolute; inset: 13% 19%; border-radius: 50%; border: var(--borda) dashed var(--fio); }
+  .visor--cheio::after { content: none; }
+
   /* Botão-lente: o gesto central de quem fotografa. Círculo, embaixo à direita. */
   .lente {
     inline-size: 72px; block-size: 72px; border-radius: 50%;

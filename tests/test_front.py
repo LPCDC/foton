@@ -269,5 +269,16 @@ checa("fotos de demonstracao creditadas (licenca Creative Commons)",
       "assets/CREDITS.txt" in HTML, True)
 
 print("")
+print("[11] jornada do convidado no sistema (plano 2)")
+for tela, quantos in (("s-g-code", 2), ("s-g-start", 2)):
+    bloco = HTML[HTML.find('id="%s"' % tela):]
+    bloco = bloco[:bloco.find("</section>")]
+    checa("%s usa botao do sistema" % tela, bloco.count('class="botao') >= quantos, True)
+checa("visor da selfie e o circulo do sistema", 'class="visor"' in HTML, True)
+checa("visor documentado no design system", ".visor {" in io.open(os.path.join(WEB, "ds", "foton.css"), encoding="utf-8").read(), True)
+checa("campo do codigo usa o campo do sistema",
+      'class="campo"' in HTML[HTML.find('id="s-g-code"'):HTML.find('id="s-g-start"')], True)
+
+print("")
 print("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}")
 sys.exit(1 if FALHAS else 0)

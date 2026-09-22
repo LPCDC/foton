@@ -22,7 +22,7 @@
      exatamente como estao e o sistema so age onde ninguem disputa. Conferido no
      navegador antes de entrar. A versao no endereco e obrigatoria: o sw.js guarda
      .css sem revalidar. -->
-<link rel="stylesheet" href="/ds/foton.css?v=3">
+<link rel="stylesheet" href="/ds/foton.css?v=4">
 <style>
 /* ============================================================
    Foto na Hora — identidade "premium escuro / fotografia"
@@ -151,6 +151,13 @@ input{font-family:inherit}
 #s-landing .display{color:var(--tinta)}
 #s-landing .lede{color:var(--fio)}
 #s-landing .entry{gap:8px;margin-top:14px}
+
+/* ---- Jornada do convidado no sistema (plano 2) ----
+   Consentimento e um bloco de conteudo: retangulo, borda de 2px, zero raio. Ele estava
+   arredondado, o que contraria a gramatica e, aqui, tira peso de uma escolha que e
+   juridica, nao decorativa. */
+#s-g-start .consent{border-radius:0;border:2px solid var(--tinta);background:var(--suave)}
+#s-g-code .card{border-radius:0;border:2px solid var(--tinta);background:transparent}
 .entry{display:flex;flex-direction:column;gap:8px;margin-top:16px}
 .entry-card{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;text-align:left;
   padding:13px 18px;border-radius:16px;background:var(--grad);color:#1a1608;border:1px solid transparent;
@@ -1066,17 +1073,17 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
     <p class="subtitle" id="g-code-sub">Escaneie o QR do fotógrafo — ou digite o código que aparece na tela dele.</p>
     <div class="card">
       <!-- A tela mandava "escaneie o QR" e nao dava como escanear. Agora da. -->
-      <button class="btn primary block" id="btn-scan" style="display:none" onclick="abrirScanner()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5"/><rect x="14" y="3.5" width="6.5" height="6.5"/><rect x="3.5" y="14" width="6.5" height="6.5"/><path d="M14 14h3v3h-3zM20.5 14v3M14 20.5h6.5"/></svg>&nbsp; Escanear o QR</button>
+      <button class="botao botao--marca botao--bloco" id="btn-scan" style="display:none" onclick="abrirScanner()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5"/><rect x="14" y="3.5" width="6.5" height="6.5"/><rect x="3.5" y="14" width="6.5" height="6.5"/><path d="M14 14h3v3h-3zM20.5 14v3M14 20.5h6.5"/></svg>&nbsp; Escanear o QR</button>
       <div class="ou" id="scan-ou" style="display:none">ou digite o código</div>
-      <div class="field"><label>Código do evento</label>
+      <div class="campo"><label for="g-code-input">Código do evento</label>
         <input id="g-code-input" placeholder="ABCD" maxlength="4" autocapitalize="characters" autocomplete="off"
-          style="text-transform:uppercase;letter-spacing:.35em;font-family:var(--mono);text-align:center;font-size:24px"></div>
-      <button class="btn ghost block" id="btn-entrar-cod" onclick="entrarNoEvento()">Entrar com o código</button>
+          style="text-transform:uppercase;letter-spacing:.35em;text-align:center;font-size:24px;min-height:56px"></div>
+      <button class="botao botao--bloco" id="btn-entrar-cod" onclick="entrarNoEvento()">Entrar com o código</button>
       <!-- Convidado que JA se registrou: volta sem refazer nada. Aparece so quando ha
            sessao viva (24h) — ver montarVoltarConvidado(). -->
       <div id="g-voltar-bloco" style="display:none">
         <div class="ou">ou</div>
-        <button class="btn primary block" id="btn-g-voltar" onclick="voltarAoEventoSalvo()"></button>
+        <button class="botao botao--marca botao--bloco" id="btn-g-voltar" onclick="voltarAoEventoSalvo()"></button>
         <p class="note" style="margin-top:8px;text-align:center">Você já está registrado neste evento — não precisa tirar outra selfie.</p>
       </div>
     </div>
@@ -1097,14 +1104,16 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
       <b style="color:var(--text)">2.</b> O fotógrafo clica &nbsp;·&nbsp;
       <b style="color:var(--text)">3.</b> Suas fotos chegam sozinhas
     </p>
-    <div class="cam cam-compact" id="cam2">
-      <div class="ph-txt" id="cam2-ph"><span class="k">🤳</span>Toque em <b>Ativar câmera</b><br>e enquadre seu rosto</div>
+    <!-- Visor do design system (ADR-0040): circulo, porque circulo e rosto na gramatica.
+         O `.cam`/`.frame` antigo era um retangulo com cantos arredondados, que dizia
+         "foto", nao "seu rosto aqui". Os ids e as funcoes continuam os mesmos. -->
+    <div class="visor" id="cam2" style="justify-self:center;margin:4px auto 0">
+      <div class="ph-txt" id="cam2-ph" style="text-align:center;padding:0 14px">Toque em <b>Ativar câmera</b><br>e enquadre seu rosto</div>
       <video id="cam2-video" autoplay playsinline muted style="display:none"></video>
-      <div class="frame"></div>
     </div>
-    <div class="cam-row">
-      <button class="btn ghost block" id="cam2-btn" onclick="ativarCam2()">Ativar câmera</button>
-      <button class="btn primary block" onclick="tirarSelfie2()">Tirar selfie</button>
+    <div class="cam-row" style="margin-top:14px">
+      <button class="botao botao--bloco" id="cam2-btn" onclick="ativarCam2()">Ativar câmera</button>
+      <button class="botao botao--marca botao--bloco" onclick="tirarSelfie2()">Tirar selfie</button>
     </div>
     <div class="consent" style="margin:12px 0 0;padding:11px 13px">
       <input type="checkbox" id="g-consent2" checked>
