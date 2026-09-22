@@ -4,7 +4,7 @@
 set -e
 cd "$(dirname "$0")/.."
 falhou=0
-for t in test_front test_autorizacao test_ftp_camera test_logo test_ds test_pintura; do
+for t in test_front test_autorizacao test_ftp_camera test_logo test_ds test_pintura test_site; do
   printf "  %-18s " "$t"
   if saida=$(python "tests/$t.py" 2>&1); then
     printf "%s ok\n" "$(printf '%s' "$saida" | grep -c '  ok  ')"

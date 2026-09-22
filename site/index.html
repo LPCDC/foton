@@ -53,7 +53,35 @@ a{color:inherit}
 .navcta{border:1px solid var(--champagne-2);color:var(--champagne)!important;
   padding:9px 16px;border-radius:999px;white-space:nowrap}
 .navcta:hover{background:var(--champagne);color:#17120a!important}
-@media(max-width:860px){ .navlinks a:not(.navcta){display:none} }
+/* Foco visível em todo controle (plano 1B). Sem isto, quem navega por teclado não
+   enxerga onde está: o contorno padrão do navegador some no fundo quase preto. */
+:focus-visible{outline:3px solid var(--champagne);outline-offset:3px;border-radius:2px}
+
+/* Atalho para o conteúdo: primeiro item do teclado, invisível até receber foco. */
+.pular{position:absolute;left:-9999px;top:0;z-index:100;background:var(--champagne);
+  color:#17120a;padding:12px 18px;font-weight:600;text-decoration:none}
+.pular:focus{left:12px;top:12px}
+
+/* Menu do celular. Antes os três links simplesmente sumiam abaixo de 860px e não
+   viravam nada — o visitante perdia o caminho das seções. */
+.navbtn{display:none;align-items:center;justify-content:center;width:46px;height:46px;
+  background:none;border:1px solid var(--line);color:var(--paper);border-radius:999px;cursor:pointer}
+.navbtn span,.navbtn span::before,.navbtn span::after{display:block;width:18px;height:2px;
+  background:currentColor;content:"";position:relative}
+.navbtn span::before{position:absolute;top:-6px}
+.navbtn span::after{position:absolute;top:6px}
+.navbtn[aria-expanded="true"] span{background:transparent}
+.navbtn[aria-expanded="true"] span::before{top:0;transform:rotate(45deg)}
+.navbtn[aria-expanded="true"] span::after{top:0;transform:rotate(-45deg)}
+@media(max-width:860px){
+  .navbtn{display:flex}
+  .navlinks{position:absolute;left:0;right:0;top:100%;flex-direction:column;
+    align-items:stretch;gap:0;background:rgba(11,10,13,.97);
+    border-bottom:1px solid var(--line-soft);padding:8px 22px 18px}
+  .navlinks[hidden]{display:none}
+  .navlinks a{padding:14px 0;border-bottom:1px solid var(--line-soft)}
+  .navlinks a.navcta{margin-top:14px;text-align:center;border-bottom:none}
+}
 
 /* ---------- hero ---------- */
 .hero{padding:92px 0 76px;position:relative}
@@ -159,10 +187,11 @@ footer a:hover{color:var(--champagne)}
 </head>
 <body>
 
+<a class="pular" href="#como">Pular para o conteúdo</a>
 <nav class="nav">
   <div class="navin">
     <a class="brand" href="#top">
-      <span class="mk" aria-hidden="true"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <span class="mk" aria-hidden="true"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <g fill="none" stroke="#e8d9b0" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="50" cy="50" r="38" stroke-width="3" stroke-opacity=".75"/>
           <path d="M50 32 L65.6 41 L65.6 59 L50 68 L34.4 59 L34.4 41 Z" stroke-width="3.4"/>
@@ -171,7 +200,8 @@ footer a:hover{color:var(--champagne)}
       </svg></span>
       <span class="wd"><span class="n">FÓTON</span><span class="t">fotos na hora</span></span>
     </a>
-    <div class="navlinks">
+    <button class="navbtn" id="navbtn" type="button" aria-expanded="false" aria-controls="navlinks" aria-label="Abrir o menu"><span></span></button>
+    <div class="navlinks" id="navlinks">
       <a href="#como">Como funciona</a>
       <a href="#quem">Para quem</a>
       <a href="#verdade">Em que pé está</a>
@@ -267,12 +297,12 @@ footer a:hover{color:var(--champagne)}
     </div>
 
     <ul class="lista rv" style="margin-top:44px">
-      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Funciona com a câmera que você já tem — ou só com o celular</li>
-      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>O convidado não instala nada e não cria conta</li>
-      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sua marca d’água e o seu tratamento em toda foto</li>
-      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Galeria pessoal que enche ao vivo, com download em um toque</li>
-      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Funciona no 4G do local — não depende do wi-fi da festa</li>
-      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Consentimento do convidado no fluxo, não na letra miúda</li>
+      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Funciona com a câmera que você já tem — ou só com o celular</li>
+      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>O convidado não instala nada e não cria conta</li>
+      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sua marca d’água e o seu tratamento em toda foto</li>
+      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Galeria pessoal que enche ao vivo, com download em um toque</li>
+      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Funciona no 4G do local — não depende do wi-fi da festa</li>
+      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Consentimento do convidado no fluxo, não na letra miúda</li>
     </ul>
   </div>
 </section>
@@ -283,12 +313,12 @@ footer a:hover{color:var(--champagne)}
     <h2>Rosto é dado sensível. Tratamos como tal.</h2>
     <p class="lead">O reconhecimento existe para entregar a foto a quem está nela — e para nada além disso.</p>
     <ul class="lista rv">
-      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b style="color:var(--paper)">A selfie não é guardada.</b> Ela vira um código matemático e os pixels são descartados na hora.</span></li>
-      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b style="color:var(--paper)">O código expira.</b> Termina o prazo do evento, some — sem ninguém precisar pedir.</span></li>
-      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b style="color:var(--paper)">Nada de busca global.</b> O rosto só é comparado dentro do evento em que a pessoa entrou.</span></li>
-      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b style="color:var(--paper)">Sai quando quiser.</b> Um toque apaga os dados dele, inclusive a biometria.</span></li>
-      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b style="color:var(--paper)">Servidor próprio.</b> O reconhecimento roda na nossa máquina — nenhum rosto vai para terceiro.</span></li>
-      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b style="color:var(--paper)">Consentimento explícito</b> antes da selfie, em português claro.</span></li>
+      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b style="color:var(--paper)">A selfie não é guardada.</b> Ela vira um código matemático e os pixels são descartados na hora.</span></li>
+      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b style="color:var(--paper)">O código expira.</b> Termina o prazo do evento, some — sem ninguém precisar pedir.</span></li>
+      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b style="color:var(--paper)">Nada de busca global.</b> O rosto só é comparado dentro do evento em que a pessoa entrou.</span></li>
+      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b style="color:var(--paper)">Sai quando quiser.</b> Um toque apaga os dados dele, inclusive a biometria.</span></li>
+      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b style="color:var(--paper)">Servidor próprio.</b> O reconhecimento roda na nossa máquina — nenhum rosto vai para terceiro.</span></li>
+      <li><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b style="color:var(--paper)">Consentimento explícito</b> antes da selfie, em português claro.</span></li>
     </ul>
   </div>
 </section>
@@ -349,6 +379,23 @@ footer a:hover{color:var(--champagne)}
   document.querySelectorAll('.rv').forEach((el,i)=>{
     el.style.transitionDelay=(i%3)*90+'ms'; io.observe(el);
   });
+})();
+</script>
+<script>
+/* Menu do celular (plano 1B): o botao diz se esta aberto, Escape fecha, tocar num link
+   fecha, e voltar para a largura de desktop devolve os links a barra. */
+(function(){
+  var b=document.getElementById('navbtn'), m=document.getElementById('navlinks');
+  if(!b||!m) return;
+  var estreito=window.matchMedia('(max-width:860px)');
+  function sincronizar(){ if(estreito.matches){ fechar(); } else { m.hidden=false; b.setAttribute('aria-expanded','false'); } }
+  function abrir(){ m.hidden=false; b.setAttribute('aria-expanded','true'); b.setAttribute('aria-label','Fechar o menu'); }
+  function fechar(){ if(estreito.matches) m.hidden=true; b.setAttribute('aria-expanded','false'); b.setAttribute('aria-label','Abrir o menu'); }
+  b.addEventListener('click',function(){ b.getAttribute('aria-expanded')==='true'?fechar():abrir(); });
+  m.addEventListener('click',function(e){ if(e.target.tagName==='A') fechar(); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&b.getAttribute('aria-expanded')==='true'){ fechar(); b.focus(); } });
+  (estreito.addEventListener?estreito.addEventListener('change',sincronizar):estreito.addListener(sincronizar));
+  sincronizar();
 })();
 </script>
 </body>
