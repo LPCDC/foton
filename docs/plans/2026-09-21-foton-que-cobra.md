@@ -237,6 +237,10 @@ git commit -m "refactor(ds): regras da constituicao num modulo compartilhado"
 
 ### Task 2: O teste da alfândega (vermelho primeiro)
 
+> **HISTÓRICO — não é a versão final.** Este bloco é anterior aos ajustes do revisor (§D):
+> não reprova subpasta e sai `0 if ok else 1`. A versão congelada é o arquivo no repo
+> (`tests/test_pintura.py`): subpasta → REPROVADO, saída 0 / 3 / 1 com o REPROVADO vencendo.
+
 **Files:**
 - Create: `tests/test_pintura.py`
 
@@ -353,6 +357,10 @@ Run: `python tests/test_pintura.py`
 Expected: FAIL com `ModuleNotFoundError: No module named 'pintura'`.
 
 ### Task 3: A esteira (`infra/pintura.py`)
+
+> **HISTÓRICO — não é a versão final.** Este bloco é anterior aos ajustes do revisor (§D):
+> não reprova subpasta e sai `0 if ok else 1`. A versão congelada é o arquivo no repo
+> (`infra/pintura.py`): subpasta → REPROVADO, saída 0 / 3 / 1 com o REPROVADO vencendo.
 
 **Files:**
 - Create: `infra/pintura.py`
@@ -638,3 +646,8 @@ da parte B acima, **vale o arquivo**.
 
 Estado: Tasks 1–4 feitas (`c7a2099`, `6c611a0` e o commit de docs); 34 checagens no
 `test_pintura`, com prova do vermelho. Task 5 (primeira ida da vitrine) em seguida.
+
+**Congelado em 2026-09-21** após a 2ª revisão do dono: subpasta e códigos de saída já
+estavam no código (conferido rodando o cenário dele); entrou o teste da precedência
+(PENDENTE + REPROVADO → 1) e a regra de pessoa real ficou operacional no manual (o que a
+alfândega verifica é o manifesto, não a imagem). **Nada mais entra no Plano 1.**

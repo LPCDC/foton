@@ -32,7 +32,17 @@ Cole a seção **Constituição** do `BRIEF.md` junto do pedido. Peça **arte-fi
 imagem, textura, hierarquia, texto. A estrutura das telas e o fluxo ficam.
 
 Três coisas que o pacote **não** pode trazer:
-1. **Foto de convidado real**, nem imagem gerada que pareça uma pessoa real.
+1. **Foto ou imagem gerada de pessoa real.** A alfândega verifica o que o manifesto
+   declara — ela não avalia a imagem em si:
+
+   | origem | pessoa | veredito |
+   |---|---|---|
+   | `higgsfield` (ou outra geração) | `real` | **REPROVADO** |
+   | `higgsfield` | `ficticia` | APROVADO, rotulada como ilustrativa |
+   | `foto-real` | `real` | PENDENTE (falta autorização de uso de imagem) |
+
+   Por isso o manifesto precisa ser honesto: declarar `ficticia` para uma pessoa real é o
+   único jeito de a regra falhar.
 2. **Número sem fonte** (tempo, preço, quantidade). E número sempre com algarismo.
 3. **Mudança na constituição sem conversa.** Se o Higgsfield propuser algo lindo que a fere
    (uma sombra suave, um cartão arredondado), traga assim mesmo: vira decisão sua com ADR,

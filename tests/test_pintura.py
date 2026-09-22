@@ -106,6 +106,9 @@ checa("com PENDENTE e sem reprovado, saída 3", pintura.main(["volta", d]), 3)
 rel = open(os.path.join(d, "RELATORIO.md"), encoding="utf-8").read()
 checa("relatório não diz 'pode integrar' com pendente", "pode integrar tudo" in rel, False)
 checa("relatório manda integrar só os APROVADOS", "integrar só os APROVADOS" in rel, True)
+d = pacote({"textos.md": "Chega em 4 s.", "fotos/segredo.css": ".x{color:red}"},
+           {"arquivos": {"textos.md": {"origem": "higgsfield"}}})
+checa("PENDENTE + REPROVADO juntos: vence o REPROVADO, saída 1", pintura.main(["volta", d]), 1)
 d = pacote({"hero.jpg": JPG}, limpo("hero.jpg"))
 checa("tudo aprovado, saída 0", pintura.main(["volta", d]), 0)
 checa("só aqui o relatório libera tudo",
