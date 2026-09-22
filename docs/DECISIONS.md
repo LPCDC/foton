@@ -1428,3 +1428,12 @@ sendo só `git push` com a suíte verde e o `/health` batendo com o SHA.
 
 **Rollback.** Apagar `infra/pintura.py` e `tests/test_pintura.py`, tirar `test_pintura` do
 `todos.sh`; `tests/ds_regras.py` pode ficar (o `test_ds` usa).
+
+**Atualização 2026-09-22 (dono aprovou):** a regra de privacidade da vitrine mudou de
+"nenhuma imagem" para "imagem só com procedência". Primeira pintura real: 6 fotos de festa
+(`seedream_v5_pro`, 18 créditos) em `app/web/ds/fotos/`, com `PROCEDENCIA.json` (cópia do
+manifesto). Cinco têm pessoas **geradas** e uma só mãos: todas declaradas `ficticia`, nenhuma
+como "sem pessoa". O `test_ds` passou a exigir: procedência para toda imagem publicada,
+nenhuma `pessoa: real`, a página só usa imagem com procedência, e pessoa fictícia na página
+obriga o rótulo "Fotos ilustrativas, geradas por IA". A troca foi feita **só** depois do
+"aprovo" do dono, porque remover uma checagem de privacidade é decisão dele.

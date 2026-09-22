@@ -1,0 +1,49 @@
+{
+  "peca": "vitrine",
+  "gerado_em": "2026-09-21",
+  "observacao": "pessoas geradas por IA, nenhuma real; rotular como ilustrativa",
+  "arquivos": {
+    "festa-brinde.jpg": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "7ecc9d12",
+      "uso": "foto ilustrativa na galeria de demonstração da vitrine"
+    },
+    "festa-pista.jpg": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "5260eb22",
+      "uso": "foto ilustrativa na galeria de demonstração da vitrine"
+    },
+    "festa-confete.jpg": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "05e60102",
+      "uso": "foto ilustrativa na galeria de demonstração da vitrine"
+    },
+    "festa-buque.jpg": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "b341cbe2",
+      "uso": "foto ilustrativa na galeria de demonstração da vitrine"
+    },
+    "festa-estrelinhas.jpg": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "38a49143",
+      "uso": "foto ilustrativa na galeria de demonstração da vitrine"
+    },
+    "festa-bolo.jpg": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "849f8562",
+      "uso": "foto ilustrativa na galeria de demonstração da vitrine"
+    }
+  }
+}

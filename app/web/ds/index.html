@@ -38,7 +38,9 @@
   .abertura .texto p { font-size: 1.125rem; }
 
   /* celular de demonstração */
-  .celular { width: min(100%, 340px); justify-self: center; border: 2px solid var(--tinta); background: var(--papel); display: grid; grid-template-rows: auto 1fr; height: 640px; position: relative; overflow: hidden; }
+  .demo { justify-self: center; width: min(100%, 340px); display: grid; gap: 8px; }
+  .demo__rotulo { font-size: .8rem; }
+  .celular { width: 100%; border: 2px solid var(--tinta); background: var(--papel); display: grid; grid-template-rows: auto 1fr; height: 640px; position: relative; overflow: hidden; }
   .celular__topo { padding: 16px 16px 12px; display: grid; gap: 12px; border-bottom: 2px solid var(--tinta); }
   .celular__evento { font: 600 .8rem/1.2 var(--f-ui); color: var(--fio); }
   .celular__titulo { display: flex; justify-content: space-between; align-items: end; gap: 8px; }
@@ -119,6 +121,7 @@
       </div>
     </div>
 
+    <div class="demo">
     <div class="celular" aria-label="Demonstração: a galeria do convidado">
       <div class="celular__topo">
         <span class="celular__evento">Casamento Clara e Davi</span>
@@ -139,6 +142,8 @@
       <div class="celular__rolagem"><div class="grade" id="grade"></div></div>
       <div class="aviso" id="aviso" role="status"><span class="glifo glifo--entregue"></span>Chegou uma foto sua</div>
       <button class="lente so-festa" type="button" aria-label="Tirar foto"></button>
+    </div>
+    <p class="secundario demo__rotulo">Fotos ilustrativas, geradas por IA. Nenhuma pessoa real.</p>
     </div>
   </section>
 
@@ -328,21 +333,22 @@
     var cel = document.createElement('i'); if (!(m === null ? rnd() > .5 : m)) cel.className = 'o'; qr.append(cel);
   }
 
-  /* ---- fotos de exemplo: luzes de festa fora de foco, nunca uma pessoa ---- */
-  var LUZES = ['255,179,71', '255,111,145', '255,209,102', '110,198,255', '249,132,74', '199,125,255'];
-  function bokeh() {
-    var camadas = [];
-    for (var i = 0; i < 6; i++) {
-      var cor = LUZES[Math.floor(rnd() * LUZES.length)], r = 12 + rnd() * 26;
-      camadas.push('radial-gradient(circle at ' + Math.round(rnd() * 100) + '% ' + Math.round(rnd() * 100) + '%, rgba(' + cor + ',.85) 0, rgba(' + cor + ',.35) ' + Math.round(r * .6) + '%, transparent ' + Math.round(r) + '%)');
-    }
-    camadas.push('linear-gradient(' + Math.round(rnd() * 360) + 'deg, #1b1022, #2c1a12)');
-    return camadas.join(',');
-  }
-  var grade = document.getElementById('grade'), n = 0, aviso = document.getElementById('aviso'), tAviso;
+  /* ---- fotos de exemplo: pintadas no Higgsfield (ADR-0039), pessoas fictícias, com
+     procedência em fotos/PROCEDENCIA.json e rótulo de ilustrativas embaixo do celular ---- */
+  var FOTOS = [
+    ['fotos/festa-brinde.jpg', 'Brinde com taças de espumante'],
+    ['fotos/festa-pista.jpg', 'Pista de dança com luzes coloridas'],
+    ['fotos/festa-confete.jpg', 'Confete dourado caindo sobre a festa'],
+    ['fotos/festa-buque.jpg', 'Buquê de rosas brancas'],
+    ['fotos/festa-estrelinhas.jpg', 'Estrelinhas acesas na noite'],
+    ['fotos/festa-bolo.jpg', 'Bolo de casamento com flores']
+  ];
+  var grade = document.getElementById('grade'), n = 0, prox = 0, aviso = document.getElementById('aviso'), tAviso;
   function foto(chegou) {
+    var par = FOTOS[prox++ % FOTOS.length];
     var f = document.createElement('figure'); f.className = 'foto' + (chegou ? ' foto--chegou' : '');
-    var im = document.createElement('div'); im.className = 'imagem'; im.style.background = bokeh();
+    var im = document.createElement('img'); im.src = par[0]; im.alt = 'Foto ilustrativa: ' + par[1];
+    im.width = 360; im.height = 480; im.decoding = 'async';
     var g = document.createElement('span'); g.className = 'glifo glifo--entregue';
     f.append(im, g); return f;
   }
