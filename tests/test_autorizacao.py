@@ -1019,5 +1019,44 @@ checa("evento que nao existe: 404 e nada criado",
        _s.evento("NAOEX")), (404, None))
 checa("o teto de espera e limitado pelo servidor", rig.MAX_ESPERA_S <= 60, True)
 
+print("\n[37] evento-demonstracao: existe por 1 hora e some com tudo dentro")
+# Para mostrar o Foton numa mesa sem deixar a selfie de ninguem guardada. A limpeza da
+# LGPD roda a cada 12 h -- por isso a demonstracao tem varredura propria, de 60 s.
+checa("sem login nao cria demonstracao", C.post("/evento/demo").status_code, 401)
+_dmt = C.post("/signup", data={"email": "demo@t.com", "senha": "senha123", "nome": "Demo"}).json()["token"]
+_agora = time.time()
+_rd = C.post("/evento/demo", headers=h(_dmt))
+checa("com login cria", _rd.status_code, 200)
+_dm = _rd.json()
+checa("codigo de 4 letras", bool(__import__("re").fullmatch(r"[A-Z]{4}", _dm["code"])), True)
+checa("vence em 1 hora", abs(_dm["expira_em"] - (_agora + rig.DEMO_DURACAO_S)) < 60, True)
+checa("a duracao e 1 hora", rig.DEMO_DURACAO_S, 3600)
+checa("varredura de no maximo 60 s", rig.VARREDURA_DEMO_S <= 60, True)
+checa("o evento e da dona da demonstracao", _s.evento(_dm["code"])["dono"], "demo@t.com")
+C.post("/event", data={"code": "NORM", "brand": "Demo"}, headers=h(_dmt))
+checa("evento normal nao vence", _s.evento("NORM")["expira_em"], None)
+checa("o convidado ve que e demonstracao", C.get("/stats", params={"event": _dm["code"]}).json().get("expira_em") is not None, True)
+
+# povoa a demonstracao: convidado com contato, foto, entrega
+rig._fa = _Detector(_Rosto(_E0, 300)); rig._selfies_por_ip.clear()
+_gd = C.post("/selfie", data={"event": _dm["code"], "consent": "true", "nome": "Visita", "contato": "x@y.z"},
+             files={"file": ("s.jpg", _jpg((90, 90, 90)), "image/jpeg")}).json()["guest_id"]
+rig._fa = _Detector(_Rosto(_vet(0.9), 150))
+_pd = C.post("/ingest", data={"event": _dm["code"]}, headers=h(_dmt),
+             files={"file": ("p.jpg", _jpg((91, 91, 91)), "image/jpeg")}).json()["photo_id"]
+_cd = _dm["code"]
+_tudo = lambda: {t: _s.q(f"SELECT COUNT(*) n FROM {t} WHERE {c}", a, "one")["n"] for t, c, a in (
+    ("photo", "event_code=?", (_cd,)), ("face", "event_code=?", (_cd,)), ("guest", "event_code=?", (_cd,)),
+    ("contact", "event_code=?", (_cd,)), ("match", "photo_id=?", (_pd,)), ("event", "code=?", (_cd,)))}
+checa("antes de vencer tem de tudo", all(v > 0 for v in _tudo().values()), True)
+checa("antes de vencer a varredura nao apaga nada", _s.apaga_vencidos(), 0)
+
+_s.q("UPDATE event SET expira_em=? WHERE code=?", (time.time() - 1, _cd))
+checa("vencido, a varredura apaga 1 evento", _s.apaga_vencidos(), 1)
+checa("NADA da demonstracao sobra (foto, rosto, convidado, contato, entrega, evento)",
+      {t: v for t, v in _tudo().items() if v}, {})
+checa("o evento normal continua", _s.evento("NORM") is not None, True)
+checa("varrer de novo nao acha nada", _s.apaga_vencidos(), 0)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

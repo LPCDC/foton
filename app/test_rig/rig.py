@@ -306,6 +306,20 @@ async def _lifespan(app: FastAPI):
                           % str(e).replace('"', "'")[:200])
             time.sleep(12 * 3600)
     threading.Thread(target=_limpeza, daemon=True).start()
+
+    # DEMONSTRACAO (ADR-0043): a limpeza acima roda a cada 12 h -- um evento "de 1 hora"
+    # viveria ate 13. Esta varredura so olha eventos com prazo e roda a cada minuto.
+    def _varre_demos():
+        while True:
+            try:
+                n = store.apaga_vencidos()
+                if n:
+                    log.info('{"stage":"lgpd","acao":"demo-vencida","eventos":%d}' % n)
+            except Exception as e:
+                log.error('{"stage":"lgpd","acao":"demo-vencida","status":"FALHOU","erro":"%s"}'
+                          % str(e).replace('"', "'")[:200])
+            time.sleep(VARREDURA_DEMO_S)
+    threading.Thread(target=_varre_demos, daemon=True).start()
     yield
 
 INICIO = time.time()
@@ -580,6 +594,31 @@ def me(authorization: str = Header(None)):
             "tem_logo": bool(c.get("logo"))}
 
 # ============================ EVENTOS ============================
+# ---------------- evento-demonstracao (ADR-0043) ----------------
+# Para mostrar o Foton numa mesa: a pessoa escaneia, tira a selfie, voce fotografa, a foto
+# chega -- e uma hora depois nada disso existe mais, selfie inclusive.
+DEMO_DURACAO_S = 3600
+VARREDURA_DEMO_S = 60
+_LETRAS_DEMO = "ABCDEFGHJKLMNPQRSTUVWXYZ"     # sem I e O: confundem com 1 e 0 no cartaz
+
+@app.post("/evento/demo")
+def evento_demo(authorization: str = Header(None)):
+    c = _dono(authorization)
+    if not c:
+        raise HTTPException(401, "entre na sua conta para criar a demonstração")
+    import random
+    for _ in range(50):
+        code = "".join(random.choice(_LETRAS_DEMO) for _ in range(4))
+        if store.evento(code) is None:
+            break
+    else:
+        raise HTTPException(503, "não achei um código livre — tente de novo")
+    vence = time.time() + DEMO_DURACAO_S
+    store.cria_evento(code, dono=c["email"], nome="Demonstração", marca=(c.get("marca") or "FÓTON"),
+                      expira_em=vence)
+    log.info('{"stage":"event","code":"%s","status":"demo","expira_em":%d}' % (code, vence))
+    return {"code": code, "nome": "Demonstração", "expira_em": vence}
+
 @app.post("/event")
 def create_event(code: str = Form(...), brand: str = Form("FÓTON"),
                  name: str = Form(""), date: str = Form(""), senha_admin: str = Form(""),
@@ -668,7 +707,8 @@ def stats(event: str, authorization: str = Header(None)):
     ult = store.ultima_foto(event)
     out = {"event": event, "photos": len(store.fotos_de(event)),
            "guests": store.conta_convidados(event),
-           "ultima_foto_s": (round(time.time() - ult) if ult else None)}
+           "ultima_foto_s": (round(time.time() - ult) if ult else None),
+           "expira_em": e.get("expira_em")}     # demonstracao: o convidado precisa saber (ADR-0043)
     c = _dono(authorization)
     if c and (not e.get("dono") or e["dono"] == c["email"]):
         try:                          # fila do FTP: foto que a câmera mandou e ainda não entrou

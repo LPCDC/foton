@@ -315,5 +315,15 @@ checa("o app manda marca e perfil para o cartaz",
       "p.set('perfil'" in HTML and "p.set('m'" in HTML, True)
 
 print("")
+print("[14] demonstracao de 1 hora (ADR-0043)")
+checa("o painel tem o botao da demonstracao", 'onclick="criarDemonstracao()"' in HTML, True)
+checa("a demonstracao nao registra de novo (o servidor ja criou)",
+      "registerEvent(" not in _sem_comentarios(HTML[HTML.find("async function criarDemonstracao"):HTML.find("async function openGuest")]).replace("NAO chama registerEvent", ""), True)
+checa("o convidado e avisado ANTES da selfie", 'aviso-demo' in HTML[HTML.find('id="s-g-start"'):HTML.find('id="s-g-consent"')], True)
+checa("o aviso tambem aparece na galeria", 'aviso-demo' in HTML[HTML.find('id="s-g-gallery"'):], True)
+checa("openGuest le o prazo do evento", "avisoDemo(st&&st.expira_em)" in HTML, True)
+checa("demonstracao vencida sai da lista do painel", "e.expira_em<agora" in HTML, True)
+
+print("")
 print("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}")
 sys.exit(1 if FALHAS else 0)

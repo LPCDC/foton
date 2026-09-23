@@ -819,7 +819,8 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 
     <div class="eyebrow-sm" data-voc="lista">Seus eventos</div>
     <div id="evt-list"></div>
-    <div class="sticky"><button class="btn primary block" onclick="abrirCriarEvento()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>&nbsp;<span data-voc="criar">Criar evento</span></button></div>
+    <div class="sticky"><button class="btn primary block" onclick="abrirCriarEvento()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>&nbsp;<span data-voc="criar">Criar evento</span></button>
+      <button class="botao botao--bloco" style="margin-top:8px" onclick="criarDemonstracao()">Demonstração de 1 hora</button></div>
     <p class="note" style="margin-top:14px" data-so="pro">
       <button class="link" onclick="go('guia')"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v10.5H3z"/><circle cx="12" cy="13.2" r="3.6"/></svg> Conectar câmera</button>
     </p>
@@ -1112,6 +1113,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
       <span class="pill livepill"><span class="livedot"></span> ao vivo</span>
     </div>
     <h1 class="title" style="font-size:27px">Receba suas fotos na hora</h1>
+    <p class="note aviso-demo" hidden style="border:2px solid var(--tinta);padding:10px 12px;text-align:left"></p>
     <p class="subtitle" style="margin:6px 0 12px">
       <b style="color:var(--text)">1.</b> Tire 1 selfie &nbsp;·&nbsp;
       <b style="color:var(--text)">2.</b> O fotógrafo clica &nbsp;·&nbsp;
@@ -1205,6 +1207,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
       <button class="tab on" id="tab-minhas" onclick="trocarAba('minhas')">Minhas fotos</button>
       <button class="tab" id="tab-todas" onclick="trocarAba('todas')">Todas da festa</button>
     </div>
+    <p class="note aviso-demo" hidden style="border:2px solid var(--tinta);padding:10px 12px;text-align:left;margin-top:12px"></p>
     <p class="subtitle" id="g-hint" style="margin:12px 0 14px">Novas fotos entram sozinhas enquanto a festa acontece.</p>
     <div class="grid" id="g-grid2"></div>
     <div class="sticky">
@@ -2386,7 +2389,9 @@ async function carregarContatos(){
 function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<4;i++)r+=c[Math.floor(Math.random()*c.length)];return r;}
 /* persistencia dos eventos do fotografo (sobrevive a sair/voltar/recarregar) */
 function saveEvents(){ if(!LIVE)return; try{ localStorage.setItem('foton_ev', JSON.stringify(state.events.map(e=>({id:e.id,name:e.name,date:e.date,code:e.code,status:e.status,photos:e.photos||0})))); }catch(e){} }
-function loadEvents(){ if(!LIVE)return; try{ const s=localStorage.getItem('foton_ev'); state.events = s ? JSON.parse(s) : []; }catch(e){ state.events=[]; } }
+function loadEvents(){ if(!LIVE)return; try{ const s=localStorage.getItem('foton_ev'); state.events = s ? JSON.parse(s) : []; }catch(e){ state.events=[]; }
+  // demonstracao vencida ja nao existe no servidor (ADR-0043): some da lista tambem
+  const agora=Date.now()/1000; state.events=state.events.filter(e=>!(e.expira_em && e.expira_em<agora)); }
 /* sincroniza a lista com o SERVIDOR -> o painel fica igual em qualquer aparelho */
 async function sincronizarEventos(){
   if(!LIVE)return;
@@ -2731,6 +2736,30 @@ function loadGuestSession(code){ try{ const s=localStorage.getItem('foton_guest_
   return j; }catch(e){ return null; } }
 function clearGuestSession(code){ try{ localStorage.removeItem('foton_guest_'+code); }catch(e){} }
 
+/* DEMONSTRACAO (ADR-0043). O convidado precisa saber ANTES da selfie que tudo some em
+   uma hora: consentimento sem essa informacao nao e informado. */
+function avisoDemo(expiraEm){
+  document.querySelectorAll('.aviso-demo').forEach(el=>{
+    if(!expiraEm){ el.hidden=true; return; }
+    const h=new Date(expiraEm*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    el.textContent=`Demonstração: tudo o que acontece aqui — selfie e fotos — se apaga às ${h}.`;
+    el.hidden=false;
+  });
+}
+async function criarDemonstracao(){
+  if(!LIVE){ toast('A demonstração precisa do servidor no ar'); return; }
+  try{
+    const r=await fetch(API+'/evento/demo',{method:'POST',headers:auth()});
+    if(!r.ok){ toast(r.status===401?'Entre na sua conta primeiro':'Não consegui criar a demonstração'); return; }
+    const j=await r.json();
+    const ev={id:'e'+Date.now(),name:'Demonstração',date:'',photos:0,guests:0,status:'live',
+              code:j.code,brand:(SESSAO&&SESSAO.marca)||'',leads:false,demo:true,expira_em:j.expira_em};
+    state.events.unshift(ev); saveEvents();
+    openEvent(ev,{novo:true});             // o servidor ja criou: NAO chama registerEvent
+    const h=new Date(j.expira_em*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    toast(`Demonstração criada — ela e tudo dentro dela somem às ${h}`);
+  }catch(e){ toast('Sem conexão com o servidor'); }
+}
 async function openGuest(code){
   guestState.event=code; guestState.photos=[]; guestState.id=null; guestState.active=false;
   const nm=(state.live&&state.live.code===code)?state.live.name:(LIVE?('Evento '+code):'Casamento Ana & Léo');
@@ -2746,6 +2775,7 @@ async function openGuest(code){
       if(ultimoEventoConvidado()===code) lembrarEventoConvidado('');   // nao insistir num codigo morto
       go('g-code'); return;
     }
+    if(r.ok){ const st=await r.json().catch(()=>null); avisoDemo(st&&st.expira_em); }
   }catch(e){ /* sem rede: segue e tenta — melhor que travar a convidada na porta */ }
   const sess=loadGuestSession(code);
   if(sess){                                   // JA REGISTRADO: volta direto pra galeria

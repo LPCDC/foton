@@ -93,6 +93,11 @@ def conn():
         try: _conn.execute("CREATE INDEX IF NOT EXISTS ix_photo_sha ON photo(event_code, sha)")
         except sqlite3.OperationalError: pass
 
+        # EVENTO COM PRAZO (ADR-0043): a demonstracao de mesa vive 1 hora e some com tudo
+        # dentro. NULL = sem prazo, que e o comportamento de TODO evento que ja existe.
+        try: _conn.execute("ALTER TABLE event ADD COLUMN expira_em REAL")
+        except sqlite3.OperationalError: pass
+
         # AUDITORIA DA ENTREGA (ADR-0035): por que ESTA foto foi para ESTA pessoa.
         # Guarda a razao da decisao junto com ela: a maior similaridade encontrada, o
         # limiar vigente naquele instante, o modelo e por qual caminho foi decidido
@@ -334,9 +339,21 @@ def resumo_geral():
     }
 
 # ---------------- eventos ----------------
-def cria_evento(code, dono=None, nome="Evento", data="", marca="FÓTON", auto=0):
-    q("""INSERT OR REPLACE INTO event(code,dono,nome,data,marca,status,auto,criado)
-         VALUES(?,?,?,?,?,'live',?,?)""", (code, dono, nome[:60], data[:10], (marca or "FÓTON")[:40], auto, time.time()))
+def cria_evento(code, dono=None, nome="Evento", data="", marca="FÓTON", auto=0, expira_em=None):
+    q("""INSERT OR REPLACE INTO event(code,dono,nome,data,marca,status,auto,criado,expira_em)
+         VALUES(?,?,?,?,?,'live',?,?,?)""", (code, dono, nome[:60], data[:10], (marca or "FÓTON")[:40], auto,
+                                            time.time(), expira_em))
+
+def apaga_vencidos(agora=None):
+    """Apaga os eventos com prazo vencido (ADR-0043) e TUDO dentro deles, pela mesma
+    cascata da exclusao manual. Evento sem prazo (expira_em NULL) nunca entra aqui.
+    Retorna quantos eventos apagou."""
+    agora = time.time() if agora is None else agora
+    codigos = [r["code"] for r in (q("SELECT code FROM event WHERE expira_em IS NOT NULL AND expira_em < ?",
+                                     (agora,), "all") or [])]
+    for c in codigos:
+        apaga_evento(c)
+    return len(codigos)
 
 def evento(code):
     r = q("SELECT * FROM event WHERE code=?", (code,), "one")

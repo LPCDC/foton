@@ -1565,3 +1565,36 @@ respeita o teto; com foto nova volta antes do teto, com a versão maior e a foto
 evento inexistente dá 404 sem criar nada; o teto é limitado pelo servidor.
 
 **Rollback.** Tirar a rota e voltar `startPolling` para o `setInterval` de 2,5 s.
+
+## ADR-0043 — Evento-demonstração: existe por 1 hora e some com tudo dentro
+
+**Status:** ACEITA (2026-09-23). Duração de **1 hora** decidida pelo dono.
+
+**Contexto.** A demonstração de mesa (método do Ateliê, §A.3) exige um evento que a pessoa
+use de verdade — escaneia, tira selfie, recebe a foto — e que **não deixe rastro**. Achado ao
+desenhar: a limpeza da LGPD roda a cada **12 horas**; um evento "de 1 hora" viveria até 13.
+
+**Decisão de dado (declarada antes do código).**
+- `event.expira_em REAL`; **`NULL` = sem prazo**, o comportamento de todo evento que já existe.
+- Migração aditiva protegida (`ALTER TABLE ... ADD COLUMN`), sem preencher nada.
+- `store.apaga_vencidos()` apaga os eventos vencidos **pela mesma cascata da exclusão manual**
+  (foto, rosto, convidado, contato, entrega, recusa).
+- Varredura própria **a cada 60 s**, só olhando eventos com prazo. Pior caso: 1h01.
+
+**Rota.** `POST /evento/demo` (exige login): código de 4 letras **sem I nem O** — confundem com
+1 e 0 no cartaz —, nome "Demonstração", marca da fotógrafa, `expira_em = agora + 3600`.
+
+**Transparência.** O convidado vê **antes da selfie**: "Demonstração: tudo o que acontece aqui
+— selfie e fotos — se apaga às HH:MM". Consentimento sem essa informação não é informado.
+O `/stats` passou a devolver `expira_em`. A demonstração vencida também some da lista local
+do painel.
+
+**Provado no servidor real (2026-09-23):** demonstração criada, o convidado via "faltam 60
+min"; prazo vencido à mão no banco; **51 s depois** a varredura apagou sozinha (`/stats` →
+404) e registrou `"acao":"demo-vencida","eventos":1`.
+
+**Testes.** `test_autorizacao` [37]: 401 sem login; código de 4 letras; vence em 1 h; evento
+normal não vence; o convidado vê o prazo; antes do prazo a varredura não apaga nada; vencida,
+apaga **tudo** dentro dela e só ela; varrer de novo não acha nada. `test_front` [14].
+
+**Rollback.** A coluna fica inofensiva (`NULL`); tirar a rota, a varredura e o botão.
