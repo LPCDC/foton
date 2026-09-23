@@ -231,8 +231,14 @@ despejo GLAMON de fotos 2000×2000 (2026-08-31). **TTFR fim a fim: nunca medido.
 > (`site/index.html`, bloco "10s") diz que o produto *"mede em cada foto: menos de dez
 > segundos entre você apertar o botão e a foto estar no celular"*. O que se mede por foto é
 > o **servidor** (`/admin/latencias`); o ponta a ponta **nunca foi medido** (linha acima).
-> Foi proposto corrigir e o dono decidiu manter. **Não alterar sem perguntar** — e o dia em
-> que o TTFR for medido é o dia de reabrir.
+> Foi proposto corrigir e o dono decidiu manter. **Não alterar sem perguntar.**
+>
+> **2026-09-22 — o dia de reabrir não virá.** O dono decidiu que **não haverá teste de campo
+> com a fotógrafa**, e o trecho câmera → nuvem é justamente o que só a câmera dela no 4G do
+> salão mede. A frase foi reapresentada com três saídas (trocar por "durante a festa";
+> manter e publicar o número parcial; manter como está) e o dono escolheu **manter**. Ou
+> seja: é afirmação **não medida por decisão**, não por falta de tempo. O que passa a ser
+> medido por nós é só **recebida → entregue** (plano 6′), que não cobre o clique.
 
 ## 9. Backlog — o que falta, em ordem (detalhe vivo no PROMPT-PROXIMA-SESSAO.md)
 
