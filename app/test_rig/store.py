@@ -98,6 +98,11 @@ def conn():
         try: _conn.execute("ALTER TABLE event ADD COLUMN expira_em REAL")
         except sqlite3.OperationalError: pass
 
+        # FOTO DE REFERENCIA (ADR-0045): a foto do roteiro de abordagem na porta. Chega para a
+        # propria pessoa, mas nao entra em "Todas da festa". 0 = toda foto que ja existe.
+        try: _conn.execute("ALTER TABLE photo ADD COLUMN oculta INTEGER DEFAULT 0")
+        except sqlite3.OperationalError: pass
+
         # AUDITORIA DA ENTREGA (ADR-0035): por que ESTA foto foi para ESTA pessoa.
         # Guarda a razao da decisao junto com ela: a maior similaridade encontrada, o
         # limiar vigente naquele instante, o modelo e por qual caminho foi decidido
@@ -538,9 +543,9 @@ def foto_por_sha(code, sha):
     r = q("SELECT id FROM photo WHERE event_code=? AND sha=?", (code, sha), "one")
     return r["id"] if r else None
 
-def salva_foto(pid, code, bytes_, embs, thumb=None, sha=None):
-    q("INSERT INTO photo(id,event_code,bytes,n_faces,criado,thumb,sha) VALUES(?,?,?,?,?,?,?)",
-      (pid, code, bytes_, len(embs), time.time(), thumb, sha))
+def salva_foto(pid, code, bytes_, embs, thumb=None, sha=None, oculta=0):
+    q("INSERT INTO photo(id,event_code,bytes,n_faces,criado,thumb,sha,oculta) VALUES(?,?,?,?,?,?,?,?)",
+      (pid, code, bytes_, len(embs), time.time(), thumb, sha, 1 if oculta else 0))
     for e in embs:
         q("INSERT INTO face(photo_id,event_code,emb) VALUES(?,?,?)", (pid, code, e.tobytes()))
 
@@ -568,8 +573,12 @@ def thumb_bytes(code, pid):
 def guarda_thumb(code, pid, dados):
     q("UPDATE photo SET thumb=? WHERE id=? AND event_code=?", (dados, pid, code))
 
-def fotos_de(code):
-    rs = q("SELECT id,n_faces FROM photo WHERE event_code=? ORDER BY criado", (code,), "all")
+def fotos_de(code, incluir_ocultas=False):
+    """Fotos do evento. Sem `incluir_ocultas`, a foto de referencia (ADR-0045) fica de fora:
+    e o que alimenta "Todas da festa" e o contador publico."""
+    filtro = "" if incluir_ocultas else " AND COALESCE(oculta,0)=0"
+    rs = q("SELECT id,n_faces,COALESCE(oculta,0) oculta FROM photo WHERE event_code=?" + filtro
+           + " ORDER BY criado", (code,), "all")
     return [dict(r) for r in rs]
 
 def foto_do_evento(code, pid):

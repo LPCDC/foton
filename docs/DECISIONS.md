@@ -1638,3 +1638,33 @@ olhava para esse quadro preto. O teste agora exige que o detector veja **a foto 
 preto e branco ligado, **sem marca d'água em lugar nenhum**; o convidado recebe **com** o look.
 
 **Rollback.** Voltar `detect_embed(treated)` nos três caminhos.
+
+## ADR-0045 — Foto de referência (`photo.oculta`): chega para a pessoa, não entra no álbum
+
+**Status:** ACEITA (2026-09-23). Backlog item 7 do BLUEPRINT; desenho em `docs/PRODUTO.md` §3b.
+
+**Contexto.** O roteiro de abordagem na porta da festa (ideia do dono, 2026-08-30): *"posso
+tirar uma foto sua?"* → selfie pelo QR → *"suas fotos já estão no seu celular"*. O motor já
+fazia isso; faltava a foto da abordagem **não poluir "Todas da festa"**.
+
+**Interpretação escolhida (e reversível numa linha).** A foto de referência **chega para a
+própria pessoa** — é justamente o momento mágico do roteiro —, mas **não aparece em "Todas
+da festa"** nem no contador público. A dona do evento a vê, marcada. Se o dono preferir que
+ela suma também para a própria pessoa, basta excluí-la de `matches_de`.
+
+**Dado (declarado antes do código).** `photo.oculta INTEGER DEFAULT 0` — 0 é toda foto que já
+existe; migração aditiva; retenção igual à das outras fotos.
+
+**Rotas.** `/ingest` aceita `referencia=true` (a câmera por FTP nunca manda referência).
+`/photos` só inclui as ocultas para a **dona** do evento, com `"oculta": true`; para o
+convidado e para qualquer outra conta, não inclui. `/stats` conta só as visíveis.
+
+**App.** No evento, um bloco "Foto de referência — o roteiro da porta" com o script de 15
+segundos e o botão da câmera. Sobe **direto, sem a fila offline**: a pessoa está na frente, e
+sem rede o certo é dizer na hora, não subir depois.
+
+**Testes.** `test_autorizacao` [39]: a normal aparece em "Todas", a de referência não; a dona
+vê a de referência marcada, outra fotógrafa não; a pessoa recebe a própria; o contador público
+não conta a de referência; foto normal nasce visível. `test_front` [15].
+
+**Rollback.** A coluna fica inofensiva (0); tirar o parâmetro e o bloco do painel.

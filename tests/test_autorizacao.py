@@ -1092,5 +1092,33 @@ _r, _g, _bb = [sum(c) / len(c) for c in zip(*list(_entregue.getdata())[::97])]
 checa("o convidado recebe COM o look (preto e branco)", abs(_r - _g) < 12 and abs(_g - _bb) < 12, True)
 C.post("/conta/look", data={"look": ""}, headers=h(_fl))
 
+print("\n[39] foto de referencia (photo.oculta): chega para a pessoa, nao entra no album da festa")
+# Roteiro de abordagem (PRODUTO 3b): "posso tirar uma foto sua?" -> selfie -> "suas fotos ja
+# estao no seu celular". A foto da porta nao pode poluir "Todas da festa".
+_rf = C.post("/signup", data={"email": "ref@t.com", "senha": "senha123", "nome": "Ref"}).json()["token"]
+_ou = C.post("/signup", data={"email": "outra-ref@t.com", "senha": "senha123", "nome": "Outra"}).json()["token"]
+C.post("/event", data={"code": "REFE", "brand": "Ref"}, headers=h(_rf))
+rig._fa = _Detector(_Rosto(_E0, 300)); rig._selfies_por_ip.clear()
+_gr = C.post("/selfie", data={"event": "REFE", "consent": "true"},
+             files={"file": ("s.jpg", _jpg((110, 110, 110)), "image/jpeg")}).json()["guest_id"]
+rig._fa = _Detector(_Rosto(_vet(0.9), 150))
+_pref = C.post("/ingest", data={"event": "REFE", "referencia": "true"}, headers=h(_rf),
+               files={"file": ("porta.jpg", _jpg((111, 111, 111)), "image/jpeg")}).json()["photo_id"]
+_pnor = C.post("/ingest", data={"event": "REFE"}, headers=h(_rf),
+               files={"file": ("festa.jpg", _jpg((112, 112, 112)), "image/jpeg")}).json()["photo_id"]
+
+_pub = [p["id"] for p in C.get("/photos", params={"event": "REFE"}).json()["photos"]]
+checa("a foto normal aparece em 'Todas da festa'", _pnor in _pub, True)
+checa("a foto de referencia NAO aparece em 'Todas da festa'", _pref in _pub, False)
+_dona = {p["id"]: p.get("oculta") for p in C.get("/photos", params={"event": "REFE"}, headers=h(_rf)).json()["photos"]}
+checa("a dona do evento ve a de referencia, marcada", _dona.get(_pref), True)
+checa("outra fotografa nao ve a de referencia",
+      _pref in [p["id"] for p in C.get("/photos", params={"event": "REFE"}, headers=h(_ou)).json()["photos"]], False)
+checa("a pessoa recebe a propria foto de referencia (o momento do roteiro)",
+      _pref in C.get("/feed", params={"event": "REFE", "guest_id": _gr}).json()["photos"], True)
+checa("o contador publico de fotos nao conta a de referencia",
+      C.get("/stats", params={"event": "REFE"}).json()["photos"], 1)
+checa("foto normal nasce visivel", _s.q("SELECT oculta FROM photo WHERE id=?", (_pnor,), "one")["oculta"], 0)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

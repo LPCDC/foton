@@ -325,5 +325,12 @@ checa("openGuest le o prazo do evento", "avisoDemo(st&&st.expira_em)" in HTML, T
 checa("demonstracao vencida sai da lista do painel", "e.expira_em<agora" in HTML, True)
 
 print("")
+print("[15] foto de referencia e o roteiro da porta (ADR-0045)")
+checa("o painel do evento tem o roteiro da porta", 'class="roteiro"' in HTML, True)
+checa("o botao dispara a camera da referencia", "getElementById('live-referencia').click()" in HTML, True)
+checa("a referencia sobe marcada como referencia", "fd.append('referencia','true')" in HTML, True)
+checa("sem rede, o app diz na hora (nao enfileira)", "a foto de referência precisa de internet" in HTML, True)
+
+print("")
 print("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}")
 sys.exit(1 if FALHAS else 0)

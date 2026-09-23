@@ -728,9 +728,15 @@ def stats(event: str, authorization: str = Header(None)):
     return out
 
 @app.get("/photos")
-def photos(event: str):
-    _ev(event, create=False)          # leitura nao cria (ver /stats)
-    return {"event": event, "photos": [{"id": p["id"], "n_faces": p["n_faces"]} for p in store.fotos_de(event)]}
+def photos(event: str, authorization: str = Header(None)):
+    e = _ev(event, create=False)      # leitura nao cria (ver /stats)
+    # A foto de referencia (ADR-0045) so aparece para a DONA do evento, marcada. Para o
+    # convidado e para qualquer outra conta, "Todas da festa" nao a mostra.
+    c = _dono(authorization)
+    dona = bool(c and e.get("dono") and e["dono"] == c["email"])
+    return {"event": event, "photos": [
+        dict({"id": p["id"], "n_faces": p["n_faces"]}, **({"oculta": True} if p["oculta"] else {}))
+        for p in store.fotos_de(event, incluir_ocultas=dona)]}
 
 # ============================ PIPELINE ============================
 def ingerir_bytes(event: str, raw: bytes):
@@ -762,7 +768,7 @@ def ingerir_bytes(event: str, raw: bytes):
 
 @app.post("/ingest")
 async def ingest(event: str = Form(...), file: UploadFile = File(...),
-                 authorization: str = Header(None)):
+                 authorization: str = Header(None), referencia: bool = Form(False)):
     # Sem isto, qualquer um com o código do QR injetava imagem na galeria dos convidados.
     c = _pode(event, authorization)
     e = store.evento(event)
@@ -786,7 +792,7 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...),
     look = store.pega_look(e["dono"]) if e.get("dono") else None
     treated, dims, pms, thumb, limpa = process_image(raw, e.get("marca") or "FÓTON", logo, look)
     faces = detect_embed(limpa)       # original, nao a tratada (ADR-0044)
-    store.salva_foto(pid, event, treated, faces, thumb, sha)
+    store.salva_foto(pid, event, treated, faces, thumb, sha, oculta=referencia)
     matched = []
     for gid, gemb in store.convidados_de(event):
         g = _emb(gemb)
