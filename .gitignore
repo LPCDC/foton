@@ -92,3 +92,6 @@ fotos-teste/
 
 # --- Pacotes da pintura (Higgsfield): imagens pesadas e rascunhos (ADR-0039) ---
 _pintura/
+
+# --- Variantes de layout em teste (nao publicar) ---
+app/web/_var/
