@@ -913,3 +913,38 @@ essa espera melhora quase tudo.
 **Defeito corrigido no próprio instrumento:** a primeira versão usava
 `statistics.quantiles`, que extrapola em amostra pequena e devolveu **p95 de 229 ms com
 máximo de 208 ms** — um número que não existe. Passou a usar percentil por posição.
+
+## Carga na VM de produção (plano 11) — 2026-09-23
+
+**Autorizado pelo dono** ("pode fazer tudo, não tem ninguém usando"). `tests/carga_vm.py`
+contra `https://app.foton.app.br` (versão `ba49d44`), a partir do PC do dono: conta de teste +
+**evento-demonstração** (ADR-0043, apaga-se sozinho), 12 convidados por selfie, **60 conexões
+de espera longa abertas o tempo todo** e fotos reais de `fotos-teste/` (~2,2 MB, bytes únicos
+por envio para a proteção contra duplicata não mascarar o número), em degraus de
+simultaneidade. Critério de parada: qualquer erro, ou ida-e-volta p95 acima de 10 s.
+
+| Envios simultâneos | Fotos/min | Servidor p50 | Servidor p95 | Ida e volta p95 | Erros |
+|---|---|---|---|---|---|
+| 1 | 33,1 | 916 ms | 1.179 ms | 2,1 s | 0 |
+| 2 | 35,2 | 1.274 ms | 1.551 ms | 3,7 s | 0 |
+| 4 | **45,4** | 1.022 ms | 1.294 ms | 7,5 s | 0 |
+| 6 | 39,4 | 1.066 ms | 2.411 ms | **11,4 s** | 0 → **parou** |
+
+**O que os números dizem.**
+1. **A VM processa uma foto em ~1 s** (p50), contra ~115 ms no PC do dono: cerca de **8×
+   mais lenta**, coerente com 1/8 de OCPU. A medição de recebida → entregue feita no PC
+   (plano 6′) era otimista; **esta é a da VM**.
+2. **O teto é de ~35 a 45 fotos por minuto** (≈ 2.000 a 2.700 por hora). Mais envios ao
+   mesmo tempo **não aumentam a vazão** — o núcleo é um só — e só criam fila: a ida-e-volta
+   vai de 2,1 s (um por vez) a 11,4 s (seis por vez).
+3. **A espera longa aguentou:** 60 convidados com a galeria aberta durante toda a carga,
+   **2.156 respostas, 0 erros**. Acima de 60 é `UNKNOWN`.
+4. A ida-e-volta inclui o **upload a partir do PC do dono** (~2 MB por foto); no salão, pelo
+   4G, esse trecho é outro e continua `UNKNOWN` (sem teste de campo, decisão de 2026-09-22).
+
+**Consequência prática.** Uma fotógrafa enviando uma foto por vez fica em ~2 s de ida-e-volta.
+Rajada (várias fotos de uma vez, como o FTP da câmera ou "enviar da galeria") entra em fila e
+cada foto espera a anterior. **O teto do piloto é a vazão, não o número de convidados.**
+
+**Sujeira deixada:** o evento `KQRH` apaga-se sozinho; a **conta vazia
+`carga-1790199346@teste.foton`** precisa ser apagada pelo admin no painel.
