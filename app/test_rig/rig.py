@@ -448,6 +448,45 @@ def signup(email: str = Form(...), senha: str = Form(...), nome: str = Form(""),
 _tentativas = {}          # ip -> [instantes de falha]
 LIMITE_FALHAS, JANELA_S = 10, 600
 
+# ---------------- limites de entrada (a VM tem 1 GB e 1/8 de OCPU) ----------------
+# Sem isto, /ingest lia para a memoria qualquer arquivo que mandassem, e /selfie --
+# que NAO tem login por desenho -- gastava ~1 s de CPU por chamada para quem tivesse
+# o codigo do evento. Os numeros sao folgados para o uso real: a R8 entrega JPEG bem
+# abaixo de 20 MB, e um convidado tira uma ou duas selfies, nao vinte.
+MAX_FOTO_BYTES = 20 * 1024 * 1024
+MAX_SELFIE_BYTES = 8 * 1024 * 1024
+LIMITE_SELFIES, JANELA_SELFIE_S = 20, 600
+_selfies_por_ip = {}      # ip -> [instantes]
+
+# Assinaturas de arquivo que o pipeline sabe abrir. Conferir os bytes, e nao o
+# content-type, porque o content-type vem de quem envia.
+_ASSINATURAS = (b"\xff\xd8\xff", b"\x89PNG\r\n\x1a\n", b"RIFF", b"GIF8",
+                b"BM", b"II*\x00", b"MM\x00*")
+
+def _e_imagem(raw: bytes) -> bool:
+    if raw[:4] == b"RIFF" and raw[8:12] != b"WEBP":
+        return False
+    if len(raw) > 11 and raw[4:12] in (b"ftypheic", b"ftypheix", b"ftyphevc", b"ftypmif1"):
+        return True
+    return any(raw.startswith(a) for a in _ASSINATURAS)
+
+def _confere_arquivo(raw: bytes, limite: int, oque: str):
+    """413 se for grande demais, 415 se nao for imagem. Nessa ordem: tamanho primeiro,
+    porque e o que protege a memoria."""
+    if len(raw) > limite:
+        raise HTTPException(413, f"{oque} grande demais: maximo {limite // (1024*1024)} MB")
+    if not _e_imagem(raw):
+        raise HTTPException(415, f"{oque} precisa ser uma imagem (JPEG, PNG, WEBP, HEIC)")
+
+def _freio_selfie(ip):
+    agora = time.time()
+    h = [t for t in _selfies_por_ip.get(ip, []) if agora - t < JANELA_SELFIE_S]
+    if len(h) >= LIMITE_SELFIES:
+        _selfies_por_ip[ip] = h
+        raise HTTPException(429, "muitas selfies deste aparelho — espere alguns minutos")
+    h.append(agora)
+    _selfies_por_ip[ip] = h
+
 def _freio(ip):
     """Freio contra força bruta no login. Conta só FALHA e por IP.
 
@@ -683,6 +722,7 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...),
         store.cria_evento(event, dono=c["email"], nome="Evento", auto=1)
         e = store.evento(event)
     raw = await file.read()
+    _confere_arquivo(raw, MAX_FOTO_BYTES, "foto")
     t0 = time.time()
     # IDEMPOTENCIA (antes de qualquer processamento — o objetivo e justamente NAO gastar
     # ~1s de CPU de novo): a mesma foto reenviada devolve a entrega original.
@@ -713,12 +753,14 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...),
             "processing_ms": round(pms, 1), "latency_ms": lat, "matched_guests": matched}
 
 @app.post("/selfie")
-async def selfie(event: str = Form(...), consent: bool = Form(...), file: UploadFile = File(...),
+async def selfie(request: Request, event: str = Form(...), consent: bool = Form(...), file: UploadFile = File(...),
                  nome: str = Form(""), contato: str = Form("")):
     _ev(event, create=True)
     if not consent:
         raise HTTPException(400, "consentimento obrigatorio (LGPD, ADR-0005)")
     raw = await file.read()                 # bytes da selfie: usados e descartados
+    _confere_arquivo(raw, MAX_SELFIE_BYTES, "selfie")
+    _freio_selfie(request.client.host if request.client else "?")
     faces = detect_embed(raw)
     if not faces:
         raise HTTPException(422, "nenhum rosto detectado na selfie")

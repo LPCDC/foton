@@ -280,5 +280,12 @@ checa("campo do codigo usa o campo do sistema",
       'class="campo"' in HTML[HTML.find('id="s-g-code"'):HTML.find('id="s-g-start"')], True)
 
 print("")
+print("[12] nada de app velho servido junto (decisao L do plano da Fiesta)")
+checa("artifact.html nao existe mais", os.path.exists(os.path.join(WEB, "artifact.html")), False)
+_sobrando = [n for n in os.listdir(WEB)
+             if n.endswith(".html") and n not in ("index.html",) and not n.startswith("_")]
+checa("nenhum outro html solto em app/web", _sobrando, [])
+
+print("")
 print("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}")
 sys.exit(1 if FALHAS else 0)

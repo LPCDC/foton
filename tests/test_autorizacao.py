@@ -941,5 +941,44 @@ try:
 finally:
     rig._fa = _fa_original
 
+print("\n[35] limites de entrada: tamanho, tipo e freio (a VM tem 1 GB)")
+_lim = C.post("/signup", data={"email": "limites@t.com", "senha": "senha123", "nome": "Lim"}).json()["token"]
+C.post("/event", data={"code": "LIMT", "brand": "Lim"}, headers=h(_lim))
+rig._fa = _Detector(_Rosto(_E0, 300))
+
+_gigante = b"\xff\xd8\xff" + b"\x00" * (rig.MAX_FOTO_BYTES + 1)
+_r = C.post("/ingest", data={"event": "LIMT"}, headers=h(_lim),
+            files={"file": ("gigante.jpg", _gigante, "image/jpeg")})
+checa("foto acima do limite e recusada (413)", _r.status_code, 413)
+checa("o limite da foto esta declarado", rig.MAX_FOTO_BYTES >= 5 * 1024 * 1024, True)
+
+_r = C.post("/ingest", data={"event": "LIMT"}, headers=h(_lim),
+            files={"file": ("doc.pdf", b"%PDF-1.4 nao sou foto", "application/pdf")})
+checa("arquivo que nao e imagem e recusado (415)", _r.status_code, 415)
+
+_r = C.post("/ingest", data={"event": "LIMT"}, headers=h(_lim),
+            files={"file": ("ok.jpg", _jpg((31, 32, 33)), "image/jpeg")})
+checa("foto normal continua entrando", _r.status_code, 200)
+
+_grande_png = b"\x89PNG\r\n\x1a\n" + b"\x00" * (rig.MAX_SELFIE_BYTES + 1)
+_r = C.post("/selfie", data={"event": "LIMT", "consent": "true"},
+            files={"file": ("selfie.png", _grande_png, "image/png")})
+checa("selfie acima do limite e recusada (413)", _r.status_code, 413)
+checa("selfie tem limite menor que a foto", rig.MAX_SELFIE_BYTES < rig.MAX_FOTO_BYTES, True)
+
+_r = C.post("/selfie", data={"event": "LIMT", "consent": "true"},
+            files={"file": ("x.txt", b"nem imagem sou", "text/plain")})
+checa("selfie que nao e imagem e recusada (415)", _r.status_code, 415)
+
+# Freio: cada selfie custa ~1 s de CPU no reconhecimento. Sem freio, quem tem o codigo do
+# evento derruba a VM sozinho. O numero e folgado: convidado real tira uma ou duas.
+rig._selfies_por_ip.clear()
+_status = [C.post("/selfie", data={"event": "LIMT", "consent": "true"},
+                  files={"file": ("s.jpg", _jpg((40 + i, 40, 40)), "image/jpeg")}).status_code
+           for i in range(rig.LIMITE_SELFIES + 2)]
+checa("as primeiras selfies passam", _status[:rig.LIMITE_SELFIES].count(200), rig.LIMITE_SELFIES)
+checa("depois do limite, freia (429)", _status[-1], 429)
+rig._selfies_por_ip.clear()
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

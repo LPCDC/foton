@@ -1495,3 +1495,36 @@ documentada na vitrine.
 
 **Rollback.** Tirar o `<link>` do DS, voltar o reset de `button` e o bloco `#s-landing` do
 CSS, e restaurar os três `.entry-card`. Nenhuma outra tela depende disto.
+
+## ADR-0041 — Limites de entrada em /ingest e /selfie, e o fim do app velho
+
+**Status:** ACEITA (2026-09-23). Plano de pré-requisitos da FIESTA-IMPLEMENTACAO §7 fase 1,
+decisão L inclusa.
+
+**Contexto.** A VM tem 1 GB de memória e 1/8 de OCPU. Até aqui:
+- `/ingest` lia para a memória **qualquer arquivo**, de qualquer tamanho e tipo;
+- `/selfie` **não tem login, por desenho** (o convidado não cria conta) e gastava ~1 s de CPU
+  por chamada no reconhecimento — quem tivesse o código do evento podia martelar;
+- `/artifact.html` servia uma cópia **antiga** do front (98 KB) em produção, sem dono.
+
+**Decisão.**
+1. **Tamanho:** foto até **20 MB**, selfie até **8 MB** → `413`. Folgado para o uso real (a R8
+   entrega JPEG bem abaixo disso) e pequeno o bastante para a VM.
+2. **Tipo:** vale a **assinatura dos bytes**, não o `content-type` — quem envia escolhe o
+   cabeçalho. JPEG, PNG, WEBP, GIF, BMP, TIFF e HEIC passam; o resto → `415`.
+3. **Freio na selfie:** **20 por IP a cada 10 minutos** → `429`. Um convidado real tira uma ou
+   duas; vinte é folga para wi-fi de salão com NAT, onde muita gente compartilha o mesmo IP.
+   Mesmo padrão em memória do freio de login que já existia.
+4. **`artifact.html` removido**, com teste que recusa qualquer outro `.html` solto em
+   `app/web/`.
+
+**O que NÃO foi feito, de propósito.** Não há freio em `/ingest`: ele exige login de
+fotógrafa, e limitar quem está trabalhando numa festa seria pior que o risco. Não há limite
+por evento, só por IP — limitar por evento puniria a festa inteira atrás do mesmo NAT.
+
+**Testes.** `test_autorizacao` [35]: acima do limite → 413 (foto e selfie); não-imagem → 415;
+foto normal continua entrando; as 20 primeiras selfies passam e a seguinte → 429. `test_front`
+[12]: `artifact.html` não existe e nenhum outro `.html` solto em `app/web`.
+
+**Rollback.** Tirar as chamadas de `_confere_arquivo`/`_freio_selfie` dos dois caminhos; o
+`artifact.html` volta pelo git.
