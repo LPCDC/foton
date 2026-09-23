@@ -885,3 +885,31 @@ python tests/experimento_moderacao_onnx.py recursos
 python tests/experimento_moderacao_onnx.py quantizar
 python tests/experimento_moderacao_onnx.py recursos-int8
 ```
+
+## Recebida → entregue (plano 6′) — 2026-09-23
+
+**Como:** `python tests/medir_entrega.py 40 4` no ambiente `.venv-experimento`, com o
+pipeline de verdade (buffalo_s, `det_size=640`, limiar 0,40) e **27 fotos reais** de
+`fotos-teste/` (mediana de 2,2 MB e 3 rostos por foto; máximo de 7 rostos), 4 convidados
+registrados por selfie, banco temporário. **Nesta máquina — não na VM.**
+
+| Trecho | p50 | p95 | máx |
+|---|---|---|---|
+| processamento no servidor (detectar, comparar, gravar) | **129 ms** | **158 ms** | 175 ms |
+| recebida → visível no feed (inclui a leitura do feed) | **152 ms** | **176 ms** | 194 ms |
+| espera pela próxima pergunta do app | fixo | **0–2500 ms** | 2500 ms |
+
+**A descoberta que importa:** o processamento é ~1,5% do tempo que o convidado sente. O
+resto é **espera pela próxima pergunta** — o app pergunta a cada 2,5 s (`startPolling`,
+`app/web/index.html`). Otimizar o reconhecimento não melhoraria nada perceptível; encurtar
+essa espera melhora quase tudo.
+
+**O que este número NÃO cobre, e não vai cobrir:**
+1. **clique → servidor** (câmera e 4G do salão): `UNKNOWN` permanente, decisão do dono de
+   2026-09-22 de não fazer teste de campo;
+2. **a VM** (1/8 de OCPU): este PC é muito mais rápido. O número lá é `UNKNOWN` até rodar lá;
+3. o download da imagem no celular.
+
+**Defeito corrigido no próprio instrumento:** a primeira versão usava
+`statistics.quantiles`, que extrapola em amostra pequena e devolveu **p95 de 229 ms com
+máximo de 208 ms** — um número que não existe. Passou a usar percentil por posição.
