@@ -304,6 +304,15 @@ checa("a funcao do cartaz existe", "function abrirCartaz()" in HTML, True)
 # convidado cai no app sem entrar no evento -- foi o que aconteceu na primeira versao.
 checa("o QR do cartaz usa o parametro que o app le", "'/?evento=' + codigo" in CARTAZ, True)
 checa("o QR da tela usa o mesmo parametro", "/?evento=${ev.code}" in HTML, True)
+# Quem assina (decisao do dono, 2026-09-23): profissional assina com a marca dela;
+# no modo festa, o cartaz assina com o Foton e uma linha livre da pessoa.
+checa("cartaz mostra a logo da fotografa quando existe", "/conta/logo" in CARTAZ, True)
+checa("cartaz cai no nome da marca sem logo", "marcaTxt" in CARTAZ, True)
+checa("no modo festa quem assina e o Foton", "perfil === 'social'" in CARTAZ, True)
+checa("modo festa tem linha livre para o Instagram", "q.get('linha')" in CARTAZ, True)
+checa("o credito do Foton some no modo festa", "elCredito.hidden = true" in CARTAZ, True)
+checa("o app manda marca e perfil para o cartaz",
+      "p.set('perfil'" in HTML and "p.set('m'" in HTML, True)
 
 print("")
 print("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}")

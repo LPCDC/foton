@@ -3750,6 +3750,9 @@ function abrirCartaz(){
   const ev=state.live; if(!ev){ toast('Abra um evento primeiro'); return; }
   const p=new URLSearchParams({e:ev.code||''});
   if(ev.nome||ev.name) p.set('n', ev.nome||ev.name);
+  // quem assina o cartaz: a marca da fotografa (pro/empresa) ou o Foton (festa)
+  p.set('perfil', (typeof PERFIL==='function' ? PERFIL() : (SESSAO&&SESSAO.perfil)) || 'pro');
+  const _m=(SESSAO&&(SESSAO.marca||SESSAO.nome))||''; if(_m) p.set('m', _m);
   window.open('/cartaz.html?'+p.toString(), '_blank', 'noopener');
 }
 async function baixarQR(){
