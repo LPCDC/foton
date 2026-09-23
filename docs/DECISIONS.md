@@ -1528,3 +1528,40 @@ foto normal continua entrando; as 20 primeiras selfies passam e a seguinte → 4
 
 **Rollback.** Tirar as chamadas de `_confere_arquivo`/`_freio_selfie` dos dois caminhos; o
 `artifact.html` volta pelo git.
+
+## ADR-0042 — Espera longa no feed: a foto aparece quando chega, não na próxima pergunta
+
+**Status:** ACEITA (2026-09-23). Nasce de uma medição, não de uma opinião.
+
+**Contexto.** `docs/BENCHMARKS.md` (2026-09-23) mediu **recebida → entregue** com fotos reais:
+o servidor processa em **129 ms (p50)** e **158 ms (p95)**. Mas o app do convidado perguntava
+a cada **2,5 s** (`startPolling`). Ou seja: **o processamento era ~1,5% do tempo que a pessoa
+sentia** — o resto era esperar a próxima pergunta. Otimizar o reconhecimento não melhoraria
+nada perceptível.
+
+**Decisão.** `GET /feed/espera` segura a pergunta no servidor até haver foto nova, com teto de
+**25 s**, e responde **no instante da entrega**. O app usa essa rota em vez do ciclo de 2,5 s.
+
+- Um contador por evento (`_versao_evento`) sobe a cada `/ingest`; quem espera acorda.
+- O cliente manda `desde=<versão que já viu>`; se o servidor reiniciou (contador zerado), a
+  diferença faz a resposta voltar na hora — nada trava.
+- **Leitura não cria evento** (mesma regra do `/feed`: celular com galeria aberta de evento
+  apagado não pode ressuscitá-lo — já aconteceu em produção).
+
+**Por que não "perguntar mais vezes".** Seria o caminho óbvio e o errado: perguntar a cada
+1 s triplicaria a carga de uma VM de 1/8 de OCPU. A espera longa faz o contrário — **uma
+pergunta por convidado em vez de 24 por minuto** — e ainda entrega mais rápido.
+
+**Volta segura.** Se a rota não existir (servidor antigo) ou a rede der erro três vezes
+seguidas, o app volta sozinho ao ciclo de 2,5 s. A galeria não pode depender de uma rota nova.
+
+**Medido no teste de fumaça (uvicorn real, fotos reais, 2026-09-23):** a espera acordou
+**3,10 s** e **3,13 s** depois de aberta — em ambos os casos o envio da foto aconteceu aos
+3,0 s. Ou seja, **~0,1 s entre a foto chegar ao servidor e o convidado ter a resposta na
+mão**, contra até 2,5 s antes. Na segunda, a foto certa foi entregue à convidada certa.
+
+**Testes.** `test_autorizacao` [36]: volta na hora com a versão; sem novidade espera e
+respeita o teto; com foto nova volta antes do teto, com a versão maior e a foto junto;
+evento inexistente dá 404 sem criar nada; o teto é limitado pelo servidor.
+
+**Rollback.** Tirar a rota e voltar `startPolling` para o `setInterval` de 2,5 s.

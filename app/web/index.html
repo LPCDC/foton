@@ -2769,7 +2769,7 @@ async function recarregarFeed(){
 }
 /* sessao perdida no servidor -> explica e pede a selfie de novo (nao deixa tela vazia) */
 function sessaoExpirou(){
-  clearInterval(state._poll); clearGuestSession(guestState.event);
+  (state._pollAtivo=false, clearTimeout(state._poll), clearInterval(state._poll)); clearGuestSession(guestState.event);
   if(ultimoEventoConvidado()===guestState.event) lembrarEventoConvidado('');
   guestState.id=null; guestState.photos=[]; guestState.todas=[];
   toast('Precisamos da sua selfie de novo — o evento foi reiniciado');
@@ -2807,7 +2807,7 @@ function entrarComSelfie(src){
 }
 /* refazer selfie (nao sou eu) */
 function refazerSelfie(){
-  clearGuestSession(guestState.event); clearInterval(state._poll);
+  clearGuestSession(guestState.event); (state._pollAtivo=false, clearTimeout(state._poll), clearInterval(state._poll));
   guestState.id=null; guestState.photos=[]; document.getElementById('g-consent2').checked=true;
   go('g-start');
 }
@@ -2857,20 +2857,40 @@ async function liveSelfie(src){
   }catch(e){ toast('Backend offline'); go(LIVE?'g-start':'g-selfie'); }
 }
 function startPolling(){
-  clearInterval(state._poll);
-  state._poll=setInterval(async()=>{
+  /* ESPERA LONGA (ADR-0042). Medido em 2026-09-23: o servidor entrega em ~150 ms, mas
+     este ciclo perguntava a cada 2,5 s — ou seja, a pessoa esperava por nada quase todo
+     o tempo que ela sentia. Agora a pergunta FICA ABERTA no servidor ate a foto chegar
+     (ate 25 s) e volta na hora da entrega. Uma pergunta por convidado em vez de 24 por
+     minuto: melhor para o celular dela e para a VM.
+     Se a rota nao existir (servidor antigo) ou der erro, volta sozinho para o ciclo de
+     2,5 s — a galeria nunca pode depender de uma rota nova para funcionar. */
+  (state._pollAtivo=false, clearTimeout(state._poll), clearInterval(state._poll)); clearTimeout(state._poll);
+  state._pollAtivo = true;
+  let versao = 0, espera = true, erros = 0;
+  const base = () => `event=${encodeURIComponent(guestState.event)}&guest_id=${guestState.id}`;
+
+  async function ciclo(){
+    if(!state._pollAtivo) return;
     try{
-      const r=await fetch(`${API}/feed?event=${encodeURIComponent(guestState.event)}&guest_id=${guestState.id}`);
-      if(!r.ok)return; const j=await r.json();
-      if(j.known===false){ sessaoExpirou(); return; }
-      // quantas fotos existem no evento (dá vida à tela de espera)
-      fetch(`${API}/stats?event=${encodeURIComponent(guestState.event)}`).then(r=>r.ok&&r.json())
-        .then(s=>{ if(s&&s.photos!==guestState.totalEvento){ guestState.totalEvento=s.photos;
-          if(!guestState.photos.length) renderGuestGrid(); } }).catch(()=>{});
-      const have=new Set(guestState.photos.map(p=>p.src));
-      (j.photos||[]).forEach(id=>{ const s=`${API}/img/${guestState.event}/${id}.jpg`; if(!have.has(s)) pushToGuest({src:s}); });
-    }catch(e){}
-  },2500);
+      const r = await fetch(API + (espera ? `/feed/espera?${base()}&desde=${versao}` : `/feed?${base()}`));
+      if(r.status === 404 && espera){ espera = false; }          // rota nova ausente: volta ao ciclo antigo
+      else if(r.ok){
+        const j = await r.json();
+        if(j.known === false){ state._pollAtivo = false; sessaoExpirou(); return; }
+        if(typeof j.versao === 'number') versao = j.versao;
+        const have = new Set(guestState.photos.map(p=>p.src));
+        (j.photos||[]).forEach(id=>{ const src=`${API}/img/${guestState.event}/${id}.jpg`;
+          if(!have.has(src)) pushToGuest({src}); });
+        fetch(`${API}/stats?event=${encodeURIComponent(guestState.event)}`).then(r=>r.ok&&r.json())
+          .then(s=>{ if(s && s.photos !== guestState.totalEvento){ guestState.totalEvento = s.photos;
+            if(!guestState.photos.length) renderGuestGrid(); } }).catch(()=>{});
+        erros = 0;
+      }
+    }catch(e){ erros++; if(erros >= 3) espera = false; }          // rede ruim: para de segurar conexao
+    if(!state._pollAtivo) return;
+    state._poll = setTimeout(ciclo, espera ? 150 : 2500);
+  }
+  state._poll = setTimeout(ciclo, 150);
 }
 function startGuestSearch(){
   guestState.active=true;guestState.photos=[];
@@ -3103,7 +3123,7 @@ async function excluirMeusDados(){
     const fd=new FormData(); fd.append('guest_id',guestState.id);
     const r=await fetch(API+'/convidado/excluir',{method:'POST',body:fd});
     if(!r.ok){ toast('Não consegui excluir. Tente de novo.'); return; }
-    clearGuestSession(guestState.event); clearInterval(state._poll);
+    clearGuestSession(guestState.event); (state._pollAtivo=false, clearTimeout(state._poll), clearInterval(state._poll));
     if(ultimoEventoConvidado()===guestState.event) lembrarEventoConvidado('');
     guestState.id=null; guestState.photos=[]; guestState.todas=[];
     toast('Seus dados foram excluídos ✓');
@@ -3838,7 +3858,7 @@ async function baixarTodas(){
 }
 
 /* home (voltar pra home de qualquer subpagina) */
-function home(){ if(typeof stopEvent==='function') stopEvent(); clearInterval(state._gfeed); clearInterval(state._poll); go('landing'); }
+function home(){ if(typeof stopEvent==='function') stopEvent(); clearInterval(state._gfeed); (state._pollAtivo=false, clearTimeout(state._poll), clearInterval(state._poll)); go('landing'); }
 
 /* ===================== A MARCA =====================
    Ideia, nao ornamento: Foton e uma particula de LUZ, e o produto e uma lente que

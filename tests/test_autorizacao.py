@@ -980,5 +980,44 @@ checa("as primeiras selfies passam", _status[:rig.LIMITE_SELFIES].count(200), ri
 checa("depois do limite, freia (429)", _status[-1], 429)
 rig._selfies_por_ip.clear()
 
+print("\n[36] espera longa: a foto chega sem o app ficar perguntando")
+# A medicao de 2026-09-23 mostrou que o processamento e ~1,5% do tempo percebido: o resto
+# era esperar a proxima pergunta (2,5 s). Aqui o servidor SEGURA a pergunta ate ter
+# resposta -- uma pergunta so, que volta no instante da entrega.
+_esp = C.post("/signup", data={"email": "espera@t.com", "senha": "senha123", "nome": "Esp"}).json()["token"]
+C.post("/event", data={"code": "ESPR", "brand": "Esp"}, headers=h(_esp))
+rig._fa = _Detector(_Rosto(_E0, 300))
+rig._selfies_por_ip.clear()
+_gesp = C.post("/selfie", data={"event": "ESPR", "consent": "true"},
+               files={"file": ("s.jpg", _jpg((70, 70, 70)), "image/jpeg")}).json()["guest_id"]
+
+_r = C.get("/feed/espera", params={"event": "ESPR", "guest_id": _gesp, "desde": 0, "max_espera": 1})
+checa("a primeira chamada volta na hora, com a versao do evento", _r.status_code, 200)
+_v0 = _r.json()["versao"]
+checa("versao e um numero", isinstance(_v0, int), True)
+
+_t0 = time.time()
+_r = C.get("/feed/espera", params={"event": "ESPR", "guest_id": _gesp, "desde": _v0, "max_espera": 1})
+_dt = time.time() - _t0
+checa("sem foto nova, ela espera e volta sem novidade", (_r.status_code, _r.json()["versao"]), (200, _v0))
+checa("a espera respeita o teto pedido (1 s)", 0.8 < _dt < 3.0, True)
+
+rig._fa = _Detector(_Rosto(_vet(0.9), 150))
+C.post("/ingest", data={"event": "ESPR"}, headers=h(_esp),
+       files={"file": ("p.jpg", _jpg((71, 71, 71)), "image/jpeg")})
+_t0 = time.time()
+_r = C.get("/feed/espera", params={"event": "ESPR", "guest_id": _gesp, "desde": _v0, "max_espera": 5})
+_dt = time.time() - _t0
+checa("com foto nova, volta na hora (sem esperar o teto)", _dt < 1.0, True)
+checa("a versao subiu", _r.json()["versao"] > _v0, True)
+checa("a foto entregue veio junto", len(_r.json()["photos"]) >= 1, True)
+
+# leitura NAO cria evento (mesma regra do /feed: um celular com a galeria aberta de um
+# evento apagado nao pode ressuscita-lo -- ja aconteceu em producao).
+checa("evento que nao existe: 404 e nada criado",
+      (C.get("/feed/espera", params={"event": "NAOEX", "guest_id": "x", "desde": 0, "max_espera": 1}).status_code,
+       _s.evento("NAOEX")), (404, None))
+checa("o teto de espera e limitado pelo servidor", rig.MAX_ESPERA_S <= 60, True)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

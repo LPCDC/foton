@@ -6,7 +6,7 @@ match -> feed do convidado. Dados em SQLite (store.py), não mais em memória.
 Segurança (ADR-0005): a selfie do convidado NUNCA é armazenada — vira embedding e os
 bytes são descartados. Logs sem PII (só id de rastreio, contagem, latência).
 """
-import io, os, re, time, uuid, logging
+import asyncio, io, os, re, time, uuid, logging
 from contextlib import asynccontextmanager
 import cv2, numpy as np, qrcode
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
@@ -749,6 +749,8 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...),
     _marca_latencia(lat)
     log.info('{"stage":"ingest","photo_id":"%s","n_faces":%d,"proc_ms":%.0f,"latency_ms":%d,"status":"ok"}'
              % (pid, len(faces), pms, lat))
+    # quem estiver esperando em /feed/espera acorda agora (ADR-0042)
+    _versao_evento[event] = _versao_evento.get(event, 0) + 1
     return {"photo_id": pid, "n_faces": len(faces), "dims": dims, "duplicada": False,
             "processing_ms": round(pms, 1), "latency_ms": lat, "matched_guests": matched}
 
@@ -792,6 +794,25 @@ def feed(event: str, guest_id: str):
     _ev(event, create=False)
     return {"guest_id": guest_id, "known": store.convidado_existe(event, guest_id),
             "photos": store.matches_de(guest_id)}
+
+# ---------------- espera longa (ADR-0042) ----------------
+# Medido em 2026-09-23: o servidor entrega em ~150 ms, mas o app perguntava a cada 2,5 s,
+# entao a pessoa esperava ate 2,5 s por nada. Aqui o servidor SEGURA a pergunta ate ter
+# resposta. Uma pergunta por convidado em vez de 24 por minuto, e a foto aparece na hora.
+MAX_ESPERA_S = 25
+_versao_evento = {}          # code -> contador que sobe a cada foto nova
+
+@app.get("/feed/espera")
+async def feed_espera(event: str, guest_id: str, desde: int = 0, max_espera: float = MAX_ESPERA_S):
+    _ev(event, create=False)                 # leitura NAO cria evento
+    fim = time.monotonic() + max(0.0, min(float(max_espera), MAX_ESPERA_S))
+    while True:
+        v = _versao_evento.get(event, 0)
+        if v != desde or time.monotonic() >= fim:
+            return {"versao": v, "guest_id": guest_id,
+                    "known": store.convidado_existe(event, guest_id),
+                    "photos": store.matches_de(guest_id)}
+        await asyncio.sleep(0.25)
 
 @app.get("/contatos")
 def contatos(event: str, authorization: str = Header(None)):
