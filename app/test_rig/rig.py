@@ -167,6 +167,11 @@ def process_image(raw: bytes, marca: str = "FÓTON", logo: bytes = None, look: s
     s = LONG_EDGE / max(w, h)
     if s < 1:
         img = img.resize((round(w * s), round(h * s)), Image.LANCZOS)
+    # COPIA LIMPA para o reconhecimento (ADR-0044): ja reduzida, mas SEM look e SEM marca
+    # d'agua. Antes o detector recebia a foto tratada -- o filtro mexia na cor que ele
+    # compara e a marca no canto podia cobrir um rosto. Decisao do dono (2026-09-23):
+    # filtro entra DEPOIS do reconhecimento. Array em memoria: nao decodifica duas vezes.
+    limpa = np.ascontiguousarray(np.asarray(img)[:, :, ::-1])       # RGB -> BGR
     # LOOK antes da marca d'agua, de proposito: a curva e para a FOTO, nao para a marca.
     # Aplicar depois tingiria o logo/texto da fotografa junto (ADR-0028).
     img = aplica_look(img, look)
@@ -184,7 +189,7 @@ def process_image(raw: bytes, marca: str = "FÓTON", logo: bytes = None, look: s
     # Miniatura na MESMA passada (ADR-0022): a imagem ja esta decodificada em memoria,
     # entao e um resize, nao uma segunda decodificacao. ~15 KB contra ~400 KB da foto.
     thumb = _thumb(img)
-    return out.getvalue(), (fw, fh), (time.perf_counter() - t0) * 1000, thumb
+    return out.getvalue(), (fw, fh), (time.perf_counter() - t0) * 1000, thumb, limpa
 
 def _thumb(img: Image.Image) -> bytes:
     """Reduz a imagem JA decodificada. Nunca deixa a falta de miniatura derrubar o
@@ -209,8 +214,11 @@ def detect_embed(raw: bytes):
     com 2+ pessoas o primeiro NÃO era o maior (ADR-0034). Numa selfie com gente ao fundo,
     quem virava "o convidado" podia ser a pessoa de trás. Para /ingest a ordem é
     indiferente (entrega se QUALQUER rosto casar)."""
-    arr = np.frombuffer(raw, np.uint8)
-    bgr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    # Aceita bytes (selfie) ou a copia limpa ja decodificada (foto do evento, ADR-0044).
+    if isinstance(raw, np.ndarray):
+        bgr = raw
+    else:
+        bgr = cv2.imdecode(np.frombuffer(raw, np.uint8), cv2.IMREAD_COLOR)
     if bgr is None:
         return []
     faces = sorted(_face().get(bgr), key=_area, reverse=True)
@@ -736,8 +744,8 @@ def ingerir_bytes(event: str, raw: bytes):
     pid = uuid.uuid4().hex[:12]
     logo = store.pega_logo(e["dono"]) if e.get("dono") else None
     look = store.pega_look(e["dono"]) if e.get("dono") else None
-    treated, dims, pms, thumb = process_image(raw, e.get("marca") or "FÓTON", logo, look)
-    faces = detect_embed(treated)
+    treated, dims, pms, thumb, limpa = process_image(raw, e.get("marca") or "FÓTON", logo, look)
+    faces = detect_embed(limpa)       # original, nao a tratada (ADR-0044)
     store.salva_foto(pid, event, treated, faces, thumb, sha)
     for gid, gemb in store.convidados_de(event):
         g = _emb(gemb)
@@ -776,8 +784,8 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...),
     pid = uuid.uuid4().hex[:12]
     logo = store.pega_logo(e["dono"]) if e.get("dono") else None
     look = store.pega_look(e["dono"]) if e.get("dono") else None
-    treated, dims, pms, thumb = process_image(raw, e.get("marca") or "FÓTON", logo, look)
-    faces = detect_embed(treated)
+    treated, dims, pms, thumb, limpa = process_image(raw, e.get("marca") or "FÓTON", logo, look)
+    faces = detect_embed(limpa)       # original, nao a tratada (ADR-0044)
     store.salva_foto(pid, event, treated, faces, thumb, sha)
     matched = []
     for gid, gemb in store.convidados_de(event):
@@ -1293,8 +1301,8 @@ def admin_testar_foto(file: UploadFile = File(...), authorization: str = Header(
     import asyncio
     raw = asyncio.run(file.read()) if False else file.file.read()
     t0 = time.time()
-    treated, dims, pms, thumb = process_image(raw)
-    faces = detect_embed(treated)
+    treated, dims, pms, thumb, limpa = process_image(raw)
+    faces = detect_embed(limpa)       # original, nao a tratada (ADR-0044)
     dica = ("Perfeito — rosto reconhecido." if len(faces) == 1 else
             f"{len(faces)} rostos reconhecidos." if faces else
             "Nenhum rosto lido. Aproxime a pessoa, use luz melhor e rosto de frente.")

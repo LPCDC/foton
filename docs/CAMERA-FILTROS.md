@@ -1,5 +1,11 @@
 # CAMERA-FILTROS.md — filtros com nome, calibração e o lag da câmera
 
+> **Atualização 2026-09-23 (ADR-0044).** Decisão do dono: **filtro entra depois do
+> reconhecimento**, sem experimento — não há filtro conhecido que melhore o ArcFace. O
+> reconhecimento passou a rodar na cópia limpa (antes rodava na foto já com look e marca
+> d'água). Os filtros com nome **já existem** como looks (`quente`, `frio`, `filme`, `vivo`,
+> `pb`). O experimento 4 do §6 está **encerrado sem rodar**; o 2 e o 3 perdem urgência.
+
 > Pesquisa e proposta de 2026-09-22. **Nada implementado.** Pedido do dono: deixar as pessoas
 > calibrarem a imagem com **filtros de nome criativo** que resolvam 99% dos ajustes que se
 > costuma fazer, **leve para nós** e com o **mínimo possível de lag ao mover a câmera**.

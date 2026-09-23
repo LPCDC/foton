@@ -1058,5 +1058,39 @@ checa("NADA da demonstracao sobra (foto, rosto, convidado, contato, entrega, eve
 checa("o evento normal continua", _s.evento("NORM") is not None, True)
 checa("varrer de novo nao acha nada", _s.apaga_vencidos(), 0)
 
+print("\n[38] o reconhecimento ve a foto ORIGINAL; o convidado recebe a TRATADA (ADR-0044)")
+# Decisao do dono (2026-09-23): filtro entra DEPOIS do reconhecimento. Antes, detect_embed
+# rodava na foto ja com look E marca d'agua -- a marca no canto podia cobrir um rosto.
+class _Gravador:
+    def __init__(self, rosto): self.rosto, self.visto = rosto, None
+    def get(self, bgr): self.visto = bgr; return [self.rosto]
+
+_fl = C.post("/signup", data={"email": "filtro@t.com", "senha": "senha123", "nome": "Fil",
+                              "marca": "ESTUDIO LUZ"}).json()["token"]
+C.post("/event", data={"code": "FILT", "brand": "ESTUDIO LUZ"}, headers=h(_fl))
+checa("look preto e branco ligado na conta", C.post("/conta/look", data={"look": "pb"}, headers=h(_fl)).status_code, 200)
+
+_grav = _Gravador(_Rosto(_E0, 300)); rig._fa = _grav
+_b = io.BytesIO(); Image.new("RGB", (400, 300), (200, 40, 40)).save(_b, "JPEG", quality=95)
+_pf = C.post("/ingest", data={"event": "FILT"}, headers=h(_fl),
+             files={"file": ("vermelha.jpg", _b.getvalue(), "image/jpeg")}).json()["photo_id"]
+_v = _grav.visto                                    # BGR, como o detector recebe
+checa("o detector recebeu uma imagem", _v is not None, True)
+# Este arquivo troca o cv2 por um duble que devolve PRETO 10x10. Se o detector recebesse
+# o resultado do cv2.imdecode, as checagens abaixo olhariam para um quadro preto e nao
+# provariam nada. A foto de verdade tem 400x300.
+checa("o detector viu a foto de verdade, nao o duble do cv2", tuple(_v.shape[:2]), (300, 400))
+checa("o detector viu COR: o look preto e branco nao foi aplicado antes",
+      int(_v[:, :, 2].mean()) - int(_v[:, :, 1].mean()) > 100, True)
+# A foto e vermelho chapado: o canal verde fica ~40 em TODO lugar. Letra branca da marca
+# d'agua, em qualquer canto, levaria o verde para perto de 200. (A primeira versao olhava
+# so um recorte do canto e passava no codigo errado -- teste que nao reprova nao prova.)
+checa("o detector viu a foto sem marca d'agua em lugar nenhum", int(_v[:, :, 1].max()) < 100, True)
+
+_entregue = Image.open(io.BytesIO(C.get(f"/img/FILT/{_pf}.jpg").content)).convert("RGB")
+_r, _g, _bb = [sum(c) / len(c) for c in zip(*list(_entregue.getdata())[::97])]
+checa("o convidado recebe COM o look (preto e branco)", abs(_r - _g) < 12 and abs(_g - _bb) < 12, True)
+C.post("/conta/look", data={"look": ""}, headers=h(_fl))
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

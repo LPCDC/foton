@@ -1598,3 +1598,43 @@ normal não vence; o convidado vê o prazo; antes do prazo a varredura não apag
 apaga **tudo** dentro dela e só ela; varrer de novo não acha nada. `test_front` [14].
 
 **Rollback.** A coluna fica inofensiva (`NULL`); tirar a rota, a varredura e o botão.
+
+## ADR-0044 — O reconhecimento vê a foto original; o filtro e a marca vêm depois
+
+**Status:** ACEITA (2026-09-23). Decisão do dono: "os filtros entram depois, a não ser que
+haja algum que notável e conhecidamente facilite o reconhecimento; se não houver,
+simplifique". **Não há:** modelos como o ArcFace são treinados para ignorar variação de cor
+e brilho. A melhora conhecida é outra — *detectar* rosto em foto muito escura —, um problema
+de detecção a medir, não um filtro criativo. Por isso **o experimento do plano 5 não roda**.
+
+**O defeito que isto achou.** `detect_embed` recebia a foto **já tratada**: com o look da
+fotógrafa **e** com a marca d'água. O filtro mexia na cor que o detector compara, e a marca
+no canto podia cobrir um rosto — nos três caminhos: envio pelo app, câmera por FTP e o teste
+de foto do admin.
+
+**Decisão.** `process_image` guarda uma **cópia limpa** — já reduzida, **antes** do look e da
+marca — como array em memória, e o reconhecimento roda nela. A foto entregue continua com
+look e marca. `detect_embed` aceita bytes (selfie) ou o array (foto do evento).
+
+**Medido com o modelo real** (`tests/medir_entrega.py 40 4`, as mesmas 27 fotos):
+
+| | antes | depois |
+|---|---|---|
+| processamento p50 | 129 ms | **115 ms** |
+| processamento p95 | 158 ms | **129 ms** |
+| entregas geradas | 18 | **18** |
+
+Mais rápido porque o detector deixou de decodificar a foto uma segunda vez; mesmas entregas.
+
+**Achado sobre os próprios testes.** `test_autorizacao` troca o `cv2` por um dublê que devolve
+**preto 10×10**. A primeira versão do teste de marca d'água passava no código errado porque
+olhava para esse quadro preto. O teste agora exige que o detector veja **a foto de verdade
+(400×300)** antes de acreditar nas outras checagens.
+
+**Filtros com nome (plano 8):** já existem como *looks* — `quente`, `frio`, `filme`, `vivo`,
+`pb` (ADR-0028). O plano 8 encolhe a, no máximo, renomear ou acrescentar looks.
+
+**Testes.** `test_autorizacao` [38]: o detector vê a foto real, **em cor** mesmo com o look
+preto e branco ligado, **sem marca d'água em lugar nenhum**; o convidado recebe **com** o look.
+
+**Rollback.** Voltar `detect_embed(treated)` nos três caminhos.
