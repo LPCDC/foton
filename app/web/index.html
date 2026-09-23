@@ -158,6 +158,19 @@ input{font-family:inherit}
    juridica, nao decorativa. */
 #s-g-start .consent{border-radius:0;border:2px solid var(--tinta);background:var(--suave)}
 #s-g-code .card{border-radius:0;border:2px solid var(--tinta);background:transparent}
+
+/* Galeria do convidado: retangulo e foto na gramatica, entao a miniatura perde o raio.
+   As abas viram dois blocos retos, e a aba ativa e preenchida — estado por forma e
+   preenchimento, nao por um fio de cor que some no escuro. */
+#s-g-gallery .ph{border-radius:0}
+#s-g-gallery .tabs{gap:0;border:2px solid var(--tinta);display:inline-flex}
+#s-g-gallery .tab{border-radius:0;border:0;min-height:44px;padding:0 16px;
+  font:600 .8rem/1.2 var(--f-ui);color:var(--tinta);background:var(--papel)}
+#s-g-gallery .tab+.tab{border-left:2px solid var(--tinta)}
+#s-g-gallery .tab.on{background:var(--tinta);color:var(--papel)}
+/* O estado vazio que ja existia (e tem saida: "ver as fotos da festa") vira bloco reto
+   do sistema, com o circulo vazado que a gramatica usa para "ainda nada aqui". */
+#s-g-gallery .empty{border-radius:0;border:2px dashed var(--fio);background:transparent}
 .entry{display:flex;flex-direction:column;gap:8px;margin-top:16px}
 .entry-card{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;text-align:left;
   padding:13px 18px;border-radius:16px;background:var(--grad);color:#1a1608;border:1px solid transparent;
@@ -1195,8 +1208,8 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
     <p class="subtitle" id="g-hint" style="margin:12px 0 14px">Novas fotos entram sozinhas enquanto a festa acontece.</p>
     <div class="grid" id="g-grid2"></div>
     <div class="sticky">
-      <button class="btn primary block" id="g-download" onclick="shareSheet('todas')">Baixar todas as fotos</button>
-      <button class="btn ghost block" id="g-escolher" style="margin-top:8px" onclick="ligarSelecao()">Escolher algumas</button>
+      <button class="botao botao--marca botao--bloco" id="g-download" onclick="shareSheet('todas')">Baixar todas as fotos</button>
+      <button class="botao botao--bloco" id="g-escolher" style="margin-top:8px" onclick="ligarSelecao()">Escolher algumas</button>
     </div>
     <p class="note" style="margin-top:12px">
       <button class="link btn-instalar" style="display:none" onclick="instalarApp()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.8" width="11" height="18.4" rx="2"/><path d="M12 7.5v6.4m0 0l-2.4-2.4M12 13.9l2.4-2.4"/></svg> Guardar na tela inicial</button>
@@ -2934,13 +2947,14 @@ function renderGuestGrid(){
   const noEvento = guestState.totalEvento||0;
   // estado vazio VIVO: mostra que a festa está rolando e dá saída (antes era um beco)
   const vazioMinhas = `<div class="empty" style="grid-column:1/-1">
-      <div style="font-size:17px;color:var(--text);font-weight:600;margin-bottom:8px">Você está no evento ✓</div>
+      <span class="glifo" style="border-style:dashed;margin:0 auto 10px;display:block" aria-hidden="true"></span>
+      <div style="font-size:17px;color:var(--text);font-weight:600;margin-bottom:8px">Você está no evento</div>
       ${noEvento
         ? `<div style="color:var(--accent);font-weight:600;margin-bottom:8px">${noEvento} foto${noEvento>1?'s':''} já ${noEvento>1?'foram tiradas':'foi tirada'} na festa</div>
            Assim que você aparecer em uma, ela chega aqui <b>sozinha</b>.`
         : 'Assim que o fotógrafo começar, suas fotos chegam aqui <b>sozinhas</b>.'}
       <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        <button class="btn ghost sm" onclick="trocarAba('todas')">Ver as fotos da festa</button>
+        <button class="botao" onclick="trocarAba('todas')">Ver as fotos da festa</button>
         ${noEvento>2?'<button class="btn ghost sm" onclick="refazerSelfie()">Não achou você? Tente outra selfie</button>':''}
       </div>
     </div>`;
@@ -2976,6 +2990,8 @@ function renderGuestGrid(){
   const tem=(todasAba?guestState.todas.length:c);
   const dl=document.getElementById('g-download'); if(dl) dl.style.display=tem?'':'none';
   const es=document.getElementById('g-escolher'); if(es) es.style.display=(tem>1&&!SEL)?'':'none';
+  // Estado vazio do sistema: so aparece quando nao ha NENHUMA foto na aba atual.
+  const dica=document.getElementById('g-hint'); if(dica) dica.style.display=tem>0?'':'none';
 }
 /* "Mostrar mais": sobe o teto da aba atual em 50 e repinta. A foto ja vista continua no DOM. */
 function mostrarMais(){
