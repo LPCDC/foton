@@ -283,8 +283,27 @@ print("")
 print("[12] nada de app velho servido junto (decisao L do plano da Fiesta)")
 checa("artifact.html nao existe mais", os.path.exists(os.path.join(WEB, "artifact.html")), False)
 _sobrando = [n for n in os.listdir(WEB)
-             if n.endswith(".html") and n not in ("index.html",) and not n.startswith("_")]
+             if n.endswith(".html") and n not in ("index.html", "cartaz.html") and not n.startswith("_")]
 checa("nenhum outro html solto em app/web", _sobrando, [])
+
+print("")
+print("[13] cartaz de QR para imprimir (o QR nao pode existir so na tela)")
+CARTAZ = io.open(os.path.join(WEB, "cartaz.html"), encoding="utf-8").read()
+checa("cartaz existe e usa o design system com versao",
+      bool(re.search(r'href="/ds/foton\.css\?v=\d+"', CARTAZ)), True)
+checa("folha A4 declarada", "size: A4" in CARTAZ, True)
+checa("tema claro: impressora entende papel branco", 'data-tema="dia"' in CARTAZ, True)
+checa("QR no quadro que forca preto sobre branco", 'class="qr-quadro"' in CARTAZ, True)
+checa("os botoes nao saem na impressao", ".acoes { display: none; }" in CARTAZ, True)
+checa("os tres passos estao no cartaz",
+      all(t in CARTAZ for t in ("Aponte a câmera", "Tire uma selfie", "Receba")), True)
+checa("diz que a selfie some no fim do evento", "some no fim do evento" in CARTAZ, True)
+checa("o app leva a fotografa ate o cartaz", 'onclick="abrirCartaz()"' in HTML, True)
+checa("a funcao do cartaz existe", "function abrirCartaz()" in HTML, True)
+# O QR do cartaz e o QR da tela precisam levar ao MESMO lugar. Com o parametro errado o
+# convidado cai no app sem entrar no evento -- foi o que aconteceu na primeira versao.
+checa("o QR do cartaz usa o parametro que o app le", "'/?evento=' + codigo" in CARTAZ, True)
+checa("o QR da tela usa o mesmo parametro", "/?evento=${ev.code}" in HTML, True)
 
 print("")
 print("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}")

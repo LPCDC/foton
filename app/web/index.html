@@ -1308,6 +1308,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
     <div class="qf-sub">ou entre em <b id="qrfull-host">foton</b> com este código</div>
   </div>
   <div class="qrfull-acts">
+    <button class="btn ghost" onclick="abrirCartaz()">Cartaz para imprimir</button>
     <button class="btn ghost" onclick="baixarQR()">Baixar QR</button>
     <button class="btn ghost" onclick="fecharQR()">Fechar</button>
   </div>
@@ -3742,6 +3743,15 @@ function abrirQR(){
   document.getElementById('qrfull').classList.add('show');
 }
 function fecharQR(){ document.getElementById('qrfull').classList.remove('show'); }
+/* Cartaz A4 para a mesa da festa: o QR existia so na tela, e tela nao fica em cima da
+   mesa a noite inteira. Leva codigo e nome do evento pela URL — a pagina nao precisa
+   de login, do mesmo jeito que o QR projetado na festa nao precisa. */
+function abrirCartaz(){
+  const ev=state.live; if(!ev){ toast('Abra um evento primeiro'); return; }
+  const p=new URLSearchParams({e:ev.code||''});
+  if(ev.nome||ev.name) p.set('n', ev.nome||ev.name);
+  window.open('/cartaz.html?'+p.toString(), '_blank', 'noopener');
+}
 async function baixarQR(){
   const ev=state.live; if(!ev)return;
   try{ const b=await fetchBlob(document.getElementById('qr-img').src);

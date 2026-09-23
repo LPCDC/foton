@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="dia" data-perfil="pro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cartaz do evento</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Jost:wght@400..700&display=swap">
+<link rel="stylesheet" href="/ds/foton.css?v=5">
+<style>
+  /* Cartaz A4 para a mesa da festa. Tema DIA de propósito: impressora entende papel
+     branco e tinta preta — fundo escuro gasta tinta e sai cinza. */
+  @page { size: A4 portrait; margin: 12mm; }
+  body { background: #E6E6E6; margin: 0; padding: 24px; font-family: var(--f-ui); }
+  .folha {
+    width: 186mm; min-height: 273mm; margin: 0 auto; background: var(--papel); color: var(--tinta);
+    border: 2px solid var(--tinta); padding: 18mm 16mm 14mm;
+    display: grid; grid-template-rows: auto auto 1fr auto; gap: 10mm; justify-items: center; text-align: center;
+  }
+  .marca { display: flex; align-items: center; gap: 10px; font: 700 20px/1 var(--f-display); letter-spacing: .16em; }
+  .marca i { width: 30px; height: 30px; border-radius: 50%; border: 2px solid currentColor; display: grid; place-items: center; }
+  .marca i::after { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--marca); }
+  h1 { font: 700 clamp(34px, 6vw, 54px)/1 var(--f-display); letter-spacing: -.03em; max-width: 16ch; }
+  .quando { font: 500 18px/1.3 var(--f-ui); color: var(--fio); margin-top: 6px; }
+  .qr-quadro { padding: 10mm; }
+  .qr-quadro img { display: block; width: 92mm; height: 92mm; image-rendering: pixelated; }
+  .codigo { font: 700 40px/1 var(--f-display); letter-spacing: .34em; padding-left: .34em; margin-top: 6mm; }
+  .codigo small { display: block; font: 500 15px/1.4 var(--f-ui); letter-spacing: 0; padding: 0; color: var(--fio); margin-top: 6px; }
+  .passos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8mm; width: 100%; }
+  .passo { display: grid; gap: 8px; justify-items: center; }
+  .passo .forma { width: 34px; height: 34px; border: 2px solid var(--tinta); }
+  .passo .forma.circulo { border-radius: 50%; }
+  .passo .forma.cheio { background: var(--marca); border-color: var(--marca); border-radius: 50%; }
+  .passo b { font: 600 17px/1.2 var(--f-ui); }
+  .passo span { font: 400 14px/1.35 var(--f-ui); color: var(--fio); max-width: 22ch; }
+  .rodape { font: 400 13px/1.4 var(--f-ui); color: var(--fio); }
+  .acoes { max-width: 186mm; margin: 0 auto 16px; display: flex; gap: 10px; justify-content: center; }
+  @media print {
+    body { background: #FFF; padding: 0; }
+    .folha { border: 0; width: auto; min-height: auto; padding: 0; }
+    .acoes { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="acoes">
+  <button class="botao botao--marca" onclick="window.print()">Imprimir</button>
+  <button class="botao" onclick="history.length > 1 ? history.back() : location.href='/'">Voltar</button>
+</div>
+
+<div class="folha">
+  <div class="marca"><i aria-hidden="true"></i>FÓTON</div>
+
+  <div>
+    <h1 id="nome">Suas fotos, na hora</h1>
+    <div class="quando" id="quando" hidden></div>
+  </div>
+
+  <div>
+    <div class="qr-quadro"><img id="qr" alt="QR do evento"></div>
+    <div class="codigo" id="codigo">— — — —
+      <small>ou entre em <b id="host">foton.app.br</b> e digite este código</small>
+    </div>
+  </div>
+
+  <div>
+    <div class="passos">
+      <div class="passo"><span class="forma" aria-hidden="true"></span><b>Aponte a câmera</b><span>O QR abre a página, sem instalar nada</span></div>
+      <div class="passo"><span class="forma circulo" aria-hidden="true"></span><b>Tire uma selfie</b><span>Ela serve só para achar você nas fotos</span></div>
+      <div class="passo"><span class="forma cheio" aria-hidden="true"></span><b>Receba</b><span>Suas fotos chegam sozinhas durante a festa</span></div>
+    </div>
+    <p class="rodape" style="margin-top:8mm">A selfie não é guardada e some no fim do evento.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var codigo = (q.get('e') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+  var nome = q.get('n'), quando = q.get('d');
+  var base = location.origin;
+  if (codigo) {
+    document.getElementById('codigo').firstChild.nodeValue = codigo.split('').join(' ');
+    /* `?evento=` e o parametro que o app le (index.html, _params) e o mesmo que o QR da
+     tela usa. Com `?e=` o convidado caía no app SEM entrar no evento. */
+    document.getElementById('qr').src = base + '/qr?data=' + encodeURIComponent(base + '/?evento=' + codigo);
+    document.title = 'Cartaz — ' + codigo;
+  }
+  if (nome) document.getElementById('nome').textContent = nome;
+  if (quando) { var d = document.getElementById('quando'); d.textContent = quando; d.hidden = false; }
+  document.getElementById('host').textContent = location.host;
+})();
+</script>
+</body>
+</html>
