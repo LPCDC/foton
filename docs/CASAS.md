@@ -146,3 +146,57 @@ custo nosso, que o teto do plano protege.
 2. **Modelo A (créditos por mesa-noite)** para o piloto?
 3. **Quanto custa uma mesa-noite** e o pacote de créditos? (`UNKNOWN` até você decidir.)
 4. **Qual casa seria a primeira?** Uma casa real muda mais o desenho do que qualquer documento.
+
+## 12. Rodada de 2026-09-27 | preço, restaurantes e LGPD
+
+### 12.1 A proposta do dono: R$ 89,90 por 2 horas, pago pelo cliente
+
+**Contra a concorrência (preços públicos, consultados em 2026-09-27):**
+
+| Referência | Preço | O que é |
+|---|---|---|
+| GuestPix | a partir de **US$ 19,99** por evento | convidados sobem fotos; sem reconhecimento facial |
+| Kululu | **US$ 39** (500 envios) a **US$ 99** (ilimitado, com marca e moderação) por evento | idem |
+| Cabine de fotos no Brasil | **R$ 500 a R$ 3.000**; R$ 800 a R$ 1.500 por 4 h na tradicional | aluguel com equipamento e operador |
+
+**Leitura:** R$ 89,90 fica **abaixo até do plano mais barato do GuestPix** em qualquer câmbio
+acima de R$ 4,50 por dólar, e o GuestPix não reconhece rosto nem entrega na hora. Contra a
+cabine, é uma fração. Ou seja: **o preço não é o risco.** O risco é outro, e é `UNKNOWN`: se o
+cliente de bar compra, por impulso, um serviço de foto que ele não sabia que existia.
+
+**Dois ajustes que eu faria antes de testar:**
+1. **"A noite da mesa", não "2 horas".** Cortar no meio do aniversário (a foto para de chegar
+   com a festa ainda rolando) é a pior experiência possível. Se o custo preocupar, o teto
+   deve ser de **fotos**, não de relógio.
+2. **O cliente paga na comanda, não no Fóton.** A casa cobra os R$ 89,90 junto da conta e gasta
+   um crédito comprado de nós por menos. Isso dispensa integração de pagamento, dá margem à
+   casa (o motivo dela empurrar o produto) e usa os créditos que já existem. O preço do crédito
+   para a casa é decisão do dono (`UNKNOWN`).
+
+### 12.2 Restaurantes: o dono quer incluir
+
+Possível, mas é o segmento com a regra mais dura, porque **tem criança na mesa**:
+
+- **LGPD, art. 14:** dado de criança e adolescente só no **melhor interesse** deles; quando a
+  base for consentimento, ele precisa ser **específico e em destaque**, dado por pelo menos um
+  dos pais ou responsável.
+- **ANPD, Enunciado CD/ANPD nº 1/2023 (vinculante):** o tratamento pode usar **qualquer base
+  legal dos arts. 7º e 11**, não só o consentimento, **desde que o melhor interesse prevaleça**.
+- **Biometria é dado sensível** (art. 5º, II): base legal do art. 11.
+- **ECA Digital (Lei 15.211/2025), em vigor desde 17/03/2026:** vale para serviço digital
+  "direcionado ou de acesso provável" por criança e adolescente, com deveres de prevenção,
+  proteção, informação e segurança, **proporcionais ao porte** do fornecedor. Um Fóton em
+  restaurante de família entra, com boa chance, no "acesso provável".
+
+**Como o restaurante pode entrar sem cruzar a linha** (desenho já aceito na ADR-0036, aplicação
+adiada): **a criança não é usuária, o responsável é.** Ela nunca tira selfie sozinha; o
+responsável cadastra do celular dele e recebe as fotos dela. Retenção da **noite**, não de dias.
+E, com o ECA Digital em vigor, o **parecer jurídico deixa de ser recomendação e passa a ser
+porta**: restaurante de família só entra depois dele. Isto não é aconselhamento jurídico.
+
+### 12.3 Fontes (2026-09-27)
+
+- GuestPix, Kululu: [comparativo de preços](https://www.wedibox.com/compare/pricing) · [Kululu, página de preços](https://www.kululu.com/pricing) · [Kululu × GuestPix](https://oureventalbum.com/vs/kululu-vs-guestpix)
+- Cabine de fotos: [GetNinjas](https://www.getninjas.com.br/eventos/equipamentos-para-festas/preco/cabine-de-fotos) · [CBL Connect](https://cblconnect.app/blog/quanto-custa-cabine-de-fotos)
+- ANPD: [Enunciado CD/ANPD nº 1/2023](https://www.gov.br/anpd/pt-br/assuntos/noticias/anpd-divulga-enunciado-sobre-o-tratamento-de-dados-pessoais-de-criancas-e-adolescentes)
+- ECA Digital: [Machado Meyer](https://www.machadomeyer.com.br/pt/inteligencia-juridica/publicacoes-ij/direito-digital/estatuto-digital-da-crianca-e-do-adolescente-lei-n-15-211-2025-entra-em-vigor-em-17-de-marco-de-2026) · [Data Privacy Brasil](https://www.dataprivacybr.org/eca-digital-entra-em-vigor-o-que-a-lei-preve-e-o-que-ainda-falta-regulamentar/)
