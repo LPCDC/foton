@@ -1,4 +1,4 @@
-/* Fóton — design system (ADR-0038).
+/* Fóton, design system (ADR-0038).
    Gramática Bauhaus: cor e forma são SINTAXE, não enfeite. A cor viva vem das fotos.
      círculo    = pessoa, rosto, estado de uma foto
      retângulo  = foto, evento, bloco de conteúdo
@@ -12,7 +12,7 @@
      html[data-perfil="social"]   festa      -> coral
    Dois temas: html[data-tema="dia"] (padrão) e html[data-tema="noite"] (celular na pista).
 
-   Contrastes MEDIDOS (WCAG) — tests/test_ds.py recalcula a partir deste arquivo:
+   Contrastes MEDIDOS (WCAG), tests/test_ds.py recalcula a partir deste arquivo:
      preto sobre ouro 6,66 (dia) e 14,98 (noite) | preto sobre coral 6,08
      branco sobre alarme 5,88  | coral como TEXTO sobre branco 3,45 -> PROIBIDO
      flash sobre branco 1,60 -> só com contorno de tinta
@@ -31,7 +31,7 @@
     --coral: #F2542D;
     --flash: #FFC400;
     /* Ouro: assinatura da fotógrafa e marca do Fóton. Dois tons do MESMO ouro, um por
-       superfície — o champagne do app (#E8D9B0) tem 1,40:1 sobre o branco e sumiria no
+       superfície, o champagne do app (#E8D9B0) tem 1,40:1 sobre o branco e sumiria no
        tema claro; este tom dá 3,15:1 como forma e 6,66:1 com texto preto em cima. À
        noite volta o champagne, com 14,98:1. */
     --ouro: #B08C3A;
@@ -204,7 +204,7 @@
   .cartaz__qr { padding: calc(var(--u) * 3); display: grid; align-content: center; justify-items: center; gap: var(--u); background: var(--papel); border-inline-start: var(--borda) solid var(--tinta); }
 
   /* QR: SEMPRE preto sobre branco, em qualquer tema. Muitos leitores falham com QR
-     invertido (claro sobre escuro) — no tema noite isso deixaria o convidado de fora. */
+     invertido (claro sobre escuro), no tema noite isso deixaria o convidado de fora. */
   .qr-quadro { background: #FFFFFF; color: #000000; padding: 12px; outline: var(--borda) solid var(--tinta); }
   @media (max-width: 560px) {
     .cartaz { grid-template-columns: 1fr; }
@@ -226,7 +226,7 @@
   .porta__nome { grid-column: 1; font: 600 var(--t1)/1.15 var(--f-display); letter-spacing: -.01em; }
   .porta__fim  { grid-column: 1; font: 400 var(--t-1)/1.3 var(--f-ui); color: var(--fio); }
   /* Seta de verdade: o circulo que estava aqui lia como botao de radio nao marcado.
-     Duas linhas retas formando a ponta — a gramatica ja usa linha para "sequencia". */
+     Duas linhas retas formando a ponta, a gramatica ja usa linha para "sequencia". */
   .porta__seta { grid-column: 2; grid-row: 1 / 3; inline-size: 1.1rem; block-size: 1.1rem; position: relative; }
   .porta__seta::before, .porta__seta::after { content: ""; position: absolute; background: currentColor; }
   .porta__seta::before { inset-block-start: 50%; inset-inline: 0; block-size: 2px; transform: translateY(-50%); }

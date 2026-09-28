@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!-- O zoom do navegador fica LIVRE (plano 1A, 2026-09-22). Tinha `user-scalable=no,
-     maximum-scale=1` por gosto — "senao a interface fica bamba" — e isso e exclusao:
+     maximum-scale=1` por gosto, "senao a interface fica bamba", e isso e exclusao:
      quem enxerga pouco perde o acesso. `touch-action:manipulation` continua matando o
      zoom por duplo-toque, entao a interface segue firme no uso normal. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="/ds/foton.css?v=5">
 <style>
 /* ============================================================
-   Foto na Hora — identidade "premium escuro / fotografia"
+   Foto na Hora, identidade "premium escuro / fotografia"
    Design committed dark: as fotos são a cor; fundo pintado
    explicitamente para segurar em qualquer ground do host.
    ============================================================ */
@@ -44,7 +44,7 @@
   --sans:"Instrument Sans",system-ui,sans-serif;
   --mono:"Geist Mono",ui-monospace,monospace;
 }
-/* Perfis de conta (ADR-0030): mesmo app, tres peles. So TOKENS mudam — nunca layout,
+/* Perfis de conta (ADR-0030): mesmo app, tres peles. So TOKENS mudam, nunca layout,
    nunca fluxo, nunca poder. pro = dourado (o padrao do :root, sem classe nenhuma). */
 body.perfil-empresa{--accent:#d9e2ea;--accent-2:#a7b6c6;--accent-soft:rgba(217,226,234,.12);
   --grad:linear-gradient(135deg,#e3ebf2,#a7b6c6)}
@@ -54,7 +54,7 @@ body.perfil-social{--accent:#f4c1a4;--accent-2:#dd9a72;--accent-soft:rgba(244,19
 html,body{height:100%;overscroll-behavior:none}
 /* Segurar o dedo em cima de texto (titulo, legenda, botao) selecionava a palavra e o
    Chrome do Android abria o popup "Pesquisar no Google"/"Compartilhar" por cima do
-   app — texto de app nao e texto de pagina, ninguem quer selecionar "Vou fotografar".
+   app, texto de app nao e texto de pagina, ninguem quer selecionar "Vou fotografar".
    Desliga a selecao no app inteiro e devolve so onde faz sentido: campo de digitar
    (input/textarea) e o que for marcado de proposito com .selecionavel. */
 html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -84,7 +84,7 @@ input{font-family:inherit}
 
 /* ---------- wordmark / header ---------- */
 .head{display:flex;align-items:center;gap:12px;margin-bottom:26px}
-/* logo Foton — selo circular (Foton + pontos de luz), adaptável a qualquer fundo; clique = home */
+/* logo Foton, selo circular (Foton + pontos de luz), adaptável a qualquer fundo; clique = home */
 .mark{width:44px;height:44px;flex-shrink:0;cursor:pointer;display:grid;place-items:center;background:none;
   border-radius:50%;transition:transform .14s,opacity .2s}
 .mark svg{width:44px;height:44px;display:block}
@@ -93,11 +93,11 @@ input{font-family:inherit}
 .mark:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 /* A marca e o assunto da home, mas ela NAO pode empurrar a terceira porta para fora
    da primeira tela. Medido em producao a 375x812: com 300px a porta "Sou empresa"
-   acabava 117px abaixo da dobra. Por isso a largura tem um teto em VH tambem — grande
+   acabava 117px abaixo da dobra. Por isso a largura tem um teto em VH tambem, grande
    no celular alto, menor no baixo, e as tres portas sempre visiveis. */
 /* O teto em vh caiu de 23 para 17 depois de medir: a home tinha 146px de conteudo
    ALEM da tela (os dois links de rodape abaixo das portas ficavam fora), e era
-   ISSO que fazia a pagina arrastar/deslizar ao toque — nao um bug de touch-action,
+   ISSO que fazia a pagina arrastar/deslizar ao toque, nao um bug de touch-action,
    um overflow real. 17vh + os outros ajustes desta rodada fecham a conta. */
 .brand-badge{width:min(390px,80vw,22vh);aspect-ratio:220/218;background:none;border:none;padding:0;
   cursor:pointer;display:block;margin:0 auto 10px;transition:transform .16s}
@@ -121,7 +121,7 @@ input{font-family:inherit}
 /* position:fixed, nao absolute: o fundo "deslizava" quando a pessoa arrastava o dedo
    na home. Causa real, medida: a pagina tinha mais altura de conteudo do que a tela
    (o rodape com os links de "conectar camera"/"privacidade" ficava fora), entao um
-   toque de arraste rolava a pagina uns 20-40px de verdade — e o fundo, por ser
+   toque de arraste rolava a pagina uns 20-40px de verdade, e o fundo, por ser
    absolute (preso ao .stage, que rola junto com tudo), parecia deslizar com ela.
    Encolhido o excesso abaixo, mas o fundo agora fica fixo na tela de qualquer jeito:
    mesmo que sobre 1px de rolagem, ele nunca mais se move visualmente. */
@@ -147,7 +147,7 @@ input{font-family:inherit}
   linear-gradient(180deg, rgba(0,0,0,.18) 0%, rgba(0,0,0,.55) 62%, var(--papel) 100%)}
 #s-landing .stage-body{padding-top:calc(26vh - 46px)}
 /* Faixa e marca encolhem na entrada para as TRES portas caberem sem rolar: medido num
-   iPhone de 812px, a terceira porta terminava em 963px — ficava escondida, e escolha
+   iPhone de 812px, a terceira porta terminava em 963px, ficava escondida, e escolha
    que nao se ve nao e escolha. */
 #s-landing .stage-bg{height:26vh}
 #s-landing .brand-badge{width:min(230px,52vw,15vh);margin-bottom:6px}
@@ -163,7 +163,7 @@ input{font-family:inherit}
 #s-g-code .card{border-radius:0;border:2px solid var(--tinta);background:transparent}
 
 /* Galeria do convidado: retangulo e foto na gramatica, entao a miniatura perde o raio.
-   As abas viram dois blocos retos, e a aba ativa e preenchida — estado por forma e
+   As abas viram dois blocos retos, e a aba ativa e preenchida, estado por forma e
    preenchimento, nao por um fio de cor que some no escuro. */
 #s-g-gallery .ph{border-radius:0}
 #s-g-gallery .tabs{gap:0;border:2px solid var(--tinta);display:inline-flex}
@@ -201,7 +201,7 @@ input{font-family:inherit}
 @keyframes float{0%,100%{translate:0 0}50%{translate:0 -10px}}
 .hero-body{position:relative;margin-top:auto}
 /* SEM caixa alta (pedido do dono, 2026-08-30): a frase e uma lista de contextos
-   ("no seu evento, na sua trilha, na sua festa"), nao um rotulo — em versalete ela
+   ("no seu evento, na sua trilha, na sua festa"), nao um rotulo, em versalete ela
    gritava e competia com a marca. Minusculo pede menos entreletra: .14em era
    convencao de caixa alta e em minusculo esparramava.
    align-items:flex-start (nao center): se o texto quebrar em 2 linhas no celular,
@@ -237,7 +237,7 @@ input{font-family:inherit}
 .actions-row .btn{min-height:52px}
 .evt{min-height:70px}
 .evt-del{min-width:52px}
-/* faixa fixa com o código do evento — é o que ela mais mostra/dita */
+/* faixa fixa com o código do evento, é o que ela mais mostra/dita */
 .faixa-ev{position:sticky;top:0;z-index:12;display:flex;align-items:center;justify-content:space-between;
   gap:10px;background:rgba(11,10,13,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
   margin:-26px -22px 16px;padding:12px 22px}
@@ -315,7 +315,7 @@ input{font-family:inherit}
 .stat .l{color:var(--muted);font-size:15px;font-weight:500;margin-top:6px}
 
 /* Seletor de LOOK (ADR-0028): cada opcao mostra uma AMOSTRA da propria curva, nao um
-   nome solto. A fotografa escolhe com o olho — "Quente" nao quer dizer nada sozinho. */
+   nome solto. A fotografa escolhe com o olho, "Quente" nao quer dizer nada sozinho. */
 .look-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
 .look-op{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px;
   cursor:pointer;text-align:center;transition:border-color .18s,background .18s}
@@ -394,7 +394,7 @@ input{font-family:inherit}
 .lead-box input:focus{border-color:var(--accent)}
 /* .c-row e par rotulo/valor. A regra so existia dentro de .contatos, entao fora dali
    rotulo e valor colavam ('Eventos0', 'Ultima fotonunca'). Vira regra base. */
-/* Icones: geometria simples, traco unico, herdando a cor do texto. Emoji nao serve —
+/* Icones: geometria simples, traco unico, herdando a cor do texto. Emoji nao serve,
    cada sistema desenha o seu, muda de tamanho, de cor e de peso, e nada casa. */
 .ico{width:1.15em;height:1.15em;flex-shrink:0;vertical-align:-.18em;display:inline-block}
 .ico path,.ico circle,.ico rect,.ico line,.ico polyline{fill:none;stroke:currentColor;
@@ -402,7 +402,7 @@ input{font-family:inherit}
 .ico .cheio{fill:currentColor;stroke:none}
 /* Sem zoom de pinca. O Chrome do Android IGNORA user-scalable=no na meta desde 2016;
    quem segura de verdade e o touch-action. `manipulation` mantem rolagem e toque e
-   mata a pinca e o zoom do toque duplo — que era o que desalinhava a tela no meio do
+   mata a pinca e o zoom do toque duplo, que era o que desalinhava a tela no meio do
    evento. O texto ja foi todo aumentado, entao ninguem precisa dar zoom para ler. */
 /* ---------- visor da camera ----------
    Tela cheia, sem cartao e sem moldura: a imagem e o conteudo, o resto e controle.
@@ -470,7 +470,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 /* A FOTO aberta tem zoom PROPRIO (pinchZoomLightbox, por transform), e nao o do
    navegador: `touch-action:none` entrega os dois dedos ao nosso handler, que sabe
    arrastar, limitar e voltar ao lugar. Desde 2026-09-22 o zoom do navegador esta
-   liberado no resto da pagina (plano 1A) — aqui continua sendo o nosso, de proposito. */
+   liberado no resto da pagina (plano 1A), aqui continua sendo o nosso, de proposito. */
 .lb img{touch-action:none;will-change:transform}
 .c-row{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;
   border-bottom:1px solid var(--line-soft);font-size:17px}
@@ -573,7 +573,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
   display:grid;place-items:center;margin-bottom:16px;border:1px solid var(--line)}
 .cam video,.cam img{width:100%;height:100%;object-fit:cover}
 /* Espelho: a câmera frontal mostra o mundo como a lente vê, e quem se olha espera
-   um ESPELHO — sem isto a pessoa move a mão para a direita e a imagem vai para a
+   um ESPELHO, sem isto a pessoa move a mão para a direita e a imagem vai para a
    esquerda ("a câmera abre invertida"). Espelha só o que aparece na tela; a foto
    que sai do canvas continua na orientação real, igual às fotos do evento. */
 .cam video{transform:scaleX(-1)}
@@ -629,7 +629,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 .lb-x{position:absolute;top:calc(14px + env(safe-area-inset-top));right:16px;width:40px;height:40px;border-radius:50%;
   background:rgba(255,255,255,.1);color:#fff;font-size:27px;line-height:1;display:grid;place-items:center;z-index:2}
 .lb-x:active{transform:scale(.92)}
-/* "Nao sou eu" (ADR-0037): canto oposto ao fechar e longe de Salvar/Compartilhar — e uma
+/* "Nao sou eu" (ADR-0037): canto oposto ao fechar e longe de Salvar/Compartilhar, e uma
    correcao, nao uma acao principal, e um toque acidental nao pode acontecer por vizinhanca.
    Armado (1o toque), vira aviso; o 2o toque confirma. Sem confirm(): nada de dialogo. */
 .lb-nsu{position:absolute;top:calc(14px + env(safe-area-inset-top));left:16px;height:40px;padding:0 14px;
@@ -791,7 +791,7 @@ body{background:var(--papel)}
       <div class="stage-bg" id="stage-bg" aria-hidden="true"></div>
       <div class="stage-fade" aria-hidden="true"></div>
       <div class="stage-body">
-        <button class="brand-badge" onclick="home()" aria-label="Fóton — início"></button>
+        <button class="brand-badge" onclick="home()" aria-label="Fóton, início"></button>
         <div class="eyebrow"><span class="dot"></span>no seu evento, na sua trilha, na sua festa</div>
         <h1 class="display">A foto no celular do convidado, <em>na hora.</em></h1>
         <p class="lede">Você fotografa. Quem aparece na foto recebe, sozinho, durante o evento.</p>
@@ -816,7 +816,7 @@ body{background:var(--papel)}
         </div>
         <!-- Texto encurtado: "Como conectar minha câmera ao Fóton" quebrava em 2
              linhas e sozinho respondia por boa parte dos 146px que sobravam da
-             tela na home (medido) — era isso que fazia a pagina arrastar ao toque. -->
+             tela na home (medido), era isso que fazia a pagina arrastar ao toque. -->
         <p class="note" style="margin-top:12px">
           <button class="link" onclick="go('guia')"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5h3.2l1.4-2.2h8.8l1.4 2.2H21v10.5H3z"/><circle cx="12" cy="13.2" r="3.6"/></svg> Conectar câmera</button>
         </p>
@@ -839,7 +839,7 @@ body{background:var(--papel)}
   <section class="screen" id="s-privacidade">
     <button class="back" onclick="voltarDaPrivacidade()">←&nbsp; voltar</button>
     <h1 class="title">Privacidade</h1>
-    <p class="subtitle">O que fazemos com a sua selfie — em português claro.</p>
+    <p class="subtitle">O que fazemos com a sua selfie, em português claro.</p>
 
     <div class="card" style="padding:6px 18px">
       <div class="passo"><span class="n">1</span><span class="t"><b>Sua selfie não é guardada.</b> Ela vira um código matemático e é apagada na hora. Esse código não permite reconstruir seu rosto.</span></div>
@@ -862,7 +862,7 @@ body{background:var(--papel)}
   <section class="screen" id="s-guia">
     <button class="back" onclick="sairGuia()">←&nbsp; início</button>
     <h1 class="title">Conectar sua câmera</h1>
-    <p class="subtitle">A foto vai da câmera para o seu celular pelo app do fabricante — e do celular para o Fóton. Configure uma vez; depois é só usar.</p>
+    <p class="subtitle">A foto vai da câmera para o seu celular pelo app do fabricante, e do celular para o Fóton. Configure uma vez; depois é só usar.</p>
 
     <div class="guia-tabs">
       <button class="tab on" onclick="guiaMarca('canon',this)">Canon</button>
@@ -876,11 +876,11 @@ body{background:var(--papel)}
       <b>Regra de ouro do envio</b>
       <ul>
         <li>O Wi-Fi da câmera <b>não tem internet</b>. Baixe as fotos primeiro, depois <b>volte para os dados móveis (4G/5G)</b> e envie.</li>
-        <li>Envie <b>várias de uma vez</b> — o Fóton processa em lote.</li>
+        <li>Envie <b>várias de uma vez</b>: o Fóton processa em lote.</li>
         <li>Rosto <b>nítido, de frente e próximo</b> é o que garante o reconhecimento.</li>
       </ul>
     </div>
-    <p class="note" style="margin-top:14px">Não achou sua câmera? Qualquer câmera com Wi-Fi e app do fabricante funciona — o caminho é sempre o mesmo.</p>
+    <p class="note" style="margin-top:14px">Não achou sua câmera? Qualquer câmera com Wi-Fi e app do fabricante funciona: o caminho é sempre o mesmo.</p>
   </section>
 
   <!-- ================= LOGIN ================= -->
@@ -972,14 +972,14 @@ body{background:var(--papel)}
 
     <div class="eyebrow-sm">O que muda depois de instalar</div>
     <div class="card" style="padding:6px 18px;margin-top:12px">
-      <div class="passo"><span class="n">★</span><span class="t"><b>O Fóton aparece no menu "Compartilhar"</b> do celular. Você seleciona as fotos na galeria — onde a sua câmera as deixa sozinha — e manda tudo num toque, sem abrir o app.</span></div>
+      <div class="passo"><span class="n">★</span><span class="t"><b>O Fóton aparece no menu "Compartilhar"</b> do celular. Você seleciona as fotos na galeria (onde a sua câmera as deixa sozinha) e manda tudo num toque, sem abrir o app.</span></div>
       <div class="passo"><span class="n">2</span><span class="t">Abre em <b>tela cheia</b>, sem a barra do navegador. Mais espaço para o QR e para a galeria.</span></div>
       <div class="passo"><span class="n">3</span><span class="t">Fica com <b>ícone na tela inicial</b>: um toque, sem digitar endereço no meio do evento.</span></div>
     </div>
 
     <div class="tips" style="margin-top:14px">
       <b>Já instalei, mas o Fóton não aparece no "Compartilhar"</b>
-      <p class="muted" style="font-size:17px;margin-top:8px">Acontece quando o app foi instalado antes desta função existir: o navegador ainda não releu a configuração. <b>Desinstale e instale de novo</b> — leva 20 segundos e resolve.</p>
+      <p class="muted" style="font-size:17px;margin-top:8px">Acontece quando o app foi instalado antes desta função existir: o navegador ainda não releu a configuração. <b>Desinstale e instale de novo</b>: leva 20 segundos e resolve.</p>
     </div>
 
     
@@ -1013,7 +1013,7 @@ body{background:var(--papel)}
     <div class="card">
       <p class="muted" style="font-size:17px;margin:0 0 14px">
         Um acabamento aplicado em <b>toda foto nova</b>, automaticamente, sem você
-        tocar em nada. Vale só daqui para a frente — <b>as fotos já entregues não mudam</b>.</p>
+        tocar em nada. Vale só daqui para a frente: <b>as fotos já entregues não mudam</b>.</p>
       <div id="look-opcoes" class="look-grid"></div>
       <p class="note" style="margin-top:12px;text-align:left" id="look-aviso"></p>
     </div>
@@ -1040,7 +1040,7 @@ body{background:var(--papel)}
 
     <div class="eyebrow-sm">Criar conta</div>
     <div class="tips">
-      <p class="muted" style="font-size:16px;margin:0 0 10px">Cria login e senha na hora, sem esperar a pessoa se cadastrar sozinha — já sai com a pele certa.</p>
+      <p class="muted" style="font-size:16px;margin:0 0 10px">Cria login e senha na hora, sem esperar a pessoa se cadastrar sozinha, já sai com a pele certa.</p>
       <div class="field"><label>E-mail (login)</label><input id="adm-nova-email" autocomplete="off" autocapitalize="off"></div>
       <div class="field"><label>Senha</label><input id="adm-nova-senha" autocomplete="off"></div>
       <div class="field"><label>Nome (opcional)</label><input id="adm-nova-nome" autocomplete="off"></div>
@@ -1063,7 +1063,7 @@ body{background:var(--papel)}
 
     <div class="tips" style="border-color:var(--live);margin-top:14px">
       <b style="color:var(--live)">Zona de perigo</b>
-      <p class="muted" style="font-size:16px;margin:6px 0 10px">Apaga <b>todas as fotos, convidados, contatos e eventos</b> de <b>todas</b> as contas. Mantém logins, senhas, marca, logo, créditos e retenção. <b>Não dá para desfazer pelo app</b> — só pelo backup do servidor.</p>
+      <p class="muted" style="font-size:16px;margin:6px 0 10px">Apaga <b>todas as fotos, convidados, contatos e eventos</b> de <b>todas</b> as contas. Mantém logins, senhas, marca, logo, créditos e retenção. <b>Não dá para desfazer pelo app</b>, só pelo backup do servidor.</p>
       <button class="btn ghost sm block" style="border-color:var(--live);color:var(--live)" onclick="admZerar()">Zerar todos os dados</button>
     </div>
 
@@ -1115,7 +1115,7 @@ body{background:var(--papel)}
   <!-- ================= EVENT LIVE ================= -->
   <section class="screen" id="s-event">
     <div class="faixa-ev">
-      <div><span class="rot">Código do evento</span><button class="cod" id="faixa-cod" onclick="copiarCodigo()" style="background:none;border:none;padding:0">— — — —</button></div>
+      <div><span class="rot">Código do evento</span><button class="cod" id="faixa-cod" onclick="copiarCodigo()" style="background:none;border:none;padding:0">· · · ·</button></div>
       <div class="ok" id="faixa-ok"><i></i><span>recebendo</span></div>
     </div>
     <button class="back" onclick="stopEvent();go('dash')">←&nbsp; encerrar e voltar</button>
@@ -1128,7 +1128,7 @@ body{background:var(--papel)}
     <input type="file" id="live-upload" accept="image/*" multiple style="display:none" onchange="uploadPhoto(event)">
     <!-- capture="environment" abre a CAMERA NATIVA do celular, com HDR e a resolucao
          cheia do aparelho. Um visor dentro do app (getUserMedia) daria so o fluxo de
-         video, bem pior com pouca luz — que e a luz de festa. -->
+         video, bem pior com pouca luz, que e a luz de festa. -->
     <input type="file" id="live-camera" accept="image/*" capture="environment" style="display:none" onchange="uploadPhoto(event)">
     <input type="file" id="live-referencia" accept="image/*" capture="environment" style="display:none" onchange="enviarReferencia(event)">
     <!-- A acao principal e LIGAR A CAMERA. Ela era um botao normal, do mesmo tamanho
@@ -1140,15 +1140,15 @@ body{background:var(--papel)}
       </span>
       <span class="bc-txt">
         <b id="ev-shoot-t">Abrir câmera</b>
-        <small id="ev-shoot-s">fotografe aqui — cada foto sobe sozinha</small>
+        <small id="ev-shoot-s">fotografe aqui: cada foto sobe sozinha</small>
       </span>
     </button>
     <!-- ROTEIRO DA PORTA (PRODUTO 3b, ADR-0045): 15 segundos que mostram o produto funcionando
          antes da primeira foto da festa. A foto da abordagem NAO entra em "Todas da festa". -->
     <details class="roteiro" style="border:2px solid var(--tinta);padding:10px 12px;margin:0 0 12px">
-      <summary style="cursor:pointer;font-weight:600">Foto de referência — o roteiro da porta</summary>
+      <summary style="cursor:pointer;font-weight:600">Foto de referência, o roteiro da porta</summary>
       <ol style="margin:10px 0 12px 18px;line-height:1.5">
-        <li>"Oi, posso tirar uma foto sua?" — uma foto, de perto.</li>
+        <li>"Oi, posso tirar uma foto sua?", uma foto, de perto.</li>
         <li>"Agora abre esse QR e tira uma selfie."</li>
         <li>"Pronto: suas fotos da festa vão chegar aí, sozinhas."</li>
       </ol>
@@ -1169,7 +1169,7 @@ body{background:var(--papel)}
       <span class="klbl">Convidado · aponte a câmera</span>
       <canvas id="qr" width="176" height="176"></canvas>
       <img id="qr-img" width="176" height="176" alt="QR do evento" style="display:none">
-      <button class="code code-btn" id="ev-code" onclick="copiarCodigo()" title="Tocar para copiar">— — — —</button>
+      <button class="code code-btn" id="ev-code" onclick="copiarCodigo()" title="Tocar para copiar">· · · ·</button>
       <span class="codelbl">toque no código para copiar</span>
     </div>
     <a id="ev-guestlink" class="link" target="_blank" rel="noopener" style="display:none;text-align:center;font-size:15px;margin-top:8px;word-break:break-all"></a>
@@ -1207,7 +1207,7 @@ body{background:var(--papel)}
       <b>Para o rosto ser reconhecido</b>
       <ul>
         <li>Rosto <b>nítido e de frente</b>, sem sombra forte</li>
-        <li>Pessoa <b>próxima</b> — rosto pequeno demais não é lido</li>
+        <li>Pessoa <b>próxima</b>, rosto pequeno demais não é lido</li>
         <li>Sem óculos escuros ou algo cobrindo o rosto</li>
       </ul>
     </div>
@@ -1221,7 +1221,7 @@ body{background:var(--papel)}
       <div class="word">Convidado<small>entrar no evento</small></div>
     </div>
     <h1 class="title">Entrar no evento</h1>
-    <p class="subtitle" id="g-code-sub">Escaneie o QR do fotógrafo — ou digite o código que aparece na tela dele.</p>
+    <p class="subtitle" id="g-code-sub">Escaneie o QR do fotógrafo, ou digite o código que aparece na tela dele.</p>
     <div class="card">
       <!-- A tela mandava "escaneie o QR" e nao dava como escanear. Agora da. -->
       <button class="botao botao--marca botao--bloco" id="btn-scan" style="display:none" onclick="abrirScanner()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5"/><rect x="14" y="3.5" width="6.5" height="6.5"/><rect x="3.5" y="14" width="6.5" height="6.5"/><path d="M14 14h3v3h-3zM20.5 14v3M14 20.5h6.5"/></svg>&nbsp; Escanear o QR</button>
@@ -1231,11 +1231,11 @@ body{background:var(--papel)}
           style="text-transform:uppercase;letter-spacing:.35em;text-align:center;font-size:24px;min-height:56px"></div>
       <button class="botao botao--bloco" id="btn-entrar-cod" onclick="entrarNoEvento()">Entrar com o código</button>
       <!-- Convidado que JA se registrou: volta sem refazer nada. Aparece so quando ha
-           sessao viva (24h) — ver montarVoltarConvidado(). -->
+           sessao viva (24h), ver montarVoltarConvidado(). -->
       <div id="g-voltar-bloco" style="display:none">
         <div class="ou">ou</div>
         <button class="botao botao--marca botao--bloco" id="btn-g-voltar" onclick="voltarAoEventoSalvo()"></button>
-        <p class="note" style="margin-top:8px;text-align:center">Você já está registrado neste evento — não precisa tirar outra selfie.</p>
+        <p class="note" style="margin-top:8px;text-align:center">Você já está registrado neste evento, não precisa tirar outra selfie.</p>
       </div>
     </div>
     <p class="note" style="margin-top:20px">Sem instalar app. Sem cadastro. Só a sua selfie.</p>
@@ -1354,10 +1354,10 @@ body{background:var(--papel)}
     <p class="note" style="margin-top:12px">
       <button class="link btn-instalar" style="display:none" onclick="instalarApp()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.8" width="11" height="18.4" rx="2"/><path d="M12 7.5v6.4m0 0l-2.4-2.4M12 13.9l2.4-2.4"/></svg> Guardar na tela inicial</button>
     </p>
-    <p class="note" style="margin-top:6px"><button class="link" onclick="refazerSelfie()">Não sou eu — tirar outra selfie</button></p>
+    <p class="note" style="margin-top:6px"><button class="link" onclick="refazerSelfie()">Não sou eu, tirar outra selfie</button></p>
     <!-- A SAIDA. Ela e a condicao do desenho onde o dono do evento cadastra nome e
          Instagram da convidada: se a convidada nao consegue sair sozinha, "reclame
-         com o dono" deixa de ser resposta. Fica na galeria, onde ela esta — nao
+         com o dono" deixa de ser resposta. Fica na galeria, onde ela esta, nao
          escondida numa tela de privacidade que ninguem abre. -->
     <p class="note" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
       <button class="link" style="color:var(--dim)" onclick="excluirMeusDados()">Apagar minha selfie e sair deste evento</button>
@@ -1379,7 +1379,7 @@ body{background:var(--papel)}
   <div class="inner">
     <div class="grab"></div>
     <h3>Evento encerrado</h3>
-    <div class="ss" id="res-nome">—</div>
+    <div class="ss" id="res-nome">,</div>
     <div class="stats" id="res-grid" style="flex-wrap:wrap;margin-top:16px"></div>
     <button class="btn primary block" style="margin-top:16px" onclick="fecharResumo()">Fechar</button>
   </div>
@@ -1402,7 +1402,7 @@ body{background:var(--papel)}
   </div>
 </div>
 
-<!-- CAMERA DENTRO DO APP — tela cheia, sem cartao, sem moldura.
+<!-- CAMERA DENTRO DO APP, tela cheia, sem cartao, sem moldura.
      A foto e o conteudo; tudo o mais e controle. -->
 <div class="camf" id="camfoto">
   <video id="camf-video" autoplay playsinline muted></video>
@@ -1444,7 +1444,7 @@ body{background:var(--papel)}
   <div class="qrfull-card">
     <div class="qf-top">Aponte a câmera do celular</div>
     <img id="qrfull-img" alt="QR do evento">
-    <div class="qf-code" id="qrfull-code">— — — —</div>
+    <div class="qf-code" id="qrfull-code">· · · ·</div>
     <div class="qf-sub">ou entre em <b id="qrfull-host">foton</b> com este código</div>
   </div>
   <div class="qrfull-acts">
@@ -1483,18 +1483,18 @@ body{background:var(--papel)}
 
 <script>
 /* =========================================================================
-   Foto na Hora — front-end demo (arquivo único). MODO DEMO: tudo no browser,
+   Foto na Hora, front-end demo (arquivo único). MODO DEMO: tudo no browser,
    nada sai do aparelho. No produto: auth=Supabase, fotos=Cloudflare R2,
    feed=Supabase Realtime, pipeline=FastAPI (ver app/README.md, ADR-0010).
    ========================================================================= */
 const DEMO = true;
-/* fotos reais de evento (CC0/uso comercial, ver assets/CREDITS.txt) — trocar pelas da fotografa no produto */
+/* fotos reais de evento (CC0/uso comercial, ver assets/CREDITS.txt), trocar pelas da fotografa no produto */
 const PHOTOS = Array.from({length:11},(_,i)=>`assets/p${String(i+1).padStart(2,'0')}.jpg`);
 const pick = i => PHOTOS[((i%PHOTOS.length)+PHOTOS.length)%PHOTOS.length];
 let _bag=[];                        // saco embaralhado: nao repete ate esgotar
 function photoNext(){ if(!_bag.length) _bag=[...PHOTOS].sort(()=>Math.random()-.5); return _bag.pop(); }
 
-/* ===== MODO AO VIVO — fala com o test-rig (?live=1). Sem ?live=1 = demo simulada ===== */
+/* ===== MODO AO VIVO, fala com o test-rig (?live=1). Sem ?live=1 = demo simulada ===== */
 const _params = new URLSearchParams(location.search);
 /* AO VIVO sempre que servido pela Render/rig (ou ?live=1). Só é demo no Netlify. */
 /* AO VIVO em qualquer servidor real (Oracle/Render/local). Só é demo no Netlify/artifact. */
@@ -1532,8 +1532,8 @@ function stockPhoto(seed){
 
 const state={
   events:[
-    {id:'e1',name:'15 anos — Sofia',date:'2026-08-20',photos:214,guests:96,status:'done'},
-    {id:'e2',name:'Corporativo — Menir Tech',date:'2026-08-12',photos:180,guests:63,status:'done'},
+    {id:'e1',name:'15 anos da Sofia',date:'2026-08-20',photos:214,guests:96,status:'done'},
+    {id:'e2',name:'Corporativo Menir Tech',date:'2026-08-12',photos:180,guests:63,status:'done'},
   ],
   live:null,liveTimer:null,guestTimer:null,seed:1,
   credits:18,totalCredits:20,totPhotos:394,totGuests:159,
@@ -1547,7 +1547,7 @@ function go(id){
   if(id==='landing') atualizaSairHome();
 }
 /* Sair da conta so aparece na home se a fotografa AINDA estiver logada (ex.: voltou
-   pelo "inicio" de dentro do painel/evento). Sem sessao, some — nao faz sentido
+   pelo "inicio" de dentro do painel/evento). Sem sessao, some, nao faz sentido
    oferecer sair de uma conta em que ninguem entrou. */
 function atualizaSairHome(){
   const el=document.getElementById('home-sair');
@@ -1577,7 +1577,7 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 
 /* =============== BOTAO VOLTAR DO CELULAR ===============
    O app tem 16 telas mas so tinha UMA entrada no historico do navegador. Resultado:
-   o Voltar do Android nao voltava uma tela — SAIA DO SITE. Era o motivo de ter que
+   o Voltar do Android nao voltava uma tela, SAIA DO SITE. Era o motivo de ter que
    reabrir o Foton o tempo todo, e no meio de um evento isso e grave.
 
    Nao adianta `beforeunload`: em PWA instalado o Android costuma ignorar, o texto do
@@ -1586,7 +1586,7 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 
    O que se faz: uma entrada "sentinela" no historico. Cada Voltar cai aqui, a gente
    decide para onde ir e recoloca a sentinela. Na tela raiz (landing / painel / galeria
-   do convidado) nao ha para onde voltar — ai sim vale o aviso, no padrao que todo app
+   do convidado) nao ha para onde voltar, ai sim vale o aviso, no padrao que todo app
    Android usa: toque de novo para sair. */
 const VOLTAR_PARA = {
   'privacidade': ()=>voltarDaPrivacidade(),
@@ -1611,14 +1611,14 @@ function telaAtiva(){
 function armarVoltar(){ try{ history.pushState({foton:1},''); }catch(e){} }
 
 /* =============== ARRASTAR PARA ATUALIZAR (nosso, nao o do navegador) ===============
-   Relato do dono: arrastar para baixo nao atualiza — "muitas vezes isso soluciona bugs".
+   Relato do dono: arrastar para baixo nao atualiza, "muitas vezes isso soluciona bugs".
    Causa: `overscroll-behavior:none` no html e no body desliga o puxar-para-atualizar do
-   navegador. Isso e PROPOSITAL — foi o que resolveu o fundo "deslizando" ao arrastar o
-   dedo — entao reativar o nativo traria aquele bug de volta. E no iPhone, em PWA
+   navegador. Isso e PROPOSITAL, foi o que resolveu o fundo "deslizando" ao arrastar o
+   dedo, entao reativar o nativo traria aquele bug de volta. E no iPhone, em PWA
    instalado, o gesto nativo nem existe: ficaria diferente em cada aparelho.
 
    Entao o gesto e nosso: so vale no topo da tela, so com UM dedo, e nunca com uma
-   sobreposicao aberta (foto ampliada, camera, menu) — senao brigaria com o zoom da foto,
+   sobreposicao aberta (foto ampliada, camera, menu), senao brigaria com o zoom da foto,
    que tambem usa arrasto. Passou do limiar e soltou: recarrega a pagina inteira.
    Recarregar de verdade (nao so refazer o feed) e o que a pessoa quer quando diz
    "atualiza": o service worker busca a navegacao na REDE primeiro, entao o reload
@@ -1676,7 +1676,7 @@ function armarVoltar(){ try{ history.pushState({foton:1},''); }catch(e){} }
    na secao do Voltar: em PWA instalado o Android costuma ignorar; o texto do aviso e
    do navegador (nao da para escrever nada nosso); e alguns navegadores so honram o
    aviso se a pessoa ja tocou na pagina. Por isso ele e uma CAMADA A MAIS, nao a
-   protecao principal — quem segura o Voltar continua sendo a sentinela. */
+   protecao principal, quem segura o Voltar continua sendo a sentinela. */
 let _saidaConfirmada=false;    // saida que o proprio app pediu (atualizar) nao pergunta nada
 window.addEventListener('beforeunload', e=>{
   if(_saidaConfirmada) return;
@@ -1686,7 +1686,7 @@ window.addEventListener('beforeunload', e=>{
 });
 let _pedidoDeSaida=0;
 /* Sobreposicoes tem que CONSUMIR o Voltar. Sem isto, com uma foto aberta o Voltar
-   avisava "toque de novo para sair" — e o segundo toque fechava o APP com a foto
+   avisava "toque de novo para sair", e o segundo toque fechava o APP com a foto
    ainda aberta. Era o "sai sem querer" relatado. Da camada mais externa para a mais
    interna: o QR da foto fica por cima do visualizador, que fica por cima da tela. */
 function fecharSobreposicao(){
@@ -1698,7 +1698,7 @@ function fecharSobreposicao(){
   }
   return false;
 }
-/* ENTER ENVIA. O app nao tem <form> em lugar nenhum — as telas sao <div> com <input>
+/* ENTER ENVIA. O app nao tem <form> em lugar nenhum, as telas sao <div> com <input>
    e um <button>. Sem form, o navegador nao tem o que submeter e o Enter nao faz nada:
    no computador a pessoa digita a senha, aperta Enter e nao acontece NADA.
    Em vez de embrulhar 6 telas em form (e arriscar recarregar a pagina), o Enter em
@@ -1725,8 +1725,8 @@ window.addEventListener('popstate',()=>{
   if(Date.now()-_pedidoDeSaida < 3000){ history.back(); return; }   // 2o toque em 3s: sai mesmo
   _pedidoDeSaida=Date.now(); armarVoltar();
   const ev=state.live, naGaleria=(t==='g-gallery');
-  toast(ev ? `Evento "${ev.name}" esta ao vivo — toque em voltar de novo para sair`
-      : naGaleria ? 'Suas fotos ficam guardadas — toque em voltar de novo para sair'
+  toast(ev ? `Evento "${ev.name}" está ao vivo. Toque em voltar de novo para sair`
+      : naGaleria ? 'Suas fotos ficam guardadas. Toque em voltar de novo para sair'
       : 'Toque em voltar de novo para sair do Foton');
 });
 
@@ -1759,7 +1759,7 @@ async function autenticar(){
                       fd.append('marca',document.getElementById('in-marca').value.trim()); }
     const r=await fetch(API+(modoCadastro?'/signup':'/login'),{method:'POST',body:fd});
     if(!r.ok){
-      if(r.status===409){ toast('Você já tem conta — entre com sua senha.'); if(modoCadastro) alternarCadastro(); return; }
+      if(r.status===409){ toast('Você já tem conta. Entre com sua senha.'); if(modoCadastro) alternarCadastro(); return; }
       toast(r.status===401?'E-mail ou senha incorretos.'
            :r.status===400?'Senha muito curta (mínimo 6).':'Não consegui conectar. Tente de novo.');
       return;
@@ -1786,7 +1786,7 @@ function abrirConta(){
 /* O CARDAPIO de looks vem do SERVIDOR (/conta/look), nunca de uma lista no cliente:
    e o servidor que decide o que existe, e o mesmo erro do EH_ADMIN (ADR-0025) nao
    se repete aqui. Cada amostra e pintada com a MESMA curva do servidor, via filtro
-   CSS equivalente — nao e a foto real, e uma pista visual honesta do efeito. */
+   CSS equivalente, nao e a foto real, e uma pista visual honesta do efeito. */
 const LOOK_AMOSTRA = {
   '':        'none',
   'quente':  'sepia(.28) saturate(1.16) hue-rotate(-8deg) brightness(1.03)',
@@ -1826,7 +1826,7 @@ async function escolherLook(id){
       : 'Pronto. As fotos voltam a sair como a câmera entregou.';
     toast('Jeito das fotos salvo ✓');
   }catch(e){
-    toast('Não consegui salvar — tente de novo.');
+    toast('Não consegui salvar. Tente de novo.');
     carregarLooks();                                  // desfaz a pintura otimista
   }
 }
@@ -1847,7 +1847,7 @@ async function salvarCredenciais(){
     const r=await fetch(API+'/conta/credenciais',{method:'POST',headers:auth(),body:fd});
     if(!r.ok){
       const m={403:'Senha atual incorreta.',409:'Já existe uma conta com esse login.',
-               400:'Login inválido ou senha curta demais.',401:'Sua sessão expirou — entre de novo.'};
+               400:'Login inválido ou senha curta demais.',401:'Sua sessão expirou. Entre de novo.'};
       toast(m[r.status]||'Não consegui salvar. Tente de novo.');
       if(r.status===401) sessaoFotografoExpirou();
       return;
@@ -1855,7 +1855,7 @@ async function salvarCredenciais(){
     const j=await r.json();
     salvarToken(j.token);                       // a troca derruba TODAS as sessões, inclusive esta
     SESSAO=j;
-    toast(mudouLogin?`Pronto — entre com "${j.email}" da próxima vez`:'Senha trocada ✓');
+    toast(mudouLogin?`Pronto: entre com "${j.email}" da próxima vez`:'Senha trocada ✓');
     // a senha do FTP é derivada do login: trocou o login, a câmera precisa ser reconfigurada
     document.getElementById('cc-aviso-ftp').innerHTML = j.ftp_mudou
       ? '⚠ Seu login mudou, então a <b>senha do FTP da câmera também mudou</b>. Se você usa câmera com FTP, veja os dados novos em <b>Conectar câmera</b>.'
@@ -1879,12 +1879,12 @@ async function carregarConta(){
 /* sessão do fotógrafo expirou: avisa e leva ao login, sem apagar a lista local */
 function sessaoFotografoExpirou(){
   salvarToken(null); SESSAO=null;
-  toast('Sua sessão expirou — entre de novo');
+  toast('Sua sessão expirou. Entre de novo');
   if(modoCadastro) alternarCadastro();
   go('login');
 }
 function logout(){ stopEvent(); lembrarEvento(''); salvarToken(null); SESSAO=null; state.events=[]; saveEvents(); aplicarPerfil(); go('landing'); }
-/* Terceira porta. A conta de empresa e a MESMA maquina do fotografo — o que muda e o
+/* Terceira porta. A conta de empresa e a MESMA maquina do fotografo, o que muda e o
    vocabulario (album, nao evento) e a trava: quem entra ve e baixa tudo, mas criar e
    apagar pedem a senha de administrador. A trava de verdade esta no servidor
    (_exige_elevacao); aqui e so a tela contando a verdade. */
@@ -1914,9 +1914,9 @@ let MODO_EMPRESA_PEDIDO=false;
 function ehEmpresa(){ return !!(SESSAO && SESSAO.empresa); }
 function ehAdmin(){ return !!(SESSAO && SESSAO.admin); }
 /* Perfil de conta (ADR-0030): uma estrutura, tres peles. O SERVIDOR declara o perfil
-   em /signup, /login e /me (regra da ADR-0025 — o cliente obedece, nao adivinha); o
+   em /signup, /login e /me (regra da ADR-0025, o cliente obedece, nao adivinha); o
    fallback por `empresa` cobre sessao em cache de antes do campo existir. O perfil
-   controla APRESENTACAO (vocabulario, blocos visiveis, tokens de cor) — nunca poder:
+   controla APRESENTACAO (vocabulario, blocos visiveis, tokens de cor), nunca poder:
    quem abre e fecha porta continua sendo o servidor (_exige_elevacao, FOTON_ADMINS). */
 function PERFIL(){
   if(SESSAO && VOCAB[SESSAO.perfil]) return SESSAO.perfil;
@@ -1931,7 +1931,7 @@ const VOCAB={
     qrNota:'O convidado escaneia o QR, tira 1 selfie e recebe automaticamente as fotos em que aparecer.' },
   empresa:{ painel:'galeria da empresa', lista:'Seus álbuns', criar:'Criar álbum',
     novoTitulo:'Novo álbum', novoSub:'Você recebe um QR para quem participa. Sem custo nesta fase.',
-    nomeLabel:'Nome do álbum', nomePh:'Ex.: Equipe — agosto',
+    nomeLabel:'Nome do álbum', nomePh:'Ex.: Equipe de agosto',
     statFotos:'Fotos no acervo', statPessoas:'Pessoas alcançadas',
     vazio:'Nenhum álbum ainda.<br>Toque em <b>Criar álbum</b> para começar.',
     qrNota:'Quem participa escaneia o QR, tira 1 selfie e recebe automaticamente as fotos em que aparecer.' },
@@ -1973,7 +1973,7 @@ async function entrarComoFotografo(){
 }
 
 /* O QUE ESTE CARTAO PODE E NAO PODE AFIRMAR.
-   Com FTP, o servidor sabe de verdade quando a camera se conectou (conectada_ha_s) —
+   Com FTP, o servidor sabe de verdade quando a camera se conectou (conectada_ha_s),
    ai da para dizer "conectada". Sem FTP (R8 e T6s, verificado na pratica), a foto
    passa pelo celular e o servidor NAO tem como saber se a camera esta ligada. Nesse
    caso o cartao diz o caminho e a ultima foto que entrou, e nao inventa conexao. */
@@ -1996,12 +1996,12 @@ async function estadoDaCamera(){
                               : 'último envio há '+Math.round(ha/60)+' min · FTP';
     } else if(j.ativo){
       // ATENCAO: isto fala da CAMERA, nao das fotos. A conta pode ter 30 fotos
-      // enviadas pelo celular e nenhuma camera de FTP jamais conectada — a primeira
+      // enviadas pelo celular e nenhuma camera de FTP jamais conectada, a primeira
       // versao dizia "nenhuma foto ainda" e mentia na cara de quem tinha fotos.
       luz('espera');
       t.textContent='Nenhuma câmera conectada';
       sub.textContent = j.evento_ao_vivo
-        ? 'O Fóton está pronto. R8 e T6s não têm FTP — toque para ver o caminho delas.'
+        ? 'O Fóton está pronto. R8 e T6s não têm FTP: toque para ver o caminho delas.'
         : 'Abra um evento antes de fotografar. Toque para conectar a câmera.';
     } else {
       luz('');
@@ -2039,10 +2039,10 @@ function renderDash(){
     row.appendChild(b);row.appendChild(del);box.appendChild(row);
   });
 }
-/* apagar evento (com confirmacao) — some do painel e do servidor */
+/* apagar evento (com confirmacao), some do painel e do servidor */
 async function deletarEvento(ev){
   // Ordem importa: o SERVIDOR decide primeiro. Antes a lista local era limpa antes da
-  // resposta — se o servidor recusasse (senha de admin errada), o album sumia da tela
+  // resposta, se o servidor recusasse (senha de admin errada), o album sumia da tela
   // e continuava no servidor.
   const emp=ehEmpresa(), adm=ehAdmin();
   const aviso = emp
@@ -2055,9 +2055,9 @@ async function deletarEvento(ev){
     try{
       const fd=new FormData(); fd.append("code",ev.code); if(sa) fd.append("senha_admin",sa);
       const r=await fetch(API+"/event/delete",{method:"POST",headers:auth(),body:fd});
-      if(r.status===403){ toast("Senha de administrador incorreta — nada foi apagado."); return; }
+      if(r.status===403){ toast("Senha de administrador incorreta. Nada foi apagado."); return; }
       if(!r.ok){ toast("Nao consegui apagar. Tente de novo."); return; }
-    }catch(e){ toast("Sem conexao — nada foi apagado."); return; }
+    }catch(e){ toast("Sem conexão. Nada foi apagado."); return; }
   }
   state.events=state.events.filter(x=>x.code!==ev.code);
   if(state.live&&state.live.code===ev.code) state.live=null;
@@ -2088,7 +2088,7 @@ function atualizarLogoPreview(){
   if(SESSAO&&SESSAO.tem_logo){
     box.innerHTML=`<img src="${API}/conta/logo?_=${Date.now()}" alt="Sua logo" style="width:100%;height:100%;object-fit:contain;background:repeating-conic-gradient(#2a2530 0 90deg,#1f1b26 0 180deg) 0 0/12px 12px">`;
     if(rm)rm.style.display='';
-    if(st)st.textContent='Logo cadastrada — está sendo usada nas fotos no lugar do texto.';
+    if(st)st.textContent='Logo cadastrada: está sendo usada nas fotos no lugar do texto.';
   }else{
     box.innerHTML='<span style="font-size:13px;color:var(--fio)">logo</span>';
     if(rm)rm.style.display='none';
@@ -2125,7 +2125,7 @@ function criarEvento(){
 
   saveEvents();
   // registra no servidor em 2º plano e abre a tela na hora (evento novo não tem
-  // fotos, então openEvent não precisa consultar o servidor — era isso que criava
+  // fotos, então openEvent não precisa consultar o servidor, era isso que criava
   // o evento SEM DONO e o fazia sumir do painel).
   if(LIVE) registerEvent(ev.code,8,brand,name,date);
   openEvent(ev,{novo:true});        // registra no servidor em 2º plano (com retry no cold start)
@@ -2143,19 +2143,19 @@ async function registerEvent(code,tries=8,brand='',name='',date=''){
       if(date) fd.append('date',date);
       if(sa) fd.append('senha_admin',sa);
       const r=await fetch(API+'/event',{method:'POST',body:fd,headers:auth()});
-      if(r.status===403){ toast('Senha de administrador incorreta — o album nao foi criado.'); return; }
+      if(r.status===403){ toast('Senha de administrador incorreta. O álbum não foi criado.'); return; }
       if(r.ok){ carregarConta().then(()=>{ if(document.getElementById('s-dash').classList.contains('active')) renderDash(); }); return; }
     }catch(e){}
     if(i===0) toast('Acordando o servidor…');
     await new Promise(r=>setTimeout(r,2500));
   }
-  toast('Servidor demorou — se a foto nao subir, recarregue e tente de novo');
+  toast('O servidor demorou. Se a foto não subir, recarregue e tente de novo');
 }
 /* upload REAL da foto (modo ao vivo): camera -> celular -> /ingest */
 /* ===================== FILA EM DISCO =====================
    Antes isto era um array em memoria. A tela dizia "elas nao se perderam" e era
    MENTIRA: recarregar a pagina, o app cair ou o celular matar a aba levava as fotos
-   junto — e o criterio #2 do piloto e "zero foto perdida".
+   junto, e o criterio #2 do piloto e "zero foto perdida".
 
    Agora toda foto vai para o IndexedDB ANTES de qualquer tentativa de rede, e so sai
    de la quando o servidor confirma. Fechar o app no meio do envio nao perde nada: ao
@@ -2197,7 +2197,7 @@ async function filaListar(){ try{ return (await filaOp('readonly',st=>st.getAll(
 async function filaContar(){ try{ return (await filaOp('readonly',st=>st.count()))||0; }catch(e){ return 0; } }
 
 /* Retoma o que ficou para tras. Chamado no boot, ao abrir o evento e quando a rede
-   volta — os tres momentos em que faz sentido tentar de novo. */
+   volta, os tres momentos em que faz sentido tentar de novo. */
 let _retomando=false;
 async function retomarFila(silencioso){
   if(_retomando || !LIVE || !tokenSalvo()) return;
@@ -2205,7 +2205,7 @@ async function retomarFila(silencioso){
   if(!itens.length){ renderFalhas(0); return; }
   _retomando=true;
   renderFalhas(itens.length);
-  if(!silencioso) toast(`${itens.length} foto(s) da fila — retomando o envio`);
+  if(!silencioso) toast(`${itens.length} foto(s) da fila: retomando o envio`);
   let ok=0;
   progresso(0,itens.length,`Retomando ${itens.length} foto(s)…`);
   for(let i=0;i<itens.length;i++){
@@ -2233,7 +2233,7 @@ window.addEventListener('online',()=>retomarFila(true));
 
 let filaFalhas=[];                       // compatibilidade: a fila de verdade vive em disco
 /* Reduz a foto ANTES de subir. O servidor ja reduz para 2048px de lado maior, entao
-   isto nao perde nada de qualidade — so evita empurrar 13 MB por 4G e decodificar
+   isto nao perde nada de qualidade, so evita empurrar 13 MB por 4G e decodificar
    24 MP no unico nucleo da VM. E o maior ganho na rajada.
    ATENCAO (armadilha ja paga): o canvas descarta o EXIF, e sem a rotacao a foto
    chega deitada e o rosto nao e detectado. Por isso imageOrientation:'from-image',
@@ -2250,9 +2250,9 @@ async function enviarReferencia(e){
     const r=await fetch(API+'/ingest',{method:'POST',headers:auth(),body:fd});
     if(!r.ok){ toast(r.status===413?'Foto grande demais':'Não consegui guardar a referência'); return; }
     const j=await r.json();
-    toast(j.n_faces ? 'Referência guardada ✓ — agora peça a selfie pelo QR'
-                    : 'Não achei rosto nessa foto — tente de novo, mais de perto');
-  }catch(_){ toast('Sem conexão — a foto de referência precisa de internet'); }
+    toast(j.n_faces ? 'Referência guardada ✓ Agora peça a selfie pelo QR'
+                    : 'Não achei rosto nessa foto. Tente de novo, mais de perto');
+  }catch(_){ toast('Sem conexão: a foto de referência precisa de internet'); }
 }
 async function reduzir(file){
   try{
@@ -2303,7 +2303,7 @@ function progressoFim(msg){
 async function enviarLote(files){
   const ev=state.live; if(!ev)return;
   // 1) GRAVA TUDO NO DISCO ANTES de tocar na rede. Se o app morrer no meio do envio,
-  //    nada se perdeu — e essa e a unica ordem que garante isso.
+  //    nada se perdeu, e essa e a unica ordem que garante isso.
   const ids=[];
   for(const f of files){ ids.push(await filaGravar(ev.code,f)); }
   renderFalhas(await filaContar());
@@ -2325,7 +2325,7 @@ async function enviarLote(files){
   saveEvents(); atualizarStats();
   const p=[]; if(ok)p.push(`${ok} foto(s) publicada(s)`);
   if(semRosto)p.push(`${semRosto} sem rosto`);
-  if(falhou)p.push(`${falhou} na fila — retoma sozinho`);
+  if(falhou)p.push(`${falhou} na fila (retoma sozinho)`);
   toast(p.join(' · ')||'Nada enviado');
 }
 function renderFalhas(n){
@@ -2337,7 +2337,7 @@ function renderFalhas(n){
 }
 async function reenviarFalhas(){ await retomarFila(); }
 
-/* qual evento ela estava usando — o share reabre o app do zero e perde state.live */
+/* qual evento ela estava usando, o share reabre o app do zero e perde state.live */
 /* Lote que chegou pelo menu "Compartilhar" do Android e ainda nao tem evento
    de destino. Declarado aqui porque o openEvent o consulta. */
 let _compartilhadas=[];
@@ -2346,7 +2346,7 @@ function ultimoEvento(){ try{ return localStorage.getItem('foton_ultimo_ev')||''
 function lembrarEvento(code){ try{ code?localStorage.setItem('foton_ultimo_ev',code):localStorage.removeItem('foton_ultimo_ev'); }catch(e){} }
 /* Mesma ideia, para o CONVIDADO: "uma vez logado, sempre" (pedido do dono, 2026-08-30).
    A sessao do convidado ja sobrevivia a fechar a tela (saveGuestSession/loadGuestSession,
-   24h) — mas so era restaurada se o app soubesse o CODIGO do evento, e o codigo so
+   24h), mas so era restaurada se o app soubesse o CODIGO do evento, e o codigo so
    chegava por link direto (?evento=) ou digitado de novo. Fechar o app pelo icone da
    tela inicial e reabrir (sem parametro nenhum na URL) sempre caia na home. */
 function ultimoEventoConvidado(){ try{ return localStorage.getItem('foton_guest_ultimo_ev')||''; }catch(e){ return ''; } }
@@ -2374,9 +2374,9 @@ async function lerCompartilhadas(id){
 
 async function receberDoCompartilhamento(id){
   try{ history.replaceState({},'',location.pathname); }catch(e){}   // some com ?compartilhado= da URL
-  if(id==='vazio'||id==='erro'){ toast('Não recebi as fotos — use "Enviar foto da câmera"'); return; }
+  if(id==='vazio'||id==='erro'){ toast('Não recebi as fotos. Use "Enviar foto da câmera"'); return; }
   const files=await lerCompartilhadas(id);
-  if(!files.length){ toast('Não recebi as fotos — use "Enviar foto da câmera"'); return; }
+  if(!files.length){ toast('Não recebi as fotos. Use "Enviar foto da câmera"'); return; }
   _compartilhadas=files;
   await entregarCompartilhadas();
 }
@@ -2387,23 +2387,23 @@ async function receberDoCompartilhamento(id){
    convidado errado, que é a pior falha do piloto). */
 async function entregarCompartilhadas(){
   const files=_compartilhadas; if(!files.length) return;
-  if(!LIVE){ toast('Modo demonstração — as fotos não são enviadas'); _compartilhadas=[]; return; }
+  if(!LIVE){ toast('Modo demonstração: as fotos não são enviadas'); _compartilhadas=[]; return; }
   if(!tokenSalvo()||!(await carregarConta())){
-    toast(`${files.length} foto(s) esperando — entre na sua conta`); go('login'); return;
+    toast(`${files.length} foto(s) esperando: entre na sua conta`); go('login'); return;
   }
   if(!state.live){
     await sincronizarEventos();
     const vivos=(state.events||[]).filter(e=>e.status==='live');
     // O share reabre o app do zero, então state.live sempre nasce vazio. Sem o evento
-    // lembrado, a fotógrafa levaria um toque a cada lote — e ela tem vários eventos
+    // lembrado, a fotógrafa levaria um toque a cada lote, e ela tem vários eventos
     // marcados "ao vivo" (eventos antigos nunca foram encerrados). O evento que ela
     // abriu por último É a intenção dela; qualquer outro palpite (o mais recente, o
     // primeiro da lista) seria adivinhação, e foto no evento errado vai para o
-    // convidado errado — a pior falha do piloto.
+    // convidado errado, a pior falha do piloto.
     const alvo = vivos.find(e=>e.code===ultimoEvento()) || (vivos.length===1?vivos[0]:null);
     if(alvo){ openEvent(alvo); return; }                        // openEvent chama de volta
     go('dash');
-    toast(`${files.length} foto(s) esperando — toque no evento que vai recebê-las`);
+    toast(`${files.length} foto(s) esperando: toque no evento que vai recebê-las`);
     return;
   }
   _compartilhadas=[];                                          // limpa ANTES: nada de reenvio em loop
@@ -2415,7 +2415,7 @@ function guestURL(){ return state.live?`${API}/?evento=${state.live.code}`:''; }
 function compartilharConvite(){
   const ev=state.live; if(!ev)return;
   const txt=`📸 Suas fotos do ${ev.name}, na hora!\n\nEntre, tire 1 selfie e receba automaticamente as fotos em que você aparecer:\n${guestURL()}`;
-  if(navigator.share){ navigator.share({title:'Fóton — '+ev.name, text:txt}).catch(()=>{}); }
+  if(navigator.share){ navigator.share({title:'Fóton | '+ev.name, text:txt}).catch(()=>{}); }
   else window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
 }
 async function copiarCodigo(){
@@ -2512,13 +2512,13 @@ async function atualizarStats(){
     const j=await r.json(); state.live.guests=j.guests;
     const el=document.getElementById('ev-nguests'); if(el) el.textContent=j.guests;
     /* A pergunta que ela faz no meio da festa é uma só: "está chegando?".
-       Ponto verde escrito "recebendo" não responde — pode estar verde e parado.
+       Ponto verde escrito "recebendo" não responde, pode estar verde e parado.
        Então o texto diz o que ACABOU de acontecer. */
     if(fo){
       const s=j.ultima_foto_s, ag=j.aguardando;
       let txt='recebendo', cls='ok';
       if(ag>0){ txt=ag+(ag>1?' fotos a caminho':' foto a caminho'); }
-      else if(s===null||s===undefined){ txt='pronta — aguardando a 1ª foto'; }
+      else if(s===null||s===undefined){ txt='pronta, aguardando a 1ª foto'; }
       else if(s<20){ txt='foto recebida agora'; }
       else if(s<180){ txt='última foto há '+Math.round(s)+'s'; }
       else { txt='sem foto há '+Math.round(s/60)+' min'; cls='ok off'; }
@@ -2536,7 +2536,7 @@ async function carregarContatos(){
     const j=await r.json(), cs=j.contatos||[];
     if(!cs.length){ box.style.display='none'; return; }
     box.style.display='';
-    lista.innerHTML=cs.map(c=>`<div class="c-row"><b>${(c.nome||'—').replace(/[<>]/g,'')}</b><span>${(c.contato||'').replace(/[<>]/g,'')}</span></div>`).join('');
+    lista.innerHTML=cs.map(c=>`<div class="c-row"><b>${(c.nome||'-').replace(/[<>]/g,'')}</b><span>${(c.contato||'').replace(/[<>]/g,'')}</span></div>`).join('');
   }catch(e){}
 }
 function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<4;i++)r+=c[Math.floor(Math.random()*c.length)];return r;}
@@ -2550,7 +2550,7 @@ async function sincronizarEventos(){
   if(!LIVE)return;
   try{
     // recupera eventos que ficaram sem dono no servidor (senão sumiam do painel
-    // mesmo existindo — os convidados viam as fotos e a fotógrafa não via o evento)
+    // mesmo existindo, os convidados viam as fotos e a fotógrafa não via o evento)
     const locais=(state.events||[]).map(e=>e.code).filter(Boolean);
     if(locais.length){
       try{ const fd=new FormData(); fd.append('codes',locais.join(','));
@@ -2607,7 +2607,7 @@ function openEvent(ev,opts){
   if(sb){
     const t=document.getElementById('ev-shoot-t'), sc=document.getElementById('ev-shoot-s');
     if(t) t.textContent = LIVE ? 'Abrir câmera' : 'Simular disparo';
-    if(sc) sc.textContent = LIVE ? 'fotografe aqui — cada foto sobe sozinha' : 'modo demonstração';
+    if(sc) sc.textContent = LIVE ? 'fotografe aqui: cada foto sobe sozinha' : 'modo demonstração';
   }
   ['ev-galeria','ev-semtoque'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=LIVE?'':'none'; });
   const bp=document.getElementById('btn-preview'); if(bp) bp.style.display=LIVE?'none':'';
@@ -2631,7 +2631,7 @@ function openEvent(ev,opts){
 }
 function renderEventGrid(){
   const g=document.getElementById('ev-grid'),ev=state.live;
-  if(!ev._photos.length){g.innerHTML=`<div class="empty">${LIVE?'Nenhuma foto ainda.<br>Toque em <b>Enviar fotos</b> — dá para tirar na hora ou escolher da galeria.':'Nenhuma foto ainda.<br>Toque em <b>Simular disparo</b> para ver o feed encher.'}</div>`;return;}
+  if(!ev._photos.length){g.innerHTML=`<div class="empty">${LIVE?'Nenhuma foto ainda.<br>Toque em <b>Enviar fotos</b>: dá para tirar na hora ou escolher da galeria.':'Nenhuma foto ainda.<br>Toque em <b>Simular disparo</b> para ver o feed encher.'}</div>`;return;}
   g.innerHTML='';
   const ordem=ev._photos.slice().reverse();
   ordem.forEach((p,i)=>{
@@ -2651,7 +2651,7 @@ function renderEventGrid(){
     g.appendChild(d);
   });
 }
-/* Um caminho so, sem disputa entre o onclick do HTML e um .onclick atribuido depois —
+/* Um caminho so, sem disputa entre o onclick do HTML e um .onclick atribuido depois,
    era isso que fazia o botao abrir o seletor de ARQUIVOS em vez da camera.
    `capture` so tem efeito em CELULAR: no computador o navegador nao tem app de camera
    e cai no seletor de arquivos. Isso e do navegador, nao do app. */
@@ -2692,7 +2692,7 @@ async function abrirVisor(){
     fecharCamera();
     toast((e&&e.name)==='NotAllowedError'
       ? 'Você precisa permitir a câmera. Vou abrir a do celular.'
-      : 'Não consegui abrir a câmera aqui — usando a do celular.');
+      : 'Não consegui abrir a câmera aqui. Usando a do celular.');
     usarCameraDoCelular(); return;
   }
   v.srcObject=_camStream; v.muted=true;
@@ -2706,23 +2706,23 @@ async function abrirVisor(){
   });
   if(!veio){
     fecharCamera();
-    toast('A câmera não respondeu — usando a do celular.');
+    toast('A câmera não respondeu. Usando a do celular.');
     usarCameraDoCelular(); return;
   }
   const tr=_camStream.getVideoTracks()[0];
-  /* 2560x1440 e nao 4K — e aritmetica, nao gosto.
+  /* 2560x1440 e nao 4K, e aritmetica, nao gosto.
      A captura usa a resolucao do PREVIEW (cv.width=v.videoWidth, mais abaixo), e o
      servidor reduz TODA foto para LONG_EDGE=2048. Entao pedir 3840 de largura era
      mandar o celular empurrar 8,3 MP por quadro para o servidor jogar fora tudo que
      passa de 2048: a foto entregue fica IDENTICA. 2560 continua folgado acima dos
-     2048 finais (zero perda de qualidade) e custa 3,7 MP por quadro — 2,25x menos
+     2048 finais (zero perda de qualidade) e custa 3,7 MP por quadro, 2,25x menos
      pixel no preview, que e o que derruba o FPS em Android mediano e causava o
      motion blur relatado.
      Se o aparelho nao tiver 1440p, ele entrega o que tem e a captura acompanha. */
   try{ await tr.applyConstraints({width:{ideal:2560},height:{ideal:1440}}); }catch(e){}
   _camCap=null;
   try{ if(typeof ImageCapture==='function') _camCap=new ImageCapture(tr); }catch(e){}
-  // flash e foco so aparecem se o APARELHO oferecer — nada de botao que nao faz nada
+  // flash e foco so aparecem se o APARELHO oferecer, nada de botao que nao faz nada
   let cap={};
   try{ cap=tr.getCapabilities? tr.getCapabilities():{}; }catch(e){}
   const bf=document.getElementById('camf-flash-btn');
@@ -2767,7 +2767,7 @@ async function girarCamera(){
 }
 
 /* A camera NATIVA do celular: o app sai da frente, ela fotografa com o app que ja
-   conhece (flash, foco, retrato, o que ela gostar) e volta — a foto sobe sozinha. */
+   conhece (flash, foco, retrato, o que ela gostar) e volta, a foto sobe sozinha. */
 function usarCameraDoCelular(){
   fecharCamera();
   document.getElementById('live-camera').click();
@@ -2852,15 +2852,15 @@ function mostrarBotaoScan(){
   // o texto nao pode prometer um botao que nao existe naquele aparelho
   const sub=document.getElementById('g-code-sub');
   if(sub) sub.innerHTML = tem
-    ? 'Escaneie o QR do fotógrafo — ou digite o código que aparece na tela dele.'
+    ? 'Escaneie o QR do fotógrafo, ou digite o código que aparece na tela dele.'
     : 'Digite o código que aparece na tela do fotógrafo. Se preferir, aponte a <b>câmera do seu celular</b> para o QR: ela abre o Fóton sozinha.';
 }
-/* "Já entrei antes" — sem refazer selfie e SEM biometria nova.
+/* "Já entrei antes", sem refazer selfie e SEM biometria nova.
    Usa a sessao de convidado que ja existia (24h, localStorage). NAO e o reencontro por
    selfie (P1): aquele compara rosto e so pode existir DENTRO de um evento ja escolhido,
    porque busca global de rosto esta proibida (PRODUTO §3b) e o limiar ainda depende de
-   experimento. Este botao resolve o caso comum — a mesma pessoa, no mesmo aparelho,
-   voltando durante a festa — que era justamente quem estava refazendo selfie a toa. */
+   experimento. Este botao resolve o caso comum, a mesma pessoa, no mesmo aparelho,
+   voltando durante a festa, que era justamente quem estava refazendo selfie a toa. */
 function montarVoltarConvidado(){
   const bloco=document.getElementById('g-voltar-bloco'), bt=document.getElementById('btn-g-voltar');
   if(!bloco||!bt) return;
@@ -2872,7 +2872,7 @@ function montarVoltarConvidado(){
 }
 function voltarAoEventoSalvo(){
   const code=ultimoEventoConvidado();
-  if(!code || !loadGuestSession(code)){ montarVoltarConvidado(); toast('A sessão anterior expirou — entre com o código.'); return; }
+  if(!code || !loadGuestSession(code)){ montarVoltarConvidado(); toast('A sessão anterior expirou. Entre com o código.'); return; }
   openGuest(code);
 }
 function entrarNoEvento(){
@@ -2895,7 +2895,7 @@ function avisoDemo(expiraEm){
   document.querySelectorAll('.aviso-demo').forEach(el=>{
     if(!expiraEm){ el.hidden=true; return; }
     const h=new Date(expiraEm*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    el.textContent=`Demonstração: tudo o que acontece aqui — selfie e fotos — se apaga às ${h}.`;
+    el.textContent=`Demonstração: tudo o que acontece aqui (selfie e fotos) se apaga às ${h}.`;
     el.hidden=false;
   });
 }
@@ -2910,7 +2910,7 @@ async function criarDemonstracao(){
     state.events.unshift(ev); saveEvents();
     openEvent(ev,{novo:true});             // o servidor ja criou: NAO chama registerEvent
     const h=new Date(j.expira_em*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    toast(`Demonstração criada — ela e tudo dentro dela somem às ${h}`);
+    toast(`Demonstração criada: ela e tudo dentro dela somem às ${h}`);
   }catch(e){ toast('Sem conexão com o servidor'); }
 }
 async function openGuest(code){
@@ -2929,11 +2929,11 @@ async function openGuest(code){
       go('g-code'); return;
     }
     if(r.ok){ const st=await r.json().catch(()=>null); avisoDemo(st&&st.expira_em); }
-  }catch(e){ /* sem rede: segue e tenta — melhor que travar a convidada na porta */ }
+  }catch(e){ /* sem rede: segue e tenta, melhor que travar a convidada na porta */ }
   const sess=loadGuestSession(code);
   if(sess){                                   // JA REGISTRADO: volta direto pra galeria
     guestState.id=sess.id; guestState.active=true;
-    lembrarEventoConvidado(code);             // "uma vez logado, sempre" — a proxima
+    lembrarEventoConvidado(code);             // "uma vez logado, sempre", a proxima
                                                // vez que o app abrir, volta direto aqui
     go('g-gallery'); renderGuestGrid(); startPolling(); recarregarFeed();
     toast('Bem-vindo de volta ✓');
@@ -2956,7 +2956,7 @@ function sessaoExpirou(){
   (state._pollAtivo=false, clearTimeout(state._poll), clearInterval(state._poll)); clearGuestSession(guestState.event);
   if(ultimoEventoConvidado()===guestState.event) lembrarEventoConvidado('');
   guestState.id=null; guestState.photos=[]; guestState.todas=[];
-  toast('Precisamos da sua selfie de novo — o evento foi reiniciado');
+  toast('Precisamos da sua selfie de novo: o evento foi reiniciado');
   const lb=document.getElementById('lead-box'); if(lb) lb.style.display=LIVE?'':'none';
   document.getElementById('g-consent2').checked=true;
   go('g-start');
@@ -2968,7 +2968,7 @@ async function ativarCam2(){
     const v=document.getElementById('cam2-video'); v.srcObject=cam2Stream; v.style.display='block';
     document.getElementById('cam2-ph').style.display='none';
     document.getElementById('cam2-btn').textContent='Câmera ativa';
-  }catch(e){ toast('Câmera bloqueada — use "escolher uma foto".'); }
+  }catch(e){ toast('Câmera bloqueada. Use "escolher uma foto".'); }
 }
 function tirarSelfie2(){
   if(!document.getElementById('g-consent2').checked){ toast('Marque o consentimento para continuar.'); return; }
@@ -3001,7 +3001,7 @@ async function enableCam(){
   try{camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
     const v=document.getElementById('cam-video');v.srcObject=camStream;v.style.display='block';
     document.getElementById('cam-ph').style.display='none';document.getElementById('cam-btn').textContent='Câmera ativa';
-  }catch(e){toast('Câmera indisponível aqui — use “escolher uma foto”.');}
+  }catch(e){toast('Câmera indisponível aqui. Use “escolher uma foto”.');}
 }
 function takeSelfie(){
   const v=document.getElementById('cam-video');
@@ -3032,7 +3032,7 @@ async function liveSelfie(src){
     if((lc||'').trim()) fd.append('contato',lc.trim());
     const r=await fetch(API+'/selfie',{method:'POST',body:fd});
     const volta=()=>go(LIVE?'g-start':'g-selfie');
-    if(r.status===422){ toast('Não achei seu rosto — enquadre o rosto de frente, com luz'); volta(); return; }
+    if(r.status===422){ toast('Não achei seu rosto. Enquadre o rosto de frente, com luz'); volta(); return; }
     if(!r.ok){ toast('Erro no servidor ('+r.status+')'); volta(); return; }
     const j=await r.json(); guestState.id=j.guest_id; guestState.photos=[];
     saveGuestSession();                       // <- volta rapido se sair da tela
@@ -3042,12 +3042,12 @@ async function liveSelfie(src){
 }
 function startPolling(){
   /* ESPERA LONGA (ADR-0042). Medido em 2026-09-23: o servidor entrega em ~150 ms, mas
-     este ciclo perguntava a cada 2,5 s — ou seja, a pessoa esperava por nada quase todo
+     este ciclo perguntava a cada 2,5 s, ou seja, a pessoa esperava por nada quase todo
      o tempo que ela sentia. Agora a pergunta FICA ABERTA no servidor ate a foto chegar
      (ate 25 s) e volta na hora da entrega. Uma pergunta por convidado em vez de 24 por
      minuto: melhor para o celular dela e para a VM.
      Se a rota nao existir (servidor antigo) ou der erro, volta sozinho para o ciclo de
-     2,5 s — a galeria nunca pode depender de uma rota nova para funcionar. */
+     2,5 s, a galeria nunca pode depender de uma rota nova para funcionar. */
   (state._pollAtivo=false, clearTimeout(state._poll), clearInterval(state._poll)); clearTimeout(state._poll);
   state._pollAtivo = true;
   let versao = 0, espera = true, erros = 0;
@@ -3124,7 +3124,7 @@ document.addEventListener('visibilitychange',()=>{
 /* abas da galeria do convidado: minhas fotos | todas da festa */
 guestState.aba='minhas'; guestState.todas=[];
 /* teto de render por aba: pinta so as N fotos mais novas e oferece "Mostrar mais".
-   Sem isto, renderGuestGrid reconstroi a grade INTEIRA a cada foto nova/poll — no album
+   Sem isto, renderGuestGrid reconstroi a grade INTEIRA a cada foto nova/poll, no album
    GLAMON (~2000 fotos) isso trava o aparelho. ZIP/selecao/contador seguem na lista cheia. */
 guestState.limite={minhas:50, todas:50};
 function trocarAba(qual){
@@ -3134,7 +3134,7 @@ function trocarAba(qual){
   document.getElementById('tab-todas').classList.toggle('on',qual==='todas');
   document.getElementById('g-hint').textContent = qual==='minhas'
     ? 'Novas fotos entram sozinhas enquanto a festa acontece.'
-    : 'Todas as fotos do evento — as suas aparecem na primeira aba.';
+    : 'Todas as fotos do evento. As suas aparecem na primeira aba.';
   if(qual==='todas') carregarTodas(); else renderGuestGrid();
 }
 async function carregarTodas(){
@@ -3205,7 +3205,7 @@ function mostrarMais(){
 }
 
 /* ===================== TOQUE LONGO =====================
-   O gesto que todo celular ensina — segurar para selecionar — nao existia: so havia
+   O gesto que todo celular ensina, segurar para selecionar, nao existia: so havia
    um botao "Escolher algumas", e quem segurava caia no menu do navegador.
 
    450ms e o limiar do Android. Cancela se o dedo andar mais de 10px, senao rolar a
@@ -3270,7 +3270,7 @@ async function enviarSelecionadas(){
     if(navigator.canShare&&navigator.canShare({files:arquivos})){
       const marca=(state.live&&state.live.brand)||'';
       await navigator.share({files:arquivos, title:'Minhas fotos',
-        text:`📸 Minhas fotos na hora${marca?` — ${marca}`:''} ✨`});
+        text:`📸 Minhas fotos na hora${marca?` | ${marca}`:''} ✨`});
       sairSelecao(); return;
     }
   }catch(e){ if(e&&e.name==='AbortError'){ return; } }
@@ -3282,7 +3282,7 @@ async function enviarSelecionadas(){
       saveBlob(makeZip(dados),'foton-selecionadas.zip'); toast(arquivos.length+' fotos salvas em .zip ✓');
     }
     sairSelecao();
-  }catch(e){ toast('Seu navegador bloqueou o download — segure a foto e escolha "Salvar imagem"'); }
+  }catch(e){ toast('Seu navegador bloqueou o download. Segure a foto e escolha "Salvar imagem"'); }
 }
 
 /* ========================= PRIVACIDADE (LGPD) ========================= */
@@ -3302,7 +3302,7 @@ async function abrirPrivacidade(){
 function voltarDaPrivacidade(){ go(_voltaPrivacidade||'landing'); }
 async function excluirMeusDados(){
   if(!guestState.id){ toast('Você ainda não registrou uma selfie neste aparelho.'); return; }
-  if(!confirm('Apagar minha selfie e sair?\n\n• seu código facial é apagado do servidor\n• você para de receber as fotos deste evento\n• as fotos já salvas no seu celular continuam suas\n\nNão dá para desfazer — mas você pode entrar de novo com uma selfie nova.'))return;
+  if(!confirm('Apagar minha selfie e sair?\n\n• seu código facial é apagado do servidor\n• você para de receber as fotos deste evento\n• as fotos já salvas no seu celular continuam suas\n\nNão dá para desfazer, mas você pode entrar de novo com uma selfie nova.'))return;
   try{
     const fd=new FormData(); fd.append('guest_id',guestState.id);
     const r=await fetch(API+'/convidado/excluir',{method:'POST',body:fd});
@@ -3317,7 +3317,7 @@ async function excluirMeusDados(){
 
 /* ========================= ADMIN ========================= */
 /* Era `/^admin@/.test(email)`. O login virou `admin`, sem arroba, entao o teste dava
-   FALSO e o botao de administracao nunca aparecia — o painel existia e nao tinha porta.
+   FALSO e o botao de administracao nunca aparecia, o painel existia e nao tinha porta.
    Quem sabe quem e admin e o servidor (a lista FOTON_ADMINS); o cliente so obedece. */
 const EH_ADMIN = () => !!(SESSAO && SESSAO.admin);
 async function abrirAdmin(){
@@ -3335,7 +3335,7 @@ async function abrirAdmin(){
       `<div class="c-row"><b>Disco livre</b><span>${j.disco_livre_gb} GB de ${j.disco_total_gb} GB</span></div>`+
       `<div class="c-row"><b>Reconhecimento</b><span>ArcFace (buffalo_s)</span></div>`;
     carregarSaude();
-    // quanto credito ja saiu, e para onde — evento vazio e credito jogado fora
+    // quanto credito ja saiu, e para onde, evento vazio e credito jogado fora
     const c=j.credito||{};
     document.getElementById('adm-credito').innerHTML=
       linhaAdm('Créditos concedidos', c.creditos_dados)
@@ -3377,14 +3377,14 @@ async function abrirAdmin(){
   }catch(e){ toast('Servidor indisponível.'); }
 }
 /* Torre de controle: o que precisa estar verde ANTES e DURANTE um evento.
-   Vem tudo de /admin/saude — campo que o servidor não conseguiu ler chega null,
-   e aqui vira "—" em vez de quebrar a tela inteira. */
+   Vem tudo de /admin/saude, campo que o servidor não conseguiu ler chega null,
+   e aqui vira "," em vez de quebrar a tela inteira. */
 async function carregarSaude(){
   const box=document.getElementById('adm-servidor'); if(!box)return;
   try{
     const r=await fetch(API+'/admin/saude',{headers:auth()}); if(!r.ok)return;
     const s=await r.json();
-    const n=(v,suf='')=>(v===null||v===undefined)?'—':v+suf;
+    const n=(v,suf='')=>(v===null||v===undefined)?'-':v+suf;
     const linha=(k,v,alerta)=>`<div class="c-row"><b>${k}</b><span${alerta?' style="color:var(--live);font-weight:600"':''}>${v}</span></div>`;
     const d=s.disco||{}, m=(s.servidor||{}).memoria||{}, b=s.backup, f=s.fila||{};
     box.innerHTML=
@@ -3396,14 +3396,14 @@ async function carregarSaude(){
       + linha('Último backup', b? `há ${b.horas_atras} h · ${b.copias} cópia(s)` : 'nunca', !b||(b&&b.horas_atras>48))
       + linha('Memória', `${n(m.livre_mb)} MB livres de ${n(m.total_mb)} MB (${n(m.uso_pct,'%')})`, m.uso_pct>90)
       + linha('Servidor de pé há', `${n((s.servidor||{}).uptime_processo_h,' h')} (máquina: ${n((s.servidor||{}).uptime_maquina_h,' h')})`)
-      + linha('Carga', ((s.servidor||{}).carga||['—']).join('  '))
+      + linha('Carga', ((s.servidor||{}).carga||['-']).join('  '))
       + linha('Envio direto (FTP)', f.ftp_ligado?'ligado':'DESLIGADO', !f.ftp_ligado)
       + linha('Fotos aguardando na fila', n(f.fotos_ftp_aguardando), f.fotos_ftp_aguardando>0)
       + linha('Reconhecimento','ArcFace (buffalo_s)');
   }catch(e){}
 }
 function linhaAdm(k,v,alerta){
-  return `<div class="c-row"><b>${k}</b><span${alerta?' style="color:var(--live);font-weight:600"':''}>${v===undefined||v===null?'—':v}</span></div>`;
+  return `<div class="c-row"><b>${k}</b><span${alerta?' style="color:var(--live);font-weight:600"':''}>${v===undefined||v===null?'-':v}</span></div>`;
 }
 /* "ha 3 h" diz mais que um carimbo de data quando o que importa e se a conta esta viva */
 function desde(ts){
@@ -3424,7 +3424,7 @@ async function admContatos(revelar){
     const j2=await r.json(); const cs=j2.contatos||[];
     const lp=t=>String(t||'').replace(/[<>]/g,'');
     box.innerHTML = cs.length ? cs.map(c=>`
-      <div class="c-row"><b>${lp(c.nome)||'—'}</b><span>${lp(c.contato)}</span></div>
+      <div class="c-row"><b>${lp(c.nome)||'-'}</b><span>${lp(c.contato)}</span></div>
       <p class="muted" style="font-size:13.5px;margin:-4px 0 8px">${lp(c.evento)||c.event_code} · ${lp(c.dono)||'sem dono'} · ${desde(c.ts)}</p>`).join('')
       : '<div class="empty">Nenhum convidado deixou contato ainda.</div>';
     if(cs.length && j2.mascarado){
@@ -3438,18 +3438,18 @@ async function admContatos(revelar){
   finally{ b.textContent='Ver contatos'; b.disabled=false; }
 }
 /* A PELE da conta (ADR-0030): so vocabulario e blocos da tela, nenhum poder.
-   'social' e a pele do Foton Festa — existia no app e era inalcancavel ate o
+   'social' e a pele do Foton Festa, existia no app e era inalcancavel ate o
    servidor passar a devolve-la. Vazio = automatica (empresa -> empresa, senao pro). */
-/* Sheet de escolha de pele — usado tanto para mudar a pele de uma conta que ja existe
+/* Sheet de escolha de pele, usado tanto para mudar a pele de uma conta que ja existe
    quanto para escolher a pele na hora de criar uma conta nova pelo painel.
    prompt() NAO serve aqui: em PWA instalado no Android ele aparece sem a caixa de
-   digitar — foi exatamente o que aconteceu. Escolha precisa ser BOTAO. */
+   digitar, foi exatamente o que aconteceu. Escolha precisa ser BOTAO. */
 function pelaSheet(atual, legenda, aoEscolher){
   const opcoes=[
     ['',        'Automática', 'empresa vira "empresa", o resto vira "pro"'],
     ['pro',     'Pro',        '"meu painel" · "Seus eventos"'],
     ['empresa', 'Empresa',    '"galeria da empresa" · "Seus álbuns"'],
-    ['social',  'Social',     '"meu rolê" · "Seus rolês" — Fóton Festa'],
+    ['social',  'Social',     '"meu rolê" · "Seus rolês" · Fóton Festa'],
   ];
   const esc=document.createElement('div');
   esc.style.cssText='position:fixed;inset:0;z-index:220;background:rgba(0,0,0,.62);'
@@ -3460,7 +3460,7 @@ function pelaSheet(atual, legenda, aoEscolher){
     +'max-height:86vh;overflow:auto';
   cx.innerHTML='<div style="font-weight:600;font-size:18px;margin-bottom:4px">Pele da tela</div>'
     +'<p class="note" style="text-align:left;margin:0 0 14px">'+String(legenda).replace(/[<>]/g,'')
-    +' — muda só as palavras da tela. <b>Não dá poderes.</b></p>';
+    +': muda só as palavras da tela. <b>Não dá poderes.</b></p>';
   opcoes.forEach(([val,rot,desc])=>{
     const b=document.createElement('button');
     const marcada = (atual||'')===val;
@@ -3482,7 +3482,7 @@ async function admPerfil(email, atual){
   pelaSheet(atual, email, val => admSalvarPerfil(email, val));
 }
 /* nome com prefixo adm: `aplicarPerfil()` (sem argumentos) ja existe e e outra
-   coisa — e quem pinta a pele na tela do proprio usuario. */
+   coisa, e quem pinta a pele na tela do proprio usuario. */
 async function admSalvarPerfil(email, perfil){
   try{
     const r=await fetch(API+'/admin/perfil',{method:'POST',headers:auth(),
@@ -3493,7 +3493,7 @@ async function admSalvarPerfil(email, perfil){
   }catch(e){ toast('Erro de conexão.'); }
 }
 
-/* Criar conta pelo painel (admin), com a pele ja escolhida — a conta nasce
+/* Criar conta pelo painel (admin), com a pele ja escolhida, a conta nasce
    NAO-admin e NAO-empresa de verdade, so com a pele visual pedida. */
 let admNovaPele='';
 function admEscolherPelaNova(){
@@ -3516,7 +3516,7 @@ async function admCriarConta(){
       body:new URLSearchParams({email,senha,nome,marca,perfil:admNovaPele})});
     const j=await r.json().catch(()=>({}));
     if(!r.ok){ res.textContent=j.detail||'Não consegui criar.'; return; }
-    res.textContent=`Criada: ${j.email} — pele ${j.perfil} — ${j.credits} créditos.`;
+    res.textContent=`Criada: ${j.email} | pele ${j.perfil} | ${j.credits} créditos.`;
     toast('Conta criada ✓');
     $('adm-nova-email').value=''; $('adm-nova-senha').value='';
     $('adm-nova-nome').value=''; $('adm-nova-marca').value='';
@@ -3545,14 +3545,14 @@ async function admCreditos(email,n){
   try{ const fd=new FormData(); fd.append('email',email); fd.append('quantidade',n);
     const r=await fetch(API+'/admin/creditos',{method:'POST',body:fd,headers:auth()});
     if(!r.ok){ toast('Não consegui dar créditos.'); return; }
-    const j=await r.json(); toast(`+${n} créditos — agora ${j.credits}`); abrirAdmin();
+    const j=await r.json(); toast(`+${n} créditos, agora ${j.credits}`); abrirAdmin();
   }catch(e){ toast('Erro de conexão.'); }
 }
 /* EXCLUIR CONTA E TUDO (2026-09-21). A rota existia (/admin/conta/excluir) e o painel
    nao tinha botao. Irreversivel, entao a confirmacao e DIGITAR O LOGIN, num campo dentro
-   do proprio cartao — sem prompt()/confirm(), que falham no PWA do Android (BLUEPRINT §7).
+   do proprio cartao, sem prompt()/confirm(), que falham no PWA do Android (BLUEPRINT §7).
    Depois de apagar, compacta: o SQLite nao devolve o espaco e o conteudo apagado fica nas
-   paginas livres do arquivo ate o VACUUM — "apagar tudo" inclui isso. Admin nao aparece
+   paginas livres do arquivo ate o VACUUM, "apagar tudo" inclui isso. Admin nao aparece
    aqui: tirar admin primeiro e decisao a parte. */
 function admExcluirConta(btn, email, eventos, fotos, convidados){
   const card=btn.closest('.tips'); if(!card)return;
@@ -3608,8 +3608,8 @@ async function admCompactar(){
     if(!r.ok){ box.textContent='Não consegui compactar.'; return; }
     const j=await r.json();
     box.innerHTML=j.liberou_mb>0
-      ? `✓ Liberou <b>${j.liberou_mb} MB</b> — o banco foi de ${j.antes_mb} MB para ${j.depois_mb} MB.`
-      : `Nada a recuperar — o banco já está compacto (${j.depois_mb} MB).`;
+      ? `✓ Liberou <b>${j.liberou_mb} MB</b>: o banco foi de ${j.antes_mb} MB para ${j.depois_mb} MB.`
+      : `Nada a recuperar: o banco já está compacto (${j.depois_mb} MB).`;
     abrirAdmin();
   }catch(e){ box.textContent='Erro de conexão.'; }
 }
@@ -3679,7 +3679,7 @@ function abrirFoto(lista, idx, opcoes){
 }
 /* ============== "NAO SOU EU" (ADR-0037) ==============
    So aparece na galeria PROPRIA do convidado (aba Minhas): e ali que o reconhecimento
-   pode ter errado por ele. Tira a foto da galeria dele — ela continua em Todas — e o
+   pode ter errado por ele. Tira a foto da galeria dele, ela continua em Todas, e o
    servidor guarda a entrega recusada: e o unico dado de falso positivo REAL que existe
    para calibrar o limiar. Dois toques, sem confirm() (dialogo nao e confiavel no PWA). */
 let _naoSouEuArmado=null;
@@ -3737,7 +3737,7 @@ document.addEventListener('keydown',e=>{
 /* ============== ZOOM DA FOTO ABERTA (pinca, arrastar, duplo-toque) ==============
    Relato real: "quando a foto abre nao ta dando pra dar zoom com dois dedos". A causa
    nao estava no visualizador: o <meta viewport> tem `user-scalable=no,maximum-scale=1`
-   — de proposito, senao a INTERFACE inteira fica zoomavel e bamba — e isso mata o
+  , de proposito, senao a INTERFACE inteira fica zoomavel e bamba, e isso mata o
    pinch nativo da pagina toda. O `.lb img{touch-action:pinch-zoom}` que existia era
    letra morta: nao ha como reativar o zoom do navegador so num elemento.
 
@@ -3831,10 +3831,10 @@ document.addEventListener('keydown',e=>{
    celular, na hora.
 
    O QR aponta para o APP com a foto aberta (`?ev=CODE&foto=ID`), não para o .jpg cru:
-   quem escaneia vê o Fóton, tem botão de salvar e de compartilhar — e não uma imagem
+   quem escaneia vê o Fóton, tem botão de salvar e de compartilhar, e não uma imagem
    solta numa aba do navegador.
 
-   Privacidade: o endereço da foto (`/img/...`) já é público hoje — o QR não abre nada
+   Privacidade: o endereço da foto (`/img/...`) já é público hoje, o QR não abre nada
    que já não estivesse aberto, só torna prático o que a convidada quer fazer com a
    própria foto. A retenção de 90 dias continua valendo: passou disso, o link morre e
    quem escanear vê o aviso, não um erro. */
@@ -3872,7 +3872,7 @@ async function abrirFotoAvulsa(ev,pid){
       toast('Esta foto não está mais disponível');
       return;
     }
-  }catch(e){ toast('Não consegui abrir a foto — verifique a internet'); return; }
+  }catch(e){ toast('Não consegui abrir a foto. Verifique a internet'); return; }
   abrirFoto([{id:pid, src, faces:0}], 0);
 }
 
@@ -3881,7 +3881,7 @@ async function abrirFotoAvulsa(ev,pid){
    camera nativa (que abre o link direto), mas quem ja esta dentro do app ficava sem
    saida a nao ser digitar.
 
-   Usa o BarcodeDetector do proprio navegador — sem biblioteca nova (regra do CLAUDE.md
+   Usa o BarcodeDetector do proprio navegador, sem biblioteca nova (regra do CLAUDE.md
    sobre dependencia). Nao existe no Safari/iPhone: la o botao nem aparece. */
 function temLeitorDeQR(){ return typeof window.BarcodeDetector === 'function'; }
 let _scanStream=null, _scanTimer=null;
@@ -3892,7 +3892,7 @@ function codigoDoQR(txt){
   return m ? m[0] : '';
 }
 async function abrirScanner(){
-  if(!temLeitorDeQR()){ toast('Aqui não dá para ler o QR — use a câmera do celular ou digite o código'); return; }
+  if(!temLeitorDeQR()){ toast('Aqui não dá para ler o QR. Use a câmera do celular ou digite o código'); return; }
   const v=document.getElementById('scan-video');
   try{ _scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}); }
   catch(e){ toast('Preciso da câmera para ler o QR. Você pode digitar o código.'); return; }
@@ -3927,7 +3927,7 @@ function abrirQR(){
 }
 function fecharQR(){ document.getElementById('qrfull').classList.remove('show'); }
 /* Cartaz A4 para a mesa da festa: o QR existia so na tela, e tela nao fica em cima da
-   mesa a noite inteira. Leva codigo e nome do evento pela URL — a pagina nao precisa
+   mesa a noite inteira. Leva codigo e nome do evento pela URL, a pagina nao precisa
    de login, do mesmo jeito que o QR projetado na festa nao precisa. */
 function abrirCartaz(){
   const ev=state.live; if(!ev){ toast('Abra um evento primeiro'); return; }
@@ -3941,7 +3941,7 @@ function abrirCartaz(){
 async function baixarQR(){
   const ev=state.live; if(!ev)return;
   try{ const b=await fetchBlob(document.getElementById('qr-img').src);
-    saveBlob(b, `foton-qr-${ev.code}.png`); toast('QR salvo — imprima e deixe na mesa ✓'); }
+    saveBlob(b, `foton-qr-${ev.code}.png`); toast('QR salvo. Imprima e deixe na mesa ✓'); }
   catch(e){ toast('Não consegui baixar o QR'); }
 }
 
@@ -3970,7 +3970,7 @@ function saveBlob(blob,nome){
 function ehIOS(){ return /iP(hone|ad|od)/.test(navigator.userAgent) ||
   (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); }
 
-/* baixar 1 foto — agora SEMPRE dá retorno (sucesso, alternativa ou erro) */
+/* baixar 1 foto, agora SEMPRE dá retorno (sucesso, alternativa ou erro) */
 async function baixarFoto(){
   const src=sheetTarget&&sheetTarget.src;
   if(!src){ toast('Nenhuma foto selecionada.'); return; }
@@ -3991,7 +3991,7 @@ async function baixarFoto(){
     }catch(e){ if(e&&e.name==='AbortError')return; }
   }
   try{ saveBlob(blob,nome); toast('Foto salva ✓ (veja em Downloads)'); }
-  catch(e){ toast('Seu navegador bloqueou o download — segure a foto e escolha "Salvar imagem"'); }
+  catch(e){ toast('Seu navegador bloqueou o download. Segure a foto e escolha "Salvar imagem"'); }
 }
 /* compartilhar 1 foto (WhatsApp/Instagram/etc via menu nativo) */
 async function compartilharFoto(){
@@ -4003,17 +4003,17 @@ async function compartilharFoto(){
       // texto junto = marketing gratuito para a fotógrafa
       const marca=(state.live&&state.live.brand)||'';
       await navigator.share({files:[file], title:'Minha foto',
-        text:`📸 Recebi minha foto na hora${marca?` — ${marca}`:''} ✨`});
+        text:`📸 Recebi minha foto na hora${marca?` | ${marca}`:''} ✨`});
       return;                                    // menu nativo: WhatsApp, Instagram, etc.
     }
     saveBlob(blob,file.name);                    // desktop/sem suporte: baixa e explica
-    toast('Seu aparelho não abre o menu de compartilhar — a foto foi baixada ✓');
+    toast('Seu aparelho não abre o menu de compartilhar: a foto foi baixada ✓');
   }catch(e){
     if(e&&e.name==='AbortError')return;          // usuário cancelou
-    toast('Não consegui compartilhar — a foto pode ser baixada');
+    toast('Não consegui compartilhar. A foto pode ser baixada');
   }
 }
-/* ---- ZIP (stored, sem compressao: JPEG ja e comprimido) — sem biblioteca externa ---- */
+/* ---- ZIP (stored, sem compressao: JPEG ja e comprimido), sem biblioteca externa ---- */
 const _crcT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
 function crc32(u8){let c=0xFFFFFFFF;for(let i=0;i<u8.length;i++)c=_crcT[(c^u8[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
 function makeZip(files){                          // files: [{name, data:Uint8Array}]
@@ -4058,12 +4058,12 @@ function home(){ if(typeof stopEvent==='function') stopEvent(); clearInterval(st
 
 /* ===================== A MARCA =====================
    Ideia, nao ornamento: Foton e uma particula de LUZ, e o produto e uma lente que
-   acha VOCE no meio de muitos. Entao a marca e um DIAFRAGMA — construido de verdade,
-   com as seis laminas tangentes ao hexagono da abertura, nao um circulo decorativo —
+   acha VOCE no meio de muitos. Entao a marca e um DIAFRAGMA, construido de verdade,
+   com as seis laminas tangentes ao hexagono da abertura, nao um circulo decorativo,
    e dentro dele um unico ponto de luz, FORA do centro de proposito: voce nao esta no
    meio do mundo, esta em algum lugar dele.
 
-   O anterior era fonte cursiva dentro de um circulo com pontinhos — a forma mais
+   O anterior era fonte cursiva dentro de um circulo com pontinhos, a forma mais
    comum de logo de pequeno negocio que existe, e nao dizia nada sobre o produto.
 
    Geometrico, traco unico, sem gradiente e sem filtro: legivel a 24px e a 300px,
@@ -4084,7 +4084,7 @@ function diafragmaSVG(tam, comLuz){
 }
 
 /* Assinatura completa: o diafragma acima, a palavra abaixo. A palavra usa a mesma
-   geometrica do produto (Jost) com entreletra larga — nada de cursiva. */
+   geometrica do produto (Jost) com entreletra larga, nada de cursiva. */
 function badgeSVG(full){
   if(!full) return diafragmaSVG(64,true);
   return `<svg viewBox="0 0 220 218" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fóton">
@@ -4102,30 +4102,30 @@ function badgeSVG(full){
       font-size="47" font-weight="500" letter-spacing="7" fill="#f4ecd8">FÓTON</text>
   </svg>`;
 }
-document.querySelectorAll('.mark').forEach(m=>{m.innerHTML=badgeSVG(false);m.onclick=home;m.setAttribute('role','button');m.setAttribute('tabindex','0');m.setAttribute('aria-label','Início — Fóton');
+document.querySelectorAll('.mark').forEach(m=>{m.innerHTML=badgeSVG(false);m.onclick=home;m.setAttribute('role','button');m.setAttribute('tabindex','0');m.setAttribute('aria-label','Início, Fóton');
   m.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();home();}});});
 const _bb=document.querySelector('.brand-badge'); if(_bb) _bb.innerHTML=badgeSVG(true);
 
 /* ============ GUIA DE CÂMERAS (dados oficiais dos fabricantes) ============ */
-let _pollCam=null;                       // usado por guiaMarca/guiaDireto — declarado antes por causa do guiaMarca('canon') logo abaixo
+let _pollCam=null;                       // usado por guiaMarca/guiaDireto, declarado antes por causa do guiaMarca('canon') logo abaixo
 const GUIAS={
   canon:{app:'Canon Camera Connect', loja:'grátis na Play Store / App Store',
     modelos:'EOS R8, R6, R5, R50, RP · T6s/760D, T7i, 90D · PowerShot com Wi-Fi',
     passos:[
       'Instale o <b>Canon Camera Connect</b> no celular e <b>ligue o Bluetooth</b> do celular.',
-      'Na câmera (R8 e linha R): <b>MENU → Funções de comunicação → Conectar a smartphone(tablet)</b>. <span style="color:var(--warn)">Não procure por "Rede" nem "Configurações de Wi-Fi" — na R8 o menu chama <b>Funções de comunicação</b>, com ícone de transferência de dados.</span> Nas DSLR antigas (T6s/760D) o caminho é <b>MENU → ferramentas → Wi-Fi/NFC → Ativar</b>.',
-      'Siga o pareamento no app. Na primeira vez o celular pede para entrar no Wi-Fi da câmera — aceite.',
+      'Na câmera (R8 e linha R): <b>MENU → Funções de comunicação → Conectar a smartphone(tablet)</b>. <span style="color:var(--warn)">Não procure por "Rede" nem "Configurações de Wi-Fi": na R8 o menu chama <b>Funções de comunicação</b>, com ícone de transferência de dados.</span> Nas DSLR antigas (T6s/760D) o caminho é <b>MENU → ferramentas → Wi-Fi/NFC → Ativar</b>.',
+      'Siga o pareamento no app. Na primeira vez o celular pede para entrar no Wi-Fi da câmera: aceite.',
       '<b>Ligue o envio automático (só R8 e linha R):</b> com a câmera já conectada, vá em <b>Funções de comunicação → Conectar a smartphone(tablet) → Enviar para smartphone após o disparo</b> e marque <b>Envio automático: Ativar</b>. Escolha o <b>Tamanho a enviar</b>. A partir daí <b>cada foto cai sozinha no celular</b>, sem você tocar na câmera.',
       'Na T6s (sem envio automático): toque em <b>Imagens na câmera</b>, selecione as fotos e <b>baixe</b>.',
       '<b>Volte para os dados móveis</b> (saia do Wi-Fi da câmera) e envie pelo Fóton.'],
-    dica:'Deixe o Bluetooth pareado: a reconexão fica quase instantânea nos próximos eventos. O Wi-Fi da câmera não tem internet — por isso o envio ao Fóton só funciona depois de voltar para o 4G.'},
+    dica:'Deixe o Bluetooth pareado: a reconexão fica quase instantânea nos próximos eventos. O Wi-Fi da câmera não tem internet, por isso o envio ao Fóton só funciona depois de voltar para o 4G.'},
   nikon:{app:'SnapBridge', loja:'grátis na Play Store / App Store',
     modelos:'Z6/Z7/Z8/Z50/Zf · D780, D850, D7500, D5600',
     passos:[
       'Instale o <b>SnapBridge</b> e <b>ligue o Bluetooth</b> do celular antes de começar.',
       'No app: <b>ícone de engrenagem → Adicionar câmera</b>, escolha o tipo e <b>Pareamento (Bluetooth)</b>.',
       'Quando a câmera achar o celular, confirme <b>OK</b> na câmera e toque em <b>Parear</b> no app.',
-      'Em <b>Baixar imagens</b>, selecione as fotos e transfira. <b>Importante:</b> o envio automático manda versão reduzida (2 MP) — para o Fóton, prefira baixar <b>em tamanho original</b>.',
+      'Em <b>Baixar imagens</b>, selecione as fotos e transfira. <b>Importante:</b> o envio automático manda versão reduzida (2 MP); para o Fóton, prefira baixar <b>em tamanho original</b>.',
       '<b>Volte para os dados móveis</b> e envie pelo Fóton.'],
     dica:'O pareamento por Bluetooth fica salvo: nos próximos eventos ele reconecta sozinho.'},
   sony:{app:'Creators\' App (antigo Imaging Edge Mobile)', loja:'grátis na Play Store / App Store',
@@ -4156,9 +4156,9 @@ function guiaMarca(m,btn){
 }
 guiaMarca('canon');
 
-/* modo DIRETO: a camera envia sozinha para o SERVIDOR — nao pelo celular dela.
+/* modo DIRETO: a camera envia sozinha para o SERVIDOR, nao pelo celular dela.
    O celular so entra se for usado como hotspot (a internet da camera), e nesse
-   caso pode ser QUALQUER celular com dados — a foto nao passa por ele, so a rede. */
+   caso pode ser QUALQUER celular com dados, a foto nao passa por ele, so a rede. */
 async function guiaDireto(btn){
   document.querySelectorAll('.guia-tabs .tab').forEach(b=>b.classList.remove('on'));
   if(btn)btn.classList.add('on');
@@ -4178,15 +4178,15 @@ async function _renderGuiaDireto(box, silencioso){
     box.dataset.ok='1';
     const linha=(k,v)=>`<div class="c-row"><b>${k}</b><span style="font-family:var(--mono);color:var(--accent)">${v}</span></div>`;
     const s=c.conectada_ha_s;
-    // ela nao precisa gastar uma foto de teste para saber se acertou os dados —
+    // ela nao precisa gastar uma foto de teste para saber se acertou os dados,
     // o servidor sabe no instante em que a camera consegue logar.
     const status=(s!==null&&s!==undefined&&s<600)
       ? `<div class="tips" style="border-color:var(--ok);margin-bottom:12px"><b style="color:var(--ok)">✓ Câmera conectada</b>
-         <p style="margin:4px 0 0;font-size:17px">O servidor recebeu o login ${s<15?'agora mesmo':'há '+(s<90?Math.round(s)+'s':Math.round(s/60)+' min')} — os dados abaixo estão certos.</p></div>`
+         <p style="margin:4px 0 0;font-size:17px">O servidor recebeu o login ${s<15?'agora mesmo':'há '+(s<90?Math.round(s)+'s':Math.round(s/60)+' min')}: os dados abaixo estão certos.</p></div>`
       : `<div class="tips" style="margin-bottom:12px"><b>Aguardando a câmera conectar…</b>
-         <p style="margin:4px 0 0;font-size:17px">Depois de preencher os dados abaixo na câmera, esta tela avisa sozinha — não precisa tirar foto para testar.</p></div>`;
+         <p style="margin:4px 0 0;font-size:17px">Depois de preencher os dados abaixo na câmera, esta tela avisa sozinha, não precisa tirar foto para testar.</p></div>`;
     box.innerHTML=status+`
-      <p class="subtitle" style="margin:0 0 12px">Sua câmera envia cada foto <b>direto para o servidor do Fóton</b> — a foto <b>não passa pelo seu celular</b>. Configure uma vez.</p>
+      <p class="subtitle" style="margin:0 0 12px">Sua câmera envia cada foto <b>direto para o servidor do Fóton</b>: a foto <b>não passa pelo seu celular</b>. Configure uma vez.</p>
       <div class="tips"><b>Dados para a câmera (FTP)</b>
         <div class="contatos">
           ${linha('Servidor',c.servidor)}${linha('Porta',c.porta)}
@@ -4197,18 +4197,18 @@ async function _renderGuiaDireto(box, silencioso){
       <div class="card" style="padding:6px 18px;margin-top:12px">
         <div class="passo"><span class="n">1</span><span class="t">Na câmera: <b>MENU → Rede → Configurações FTP</b> (ou "Transferência FTP").</span></div>
         <div class="passo"><span class="n">2</span><span class="t">Preencha com os dados acima. Marque <b>modo passivo</b>.</span></div>
-        <div class="passo"><span class="n">3</span><span class="t">Conecte a câmera a um <b>Wi-Fi com internet</b> — o hotspot de <b>qualquer celular</b> serve (a foto não fica nesse celular, ele só empresta a internet).</span></div>
-        <div class="passo"><span class="n">4</span><span class="t">Ative <b>"Transferência automática"</b> — cada foto vai sozinha para o Fóton.</span></div>
+        <div class="passo"><span class="n">3</span><span class="t">Conecte a câmera a um <b>Wi-Fi com internet</b>: o hotspot de <b>qualquer celular</b> serve (a foto não fica nesse celular, ele só empresta a internet).</span></div>
+        <div class="passo"><span class="n">4</span><span class="t">Ative <b>"Transferência automática"</b>: cada foto vai sozinha para o Fóton.</span></div>
         <div class="passo"><span class="n">5</span><span class="t"><b>Abra um evento antes de fotografar.</b> As fotos entram no evento que estiver ao vivo.</span></div>
       </div>
       ${c.aviso?`<p class="note" style="margin-top:12px;text-align:left;color:var(--warn)">⚠ ${c.aviso}</p>`
-               :`<p class="note" style="margin-top:12px;text-align:left;color:var(--ok)">✓ Evento <b>${c.evento_ao_vivo}</b> ao vivo — as fotos vão para ele.</p>`}
-      <p class="note" style="margin-top:8px;text-align:left;font-size:15px;color:var(--dim)">Só funciona em câmera que tenha <b>"Transferência FTP" no próprio menu</b> — corpos profissionais (Canon R5/R3/R6 II, Nikon Z série pro, Sony com FTP). <b>A Canon R8 e a T6s NÃO têm FTP</b> — verificado na prática. Para elas o caminho é o celular (abas Canon/Nikon/Sony acima), com <b>envio automático</b> ligado na R8.</p>`;
+               :`<p class="note" style="margin-top:12px;text-align:left;color:var(--ok)">✓ Evento <b>${c.evento_ao_vivo}</b> ao vivo: as fotos vão para ele.</p>`}
+      <p class="note" style="margin-top:8px;text-align:left;font-size:15px;color:var(--dim)">Só funciona em câmera que tenha <b>"Transferência FTP" no próprio menu</b>: corpos profissionais (Canon R5/R3/R6 II, Nikon Z série pro, Sony com FTP). <b>A Canon R8 e a T6s NÃO têm FTP</b> (verificado na prática). Para elas o caminho é o celular (abas Canon/Nikon/Sony acima), com <b>envio automático</b> ligado na R8.</p>`;
   }catch(e){ if(!silencioso) box.innerHTML='<div class="empty">Erro de conexão.</div>'; }
 }
 function sairGuia(){ if(_pollCam){clearInterval(_pollCam);_pollCam=null;} home(); }
 
-/* palco da landing — uma foto real de fundo (troca a cada abertura) */
+/* palco da landing, uma foto real de fundo (troca a cada abertura) */
 (()=>{const el=document.getElementById('stage-bg'); if(!el)return;
   const escolhidas=[PHOTOS[3],PHOTOS[0],PHOTOS[8],PHOTOS[1]];
   el.style.backgroundImage=`url("${escolhidas[Math.floor(Math.random()*escolhidas.length)]}")`;})();
@@ -4258,11 +4258,11 @@ function pintarInstalar(){
   // sem prompt do navegador: ensina o caminho manual, em vez de esconder o botão
   btn.style.display='none'; man.style.display='';
   if(ios){
-    est.innerHTML='No iPhone a instalação é manual — e aviso honesto: <b>o menu "Compartilhar → Fóton" não existe no iPhone</b>, é coisa do Android. No iPhone continue usando o botão <b>"Enviar foto da câmera"</b>.';
+    est.innerHTML='No iPhone a instalação é manual. E um aviso honesto: <b>o menu "Compartilhar → Fóton" não existe no iPhone</b>, é coisa do Android. No iPhone continue usando o botão <b>"Enviar foto da câmera"</b>.';
     p1.innerHTML='Toque no botão <b>Compartilhar</b> do Safari (o quadradinho com a seta para cima).';
     p2.innerHTML='Escolha <b>"Adicionar à Tela de Início"</b>.';
   }else{
-    est.innerHTML='Seu navegador não ofereceu o atalho agora — dá para instalar pelo menu dele.';
+    est.innerHTML='Seu navegador não ofereceu o atalho agora, mas dá para instalar pelo menu dele.';
     p1.innerHTML='Abra o menu do navegador (os <b>três pontinhos</b>, no canto).';
     p2.innerHTML='Toque em <b>"Instalar app"</b> ou <b>"Adicionar à tela inicial"</b>.';
   }
@@ -4296,7 +4296,7 @@ document.addEventListener('visibilitychange',()=>{
 /* carrega eventos persistidos do fotografo (sobrevive a sair/voltar) */
 loadEvents();
 /* Recarregar a pagina (ou o "puxar para atualizar" do celular) jogava de volta para a
-   tela inicial mesmo com a sessao valida — parecia que o app tinha deslogado sozinho.
+   tela inicial mesmo com a sessao valida, parecia que o app tinha deslogado sozinho.
    Se o token ainda vale, volta direto para o painel. */
 (async()=>{
   if(!LIVE || !tokenSalvo()) return;
@@ -4317,9 +4317,9 @@ else if(_params.get('compartilhado')) receberDoCompartilhamento(_params.get('com
 /* CONVIDADO, sem link nenhum na URL (ex.: abriu pelo icone da tela inicial).
    "Uma vez logado, sempre" (pedido do dono, 2026-08-30): sem isto, fechar o app e
    reabrir sempre caia na home pedindo o codigo de novo, mesmo com a selfie ja
-   registrada — o mesmo bug que ja tinha sido corrigido para a FOTOGRAFA (ver a
+   registrada, o mesmo bug que ja tinha sido corrigido para a FOTOGRAFA (ver a
    IIFE acima, "recarregar a pagina jogava de volta pra tela inicial"). So dispara
-   quando NAO ha sessao de fotografa para restaurar — uma conta nao pisa na tela
+   quando NAO ha sessao de fotografa para restaurar, uma conta nao pisa na tela
    da outra no mesmo aparelho. openGuest() confere sozinha se a sessao (24h) ainda
    vale; se o evento tiver sido apagado, ela avisa e limpa o marcador. */
 else if(!tokenSalvo()){

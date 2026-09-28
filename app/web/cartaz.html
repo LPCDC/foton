@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/ds/foton.css?v=5">
 <style>
   /* Cartaz A4 para a mesa da festa. Tema DIA de propósito: impressora entende papel
-     branco e tinta preta — fundo escuro gasta tinta e sai cinza. */
+     branco e tinta preta, fundo escuro gasta tinta e sai cinza. */
   @page { size: A4 portrait; margin: 12mm; }
   body { background: #E6E6E6; margin: 0; padding: 24px; font-family: var(--f-ui); }
   .folha {
@@ -73,7 +73,7 @@
 
   <div>
     <div class="qr-quadro"><img id="qr" alt="QR do evento"></div>
-    <div class="codigo" id="codigo">— — — —
+    <div class="codigo" id="codigo">· · · ·
       <small>ou entre em <b id="host">foton.app.br</b> e digite este código</small>
     </div>
   </div>
@@ -100,9 +100,9 @@
     /* `?evento=` e o parametro que o app le (index.html, _params) e o mesmo que o QR da
      tela usa. Com `?e=` o convidado caía no app SEM entrar no evento. */
     document.getElementById('qr').src = base + '/qr?data=' + encodeURIComponent(base + '/?evento=' + codigo);
-    document.title = 'Cartaz — ' + codigo;
+    document.title = 'Cartaz | ' + codigo;
   }
-  /* Assinatura. A logo vem de /conta/logo, que exige o login da fotografa — o cartaz
+  /* Assinatura. A logo vem de /conta/logo, que exige o login da fotografa, o cartaz
      abre em outra aba do MESMO site, entao o token do navegador vale aqui. Sem logo,
      fica o nome da marca; no modo festa, o endereco do Fóton e a linha livre. */
   var perfil = q.get('perfil') || 'pro', marcaTxt = q.get('m'), linhaTxt = q.get('linha');

@@ -350,5 +350,11 @@ checa("sem emoji no lugar da logo", "🖼️" in HTML, False)
 checa("a guia marca a aba certa ao abrir", "if(!btn) btn=document.querySelector(`.guia-tabs .tab[onclick*=" in HTML, True)
 
 print("")
+print("[17] sem travessao no app (regra permanente do dono, desde 11/08/2026)")
+for _arq in ("index.html", "cartaz.html", "ds/index.html", "manifest.webmanifest", "sw.js", "ds/foton.css"):
+    _t = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app", "web", _arq), encoding="utf-8").read()
+    checa(f"{_arq}: nenhum travessao nem meia-risca", _t.count("—") + _t.count("–"), 0)
+
+print("")
 print("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}")
 sys.exit(1 if FALHAS else 0)

@@ -1,7 +1,7 @@
-/* Fóton — service worker.
+/* Fóton, service worker.
 
    REGRA DE OURO (aprendida na marra): NUNCA cachear resposta de API.
-   A versão anterior tinha uma lista de rotas a excluir e ela tinha furos —
+   A versão anterior tinha uma lista de rotas a excluir e ela tinha furos,
    /me e /events acabaram cacheados, e o app mostrava os dados de OUTRA conta
    depois de trocar de login. Agora a lógica é invertida: só entra no cache o
    que está numa lista curta e explícita de arquivos estáticos. Qualquer coisa
@@ -15,7 +15,7 @@ const CACHE_SHARE = 'foton-compartilhado';
 const PREFIXO_SHARE = '/__compartilhado/';
 const VALIDADE_SHARE_MS = 60 * 60 * 1000;   // lote esquecido > 1h é lixo, some
 
-// única coisa que pode ser cacheada — a "casca" do app
+// única coisa que pode ser cacheada, a "casca" do app
 const CASCA = ['/', '/index.html', '/manifest.webmanifest',
                '/icons/icon-192.png', '/icons/icon-512.png'];
 
@@ -42,7 +42,7 @@ self.addEventListener('activate', e => {
    em /?compartilhado=<id> para enviá-las com a sessão da fotógrafa.
 
    Por que passar pelo cache e não mandar direto daqui: o upload precisa do token
-   da conta, que mora no localStorage — o service worker não enxerga localStorage. */
+   da conta, que mora no localStorage, o service worker não enxerga localStorage. */
 async function limparShareVelho(c) {
   const agora = Date.now();
   for (const req of await c.keys()) {
@@ -87,7 +87,7 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   const url = new URL(req.url);
 
-  // o alvo de compartilhamento vem antes de tudo — é o único POST que atendemos
+  // o alvo de compartilhamento vem antes de tudo, é o único POST que atendemos
   if (req.method === 'POST' && url.origin === self.location.origin &&
       url.pathname.replace(/\/+$/, '').endsWith('/compartilhar')) {
     e.respondWith(receberCompartilhadas(req));
