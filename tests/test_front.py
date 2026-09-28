@@ -264,7 +264,7 @@ checa("html declara tema e perfil", bool(re.search(r'<html[^>]*data-tema="[a-z]+
 checa("entrada usa as portas do sistema", HTML.count('class="porta') >= 3, True)
 checa("cada porta declara o resultado", HTML.count('class="porta__fim"') >= 3, True)
 checa("o reset de button nao mata componente do sistema",
-      bool(re.search(r'button:not\(\[class\*="porta"\]\)', HTML)), True)
+      bool(re.search(r'button:(where\()?:not\(\[class\*="porta"\]\)', HTML)), True)
 checa("fotos de demonstracao creditadas (licenca Creative Commons)",
       "assets/CREDITS.txt" in HTML, True)
 
@@ -330,6 +330,24 @@ checa("o painel do evento tem o roteiro da porta", 'class="roteiro"' in HTML, Tr
 checa("o botao dispara a camera da referencia", "getElementById('live-referencia').click()" in HTML, True)
 checa("a referencia sobe marcada como referencia", "fd.append('referencia','true')" in HTML, True)
 checa("sem rede, o app diz na hora (nao enfileira)", "a foto de referência precisa de internet" in HTML, True)
+
+print("")
+print("[16] painel no design system (ponte de tokens, 2026-09-28)")
+PONTE = HTML[HTML.find("PONTE DO DESIGN SYSTEM"):HTML.find("</style>")]
+checa("a ponte existe e fica depois do visual antigo", 0 < HTML.find("PONTE DO DESIGN SYSTEM") < HTML.find("</style>"), True)
+for tok in ("--accent:var(--marca)", "--grad:var(--marca)", "--r:0", "--r-sm:0", "--shadow:none",
+            "--serif:var(--f-display)", "--sans:var(--f-ui)", "--live:var(--alarme)"):
+    checa(f"token antigo aponta para o sistema: {tok}", tok in PONTE, True)
+checa("o botao principal usa a cor calculada para o ouro", "color:var(--sobre-marca)" in PONTE, True)
+checa("sem sombra difusa na ponte", re.search(r"box-shadow:\s*0 \d+px \d+px", PONTE) is None, True)
+# O reset com :not() somava (0,2,1) e vencia .btn.primary: o "Criar evento" ficou sem fundo.
+checa("reset de botao nao compete com as classes (usa :where)",
+      'button:where(:not([class*="porta"]):not([class*="botao"]))' in HTML, True)
+# .lb e a foto ampliada (fixa, tela cheia). Outro elemento com essa classe vira pelicula.
+checa("so a foto ampliada usa a classe lb", HTML.count('class="lb"'), 1)
+checa("o perfil chega ao sistema por html[data-perfil]", "document.documentElement.dataset.perfil = p" in HTML, True)
+checa("sem emoji no lugar da logo", "🖼️" in HTML, False)
+checa("a guia marca a aba certa ao abrir", "if(!btn) btn=document.querySelector(`.guia-tabs .tab[onclick*=" in HTML, True)
 
 print("")
 print("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}")

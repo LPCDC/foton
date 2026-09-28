@@ -29,8 +29,13 @@
 - [ ] **Matriz design system → app** (cada componente, onde aparece, estados) | plano 9
 - [ ] **Validação em celular real** (portão 4): o Claude emula 375 px; aparelho de verdade falta
 
+> **Decisão do dono, 2026-09-28:** o Higgsfield fica para os ajustes finais. O Claude
+> migra painel e site para o design system e gera as imagens pelo Higgsfield daqui do
+> chat, com a skill `build-awwwards-quality-sites`: "surpreender pela beleza, efeitos,
+> mas leveza". Direção de arte em `docs/DIRECAO-VISUAL.md`.
+
 ### Com o dono
-- [ ] **Visual final pelo Higgsfield** (decisão de 2026-09-23: "deixe o layout para o Higgsfield")
+- [ ] **Ajustes finais pelo Higgsfield** (depois do painel e do site no design system)
 - [ ] **Preço**: o dono propôs R$ 89,90 (§12 de CASAS.md); falta o preço do crédito para a casa e para a fotógrafa
 - [ ] Apagar pelo painel: conta GLAMON; conta de teste `carga-1790199346@teste.foton`
 

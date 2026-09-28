@@ -70,7 +70,10 @@ body{
 /* O reset nao vale para componentes do design system: `button` sem camada vencia o
    `.porta` de foton.css (@layer), e a porta saía sem borda nem cor. Excluir as classes
    do sistema aqui e o que permite o DS agir dentro do app antigo. */
-button:not([class*="porta"]):not([class*="botao"]){font-family:inherit;cursor:pointer;border:none;color:inherit;background:none}
+/* :where() zera a especificidade. Sem ele, os dois :not() somavam (0,2,1) e venciam
+   .btn.primary (0,2,0): de 2026-09-22 a 2026-09-28 o "Criar evento" ficou sem fundo e o
+   cartão da câmera sem borda (achado ao migrar o painel). */
+button:where(:not([class*="porta"]):not([class*="botao"])){font-family:inherit;cursor:pointer;border:none;color:inherit;background:none}
 input{font-family:inherit}
 ::selection{background:var(--accent);color:#180a06}
 
@@ -239,7 +242,10 @@ input{font-family:inherit}
   gap:10px;background:rgba(11,10,13,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
   margin:-26px -22px 16px;padding:12px 22px}
 .faixa-ev .cod{font-family:var(--mono);font-weight:600;font-size:20px;letter-spacing:.22em;color:var(--accent);padding-left:.22em}
-.faixa-ev .lb{font-size:13.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:2px}
+/* .rot, nao .lb: .lb e a foto ampliada (fixa, tela cheia). Com o mesmo nome, o rotulo virava
+   uma pelicula escura sobre a tela do evento assim que a faixa perdeu o backdrop-filter
+   (que prendia o fixo dentro dela). Latente desde 2026-08-28, achado em 2026-09-28. */
+.faixa-ev .rot{font-size:13.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:2px}
 .faixa-ev .ok{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;color:var(--ok)}
 .faixa-ev .ok i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:block;
   box-shadow:0 0 0 3px rgba(90,209,155,.18)}
@@ -653,6 +659,124 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 .qf-code{font-family:var(--mono);font-weight:600;font-size:34px;letter-spacing:.3em;color:#141018;padding-left:.3em}
 .qf-sub{font-size:16px;color:#5f574c;text-align:center;margin-top:-4px}
 .qrfull-acts{display:flex;gap:10px}
+
+/* ============================================================
+   PONTE DO DESIGN SYSTEM (painel no sistema, 2026-09-28, docs/DIRECAO-VISUAL.md)
+   Tudo acima é o visual antigo. Em vez de reescrever regra por regra (e arriscar o
+   comportamento de telas que funcionam), os tokens antigos passam a apontar para os do
+   sistema (ADR-0038) e cada componente antigo ganha a forma do sistema:
+     raio 0, ou 50% quando é círculo (pessoa, estado);
+     borda de 2px na estrutura, fio de 1px no dado denso;
+     sem sombra difusa, sem vidro fosco, ouro chapado no lugar do degradê.
+   Fica por último e sem camada: vence o antigo pela ordem, sem !important.
+   ============================================================ */
+:root{
+  --ink:var(--papel); --ink-2:var(--papel); --surface:var(--papel); --surface-2:var(--suave);
+  --line:var(--tinta); --line-soft:var(--fio);
+  --text:var(--tinta); --muted:var(--fio); --dim:var(--fio);
+  --accent:var(--marca); --accent-2:var(--marca); --accent-soft:transparent; --grad:var(--marca);
+  --live:var(--alarme); --ok:var(--marca);
+  --shadow:none; --shadow-sm:none; --r:0; --r-sm:0;
+  --serif:var(--f-display); --sans:var(--f-ui);
+}
+/* O perfil agora vive em html[data-perfil] (o sistema troca --marca sozinho). As classes
+   antigas no body continuam, mas não podem mais pintar outra cor por cima. */
+body.perfil-empresa,body.perfil-social{--accent:var(--marca);--accent-2:var(--marca);--accent-soft:transparent;--grad:var(--marca)}
+body{background:var(--papel)}
+
+/* Botões: o ouro é chapado e o texto usa a cor que o sistema calculou para ele. */
+.btn{border-radius:0;box-shadow:none;letter-spacing:.01em}
+.btn:active{transform:none}
+.btn.primary,.btn-camera,.chegou{background:var(--marca);color:var(--sobre-marca);border:2px solid var(--marca);box-shadow:none;filter:none}
+.btn.primary:hover,.btn.primary:active{background:var(--tinta);color:var(--papel);border-color:var(--tinta);filter:none}
+.btn.ghost{background:var(--papel);border:2px solid var(--tinta);color:var(--tinta)}
+.btn.ghost:hover,.btn.ghost:active{background:var(--tinta);color:var(--papel);border-color:var(--tinta)}
+.btn.sm,.btn.xs,.actions-row .btn{border-radius:0}
+.link{color:var(--tinta);text-decoration-color:var(--marca);text-decoration-thickness:2px}
+.link:hover{text-decoration-thickness:3px}
+.back{color:var(--tinta)}
+.title{font-weight:600}
+
+/* Blocos: estrutura é retângulo com borda de 2px; dica é superfície, sem borda. */
+.card,.stat,.evt,.evt-del,.camcard,.credit,.guia-app,.lead-box,.consent,.selfie-chip,.look-op,.cam{
+  border:2px solid var(--tinta);border-radius:0;box-shadow:none;background:var(--papel)}
+.tips{border:0;border-radius:0;background:var(--suave)}
+.tips > b{color:var(--tinta)}
+.evt:hover{transform:none;border-color:var(--tinta);background:var(--suave)}
+.evt:active,.camcard:active{transform:none;background:var(--suave)}
+.evt .thumb{border-radius:0}
+.evt .thumb .dotlive{background:transparent}
+.evt .thumb .dotlive::after{box-shadow:none}
+.evt-del:hover{color:var(--sobre-alarme);background:var(--alarme);border-color:var(--alarme)}
+.stat .n,.credit .num{font-weight:600}
+
+/* Campos: o campo do sistema (borda de 2px, foco no ouro). */
+.field label{letter-spacing:0;text-transform:none;color:var(--tinta)}
+.field input,.lead-box input{background:var(--papel);border:2px solid var(--tinta);border-radius:0;min-height:var(--alvo)}
+.field input:focus,.lead-box input:focus{border-color:var(--tinta);box-shadow:none;outline:3px solid var(--marca);outline-offset:2px}
+
+/* Estado é forma (sistema): cheio na cor do perfil = chegando; meio cheio = esperando;
+   vazado = sem sinal. A luz não pisca mais em verde, a gramática não tem verde. */
+.cc-luz,.srv i,.faixa-ev .ok i{background:transparent;border:2px solid var(--tinta);box-shadow:none}
+.camcard.viva .cc-luz,.srv.on i,.faixa-ev .ok i{background:var(--marca);border-color:var(--marca);box-shadow:none}
+.camcard.espera .cc-luz{background:linear-gradient(90deg,var(--flash) 50%,transparent 50%);box-shadow:none}
+.srv.off i,.faixa-ev .ok.off i{background:var(--alarme);border-color:var(--alarme);border-radius:0;box-shadow:none}
+.srv,.tag-btn,.pill{border-radius:0;background:transparent;border:1px solid var(--fio)}
+.livepill{border-color:var(--alarme);background:transparent}
+
+/* Faixa do evento: bloco chapado, sem vidro. */
+.faixa-ev{background:var(--papel);backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:2px solid var(--tinta)}
+
+/* Abrir a câmera: o gesto central. A lente é círculo (sistema: .lente). */
+.btn-camera{border-radius:0}
+.btn-camera .bc-lente{background:transparent;border:2px solid var(--sobre-marca)}
+.btn-camera .bc-lente svg{stroke:var(--sobre-marca)}
+
+/* QR: SEMPRE preto no branco (regra do sistema), sem recorte de ingresso nem sombra. */
+.ticket,.qrfull-card{background:#FFFFFF;border-radius:0;box-shadow:none;outline:2px solid var(--tinta)}
+.ticket::before,.ticket::after{content:none}
+.ticket canvas,.ticket img,.qrfull-card img{border-radius:0}
+.ticket .klbl,.ticket .codelbl,.qf-top,.qf-sub{color:#6B6B6B}
+.ticket .code,.qf-code{color:#000000}
+.code-btn{border-radius:0}
+.code-btn:hover{background:#F0F0F0}
+
+/* Abas: dois blocos retos, a ativa preenchida (como na galeria do convidado). */
+.tabs,.guia-tabs{gap:0;padding:0;border:2px solid var(--tinta);border-radius:0;background:var(--papel)}
+.tab{border-radius:0}
+.tab+.tab{border-left:2px solid var(--tinta)}
+.tab.on{background:var(--tinta);color:var(--papel);box-shadow:none}
+.tab:active{transform:none}
+
+.passo .n{border-radius:0;border:2px solid var(--tinta);background:transparent;color:var(--tinta)}
+.look-op.on{border-color:var(--marca);background:var(--papel);box-shadow:inset 0 0 0 2px var(--marca)}
+.look-op.on .look-nome{color:var(--tinta)}
+.look-am{border-radius:0}
+
+/* Fotos: retângulo sem raio. A chegada é a íris do sistema, não um salto com desfoque. */
+.ph{border-radius:0;border:0;animation:fade .3s both}
+.ph.nova{animation:iris .7s var(--ease) both}
+.ph.nova::before{border-radius:0;box-shadow:inset 0 0 0 3px var(--marca)}
+.ph .tag,.ph .noface{border-radius:0;backdrop-filter:none;-webkit-backdrop-filter:none}
+.ph .tag{background:#000000;color:#FFFFFF}
+.ph .noface{background:var(--flash);color:#000000}
+.ph .del{backdrop-filter:none;-webkit-backdrop-filter:none;background:#000000;border:2px solid #FFFFFF}
+.ph.sel{outline-color:var(--marca)}
+.ph.sel .marca-sel{background:var(--marca);border-color:var(--marca);color:var(--sobre-marca)}
+.empty{border-radius:0;border:2px dashed var(--fio)}
+.barra-sel{border-radius:0;border:2px solid var(--tinta);box-shadow:none;background:var(--papel)}
+.chegou{border-radius:0}
+
+/* Camadas por cima: aviso é bloco de tinta (sistema: .aviso), folha é retângulo. */
+.toast{border:0;border-radius:0;box-shadow:none;background:var(--tinta);color:var(--papel)}
+.sheet{background:rgba(0,0,0,.72);backdrop-filter:none;-webkit-backdrop-filter:none}
+.sheet .inner{border-radius:0;border:2px solid var(--tinta);border-bottom:0}
+.sheet .grab{border-radius:0}
+.prog{box-shadow:none;border-top:2px solid var(--tinta)}
+.bar,.bar i,.prog .bar,.prog .bar i{border-radius:0}
+.lb img{border-radius:0;box-shadow:none}
+.lb-nav,.lb-nsu{border-radius:0}
+.cam .frame{border-radius:50%}
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
 }
@@ -705,7 +829,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
           <a class="link" style="color:var(--dim);font-weight:500;text-decoration:none" href="assets/CREDITS.txt" target="_blank" rel="noopener">Fotos de demonstração: Openverse (Creative Commons)</a>
         </p>
         <p class="note" id="home-sair" style="margin-top:12px;display:none">
-          <button class="btn xs" style="display:inline-flex;background:#e3dfda;color:#2b2830;box-shadow:none" onclick="logout()">Sair da conta<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <button class="botao botao--texto" onclick="logout()">Sair da conta</button>
         </p>
       </div>
     </div>
@@ -828,7 +952,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
       <button class="link" onclick="abrirInstalar('dash')"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.8" width="11" height="18.4" rx="2"/><path d="M12 7.5v6.4m0 0l-2.4-2.4M12 13.9l2.4-2.4"/></svg> Instalar o Fóton no celular</button>
     </p>
     <p class="note" style="margin-top:6px"><button class="link" onclick="abrirConta()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="12" r="4"/><path d="M12 12h9m-2.6 0v3.1m-2.6-3.1v2.2"/></svg> Minha conta e senha</button></p>
-    <p class="note" style="margin-top:14px"><button class="btn xs" style="display:inline-flex;background:#e3dfda;color:#2b2830;box-shadow:none" onclick="logout()">Sair da conta<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></p>
+    <p class="note" style="margin-top:14px"><button class="botao botao--texto" onclick="logout()">Sair da conta</button></p>
   </section>
 
   <!-- ================= INSTALAR O APP ================= -->
@@ -968,9 +1092,9 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
         <input id="ev-brand" placeholder="Ex.: Patrícia Vargas Fotografia" maxlength="40">
         <p class="small" style="color:var(--dim);font-size:15px;margin-top:7px">Aparece como marca d'água nas fotos. Em branco, usamos “FÓTON”.</p>
         <div id="logo-box" style="margin-top:14px;display:flex;align-items:center;gap:14px">
-          <div id="logo-preview" style="width:56px;height:56px;border-radius:12px;border:1px dashed var(--line);
+          <div id="logo-preview" style="width:56px;height:56px;border:2px dashed var(--fio);
             display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;background:var(--surface-2)">
-            <span style="font-size:24px">🖼️</span>
+            <span style="font-size:13px;color:var(--fio)">logo</span>
           </div>
           <div style="flex:1">
             <label class="link" style="cursor:pointer" for="logo-file">Enviar logo em PNG (com fundo transparente)</label>
@@ -991,7 +1115,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
   <!-- ================= EVENT LIVE ================= -->
   <section class="screen" id="s-event">
     <div class="faixa-ev">
-      <div><span class="lb">Código do evento</span><button class="cod" id="faixa-cod" onclick="copiarCodigo()" style="background:none;border:none;padding:0">— — — —</button></div>
+      <div><span class="rot">Código do evento</span><button class="cod" id="faixa-cod" onclick="copiarCodigo()" style="background:none;border:none;padding:0">— — — —</button></div>
       <div class="ok" id="faixa-ok"><i></i><span>recebendo</span></div>
     </div>
     <button class="back" onclick="stopEvent();go('dash')">←&nbsp; encerrar e voltar</button>
@@ -1044,7 +1168,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
     <div class="ticket">
       <span class="klbl">Convidado · aponte a câmera</span>
       <canvas id="qr" width="176" height="176"></canvas>
-      <img id="qr-img" width="176" height="176" alt="QR do evento" style="display:none;border-radius:10px">
+      <img id="qr-img" width="176" height="176" alt="QR do evento" style="display:none">
       <button class="code code-btn" id="ev-code" onclick="copiarCodigo()" title="Tocar para copiar">— — — —</button>
       <span class="codelbl">toque no código para copiar</span>
     </div>
@@ -1309,7 +1433,7 @@ body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 <!-- LEITOR DE QR do convidado -->
 <div class="qrfull" id="scanner" onclick="if(event.target===this)fecharScanner()">
   <div class="qrfull-card" style="padding:14px;background:#000">
-    <video id="scan-video" playsinline muted style="width:min(78vw,320px);height:min(78vw,320px);object-fit:cover;border-radius:14px;background:#111"></video>
+    <video id="scan-video" playsinline muted style="width:min(78vw,320px);height:min(78vw,320px);object-fit:cover;background:#111"></video>
   </div>
   <div class="qf-top" style="color:var(--muted)">Aponte para o QR do fotógrafo</div>
   <div class="qrfull-acts"><button class="btn ghost" onclick="fecharScanner()">Fechar</button></div>
@@ -1506,8 +1630,8 @@ function armarVoltar(){ try{ history.pushState({foton:1},''); }catch(e){} }
     if(ind) return ind;
     ind=document.createElement('div');
     ind.style.cssText='position:fixed;left:50%;top:0;transform:translate(-50%,-100%);z-index:200;'
-      +'padding:9px 16px;border-radius:999px;background:var(--ink-2,#1a1420);color:var(--text,#fff);'
-      +'font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.4);pointer-events:none;'
+      +'padding:9px 16px;background:var(--tinta,#fff);color:var(--papel,#000);'
+      +'font-size:14px;font-weight:600;pointer-events:none;'
       +'white-space:nowrap;opacity:0';
     document.body.appendChild(ind); return ind;
   }
@@ -1822,6 +1946,7 @@ function aplicarPerfil(){
   const p=PERFIL(), v=VOCAB[p];
   document.body.classList.remove('perfil-empresa','perfil-social');
   if(p!=='pro') document.body.classList.add('perfil-'+p);
+  document.documentElement.dataset.perfil = p;   // o design system pinta --marca por aqui
   document.querySelectorAll('[data-voc]').forEach(el=>{
     const t=v[el.dataset.voc]; if(t!==undefined) el.textContent=t;
   });
@@ -1965,7 +2090,7 @@ function atualizarLogoPreview(){
     if(rm)rm.style.display='';
     if(st)st.textContent='Logo cadastrada — está sendo usada nas fotos no lugar do texto.';
   }else{
-    box.innerHTML='<span style="font-size:24px">🖼️</span>';
+    box.innerHTML='<span style="font-size:13px;color:var(--fio)">logo</span>';
     if(rm)rm.style.display='none';
     if(st)st.textContent="Se enviar, a logo substitui o texto acima nas fotos.";
   }
@@ -3331,7 +3456,7 @@ function pelaSheet(atual, legenda, aoEscolher){
     +'display:flex;align-items:flex-end;justify-content:center';
   const cx=document.createElement('div');
   cx.style.cssText='background:var(--ink-2,#151019);width:100%;max-width:520px;'
-    +'border-radius:20px 20px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));'
+    +'border:2px solid var(--tinta);border-bottom:0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));'
     +'max-height:86vh;overflow:auto';
   cx.innerHTML='<div style="font-weight:600;font-size:18px;margin-bottom:4px">Pele da tela</div>'
     +'<p class="note" style="text-align:left;margin:0 0 14px">'+String(legenda).replace(/[<>]/g,'')
@@ -3435,7 +3560,7 @@ function admExcluirConta(btn, email, eventos, fotos, convidados){
   if(aberto){ aberto.remove(); return; }            // segundo clique no botao fecha
   const box=document.createElement('div');
   box.className='adm-excluir';
-  box.style.cssText='margin-top:10px;padding:12px 14px;border:1px solid var(--live);border-radius:10px';
+  box.style.cssText='margin-top:10px;padding:12px 14px;border:2px solid var(--alarme)';
   const p=document.createElement('p');
   p.style.cssText='margin:0 0 10px;font-size:15px;line-height:1.45';
   p.append('Apaga para sempre a conta ');
@@ -4016,6 +4141,9 @@ const GUIAS={
 function guiaMarca(m,btn){
   if(_pollCam){clearInterval(_pollCam);_pollCam=null;}
   document.querySelectorAll('.guia-tabs .tab').forEach(b=>b.classList.remove('on'));
+  // Sem botao (a abertura chama guiaMarca('canon')), a aba certa e achada pela marca: antes
+  // o conteudo era o da Canon e nenhuma aba aparecia marcada.
+  if(!btn) btn=document.querySelector(`.guia-tabs .tab[onclick*="'${m}'"]`);
   if(btn)btn.classList.add('on');
   const g=GUIAS[m];
   document.getElementById('guia-conteudo').innerHTML=
