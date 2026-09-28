@@ -984,3 +984,39 @@ existiam quando ele fez a selfie, 0,0 s depois da selfie.
 **O que estes números NÃO dizem:** nada sobre 4G, câmera de verdade, a VM (foi o PC) ou a
 espera humana (os 36 a 69 s "no celular até entrar no Fóton" são o tempo do meu script). A
 amostra com câmera e celular reais sai do ensaio de mesa (P2).
+
+## Ensaio simulado do P2: o relatório contra dados no formato do ensaio de mesa | 2026-09-28
+
+**Verifica a análise, não o produto.** Nenhum servidor, câmera ou celular: o script
+`tests/ensaio_simulado_p2.py` monta o export que o painel daria num ensaio de mesa, com a
+verdade de cada disparo guardada, e confere o que `tests/relatorio_evento.py` conclui.
+Cenário fixo, sem sorteio: câmera 12,4 s adiantada; celular da fotógrafa 0,8 s atrasado;
+foto do relógio IMG_0201 e 20 fotos (IMG_0202 a IMG_0221); IMG_0209 perdida no meio e
+IMG_0221 no fim; 3 lotes pelo Compartilhar com IMG_0212 e IMG_0213 reenviadas; 5
+convidados, um com a tela apagada, um com a selfie no fim. A data do arquivo (T1) em
+quatro variantes, porque é UNKNOWN o que o Android passa pelo Compartilhar, e uma variante
+em que o nome IMG_xxxx some.
+
+**Antes (relatório de `8b32a63`), o que ele errava sem avisar:**
+
+| Variante | Erro |
+|---|---|
+| T1 = hora do toque em Compartilhar | aceito como bom; câmera → celular errado em +1,5 a +107,0 s |
+| T1 = hora em que o app remontou o arquivo | só 2 de 18 marcados suspeitos; câmera → celular errado em +5,5 a +111,0 s |
+| T1 = relógio da câmera (EXIF copiado) | aceito; câmera → celular = o desvio da câmera, 12,4 s constante |
+| perda no fim da sequência (IMG_0221) | invisível: 1 perda de 2 |
+| nome do arquivo trocado (sem IMG_xxxx) | "0 perdas" em vez de UNKNOWN |
+| lotes | não apareciam; `--relogio` só aceitava o photo_id, e a folha anota o número do arquivo |
+
+**Depois (este commit), com o que a folha de campo anota** (`--relogio IMG_0201=...`,
+`--disparos 201-221`, `--galeria IMG_xxxx=...`): nas quatro variantes com o nome do arquivo, desvio achado +12,40 s,
+T0 com erro 0,00 s, T1 suspeito em 18 de 18 nas três variantes falsas e em 0 de 18 na
+honesta (suspeito não entra no trecho câmera → celular), perdas 2 de 2 com os números, lotes
+3 de 3 (8, 9 e 2 fotos), critério #4 igual à verdade (103,5 s em 34 entregas). Sem o nome
+do arquivo: perdas **UNKNOWN**, a foto do relógio não é achada pelo número (aviso no topo
+do relatório) e o critério diz "T0 calibrado: não". Travado no `test_relatorio` [5].
+
+**Os números de tempo são do cenário, não do mundo.** O 103,5 s do critério #4 sai de lotes
+a cada 2 minutos, escolhidos por mim. O que ele mostra é uma dedução, não uma medida: com
+envio em lotes, o disparo até a galeria fica maior que o intervalo entre lotes. O P2 mede o
+intervalo real.

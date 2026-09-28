@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fóton | P2 folha de campo</title>
+<!-- Folha de campo do P2 (ensaio de mesa, docs/PILOTO-1.md). Uma página A4, preenchida a
+     caneta. Cada campo alimenta uma pergunta do P2 ou um número que o relatório
+     (tests/relatorio_evento.py) não tem como achar sozinho. -->
+<style>
+  @page { size: A4; margin: 9mm 10mm; }
+  :root { --tinta: #000; --fraco: #555; --linha: #999; }
+  * { box-sizing: border-box; }
+  html { background: #fff; }
+  body { margin: 0 auto; max-width: 190mm; padding: 12px 16px; color: var(--tinta); background: #fff;
+         font: 8.6pt/1.3 "Segoe UI", Roboto, Arial, sans-serif; }
+  @media print { body { padding: 0; } }
+  h1 { font-size: 13pt; margin: 0; letter-spacing: -.01em; }
+  h2 { font-size: 9pt; margin: 7px 0 3px; padding: 2px 5px; background: #000; color: #fff;
+       -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .topo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap;
+          border-bottom: 2px solid #000; padding-bottom: 3px; }
+  .regra { margin: 4px 0 0; font-weight: 600; }
+  .campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2px 12px; margin-top: 4px; }
+  .c { display: flex; gap: 4px; align-items: flex-end; white-space: nowrap; }
+  .c span { flex: 1; border-bottom: 1px solid var(--linha); min-width: 30px; height: 1.2em; }
+  ul.ck { list-style: none; margin: 0; padding: 0; }
+  ul.ck li { padding-left: 15px; position: relative; margin: 1.5px 0; }
+  ul.ck li::before { content: ""; position: absolute; left: 0; top: .22em; width: 8px; height: 8px; border: 1.2px solid #000; }
+  table { width: 100%; border-collapse: collapse; margin-top: 2px; }
+  th, td { border: 1px solid var(--linha); padding: 1px 4px; text-align: left; vertical-align: top; }
+  th { font-weight: 600; background: #eee; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  td { height: 15px; }
+  .n { color: var(--fraco); width: 22px; }
+  .op { white-space: nowrap; }
+  .dica { color: var(--fraco); font-size: 7.6pt; }
+  .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  @media (max-width: 560px) { .duas { grid-template-columns: 1fr; } body { font-size: 10pt; } }
+  .livre td { height: 17px; }
+</style>
+</head>
+<body>
+
+<div class="topo">
+  <h1>Fóton | P2, ensaio de mesa | folha de campo</h1>
+  <span class="dica">roteiro completo: docs/PILOTO-1.md</span>
+</div>
+<p class="regra">Regra: não corrigir nada durante o ensaio. Travou? Anote o gesto, a hora, o erro e o contorno, e siga.</p>
+
+<div class="campos">
+  <div class="c">data <span></span></div>
+  <div class="c">hora início <span></span></div>
+  <div class="c">código do evento <span></span></div>
+  <div class="c">câmera (modelo) <span></span></div>
+  <div class="c">celular / Android <span></span></div>
+  <div class="c">rede: Wi-Fi / 4G <span></span></div>
+</div>
+
+<h2>1 · Antes de fotografar</h2>
+<ul class="ck">
+  <li>Painel: evento criado e aberto. Tempo para criar e mostrar o QR, sozinho: ______ s</li>
+  <li>Relógio de calibração aberto no 2º aparelho (painel → "Ensaio: medir o caminho da foto") e mostrando "hora do servidor", não "sem conexão"</li>
+  <li>Relógio fotografado pela câmera, números nítidos. <b>Nº do arquivo dessa foto:</b> IMG_______ <span class="dica">(ela vai para o Fóton junto com as outras)</span></li>
+  <li>Camera Connect: "Enviar para smartphone após o disparo" ligado? sim / não / não existe nesta câmera. Tamanho enviado: original / redimensionado</li>
+</ul>
+
+<h2>2 · Convidados (3 a 5): QR → selfie → galeria aberta e tela acesa até o fim</h2>
+<table>
+  <tr><th class="n">#</th><th>aparelho</th><th>abriu sem aviso de "site perigoso"?</th><th>selfie aceita na 1ª?</th><th>tempo QR → selfie pronta</th><th>1ª foto apareceu?</th></tr>
+  <tr><td class="n">1</td><td></td><td class="op">sim / não</td><td class="op">sim / não</td><td></td><td class="op">sim / não</td></tr>
+  <tr><td class="n">2</td><td></td><td class="op">sim / não</td><td class="op">sim / não</td><td></td><td class="op">sim / não</td></tr>
+  <tr><td class="n">3</td><td></td><td class="op">sim / não</td><td class="op">sim / não</td><td></td><td class="op">sim / não</td></tr>
+  <tr><td class="n">4</td><td></td><td class="op">sim / não</td><td class="op">sim / não</td><td></td><td class="op">sim / não</td></tr>
+  <tr><td class="n">5</td><td></td><td class="op">sim / não</td><td class="op">sim / não</td><td></td><td class="op">sim / não</td></tr>
+</table>
+
+<h2>3 · A ponte: câmera → celular → Compartilhar → Fóton (~20 fotos, rajada e espaçadas)</h2>
+<div class="duas">
+  <ul class="ck">
+    <li>O Fóton aparece no menu Compartilhar? sim / não / só depois de reinstalar</li>
+    <li>A galeria seleciona arrastando o dedo? sim / não. Toques para marcar 20: _____</li>
+  </ul>
+  <ul class="ck">
+    <li>Nº do primeiro arquivo da sessão: IMG_______</li>
+    <li>Como mandou: um lote / vários lotes / uma a uma</li>
+  </ul>
+</div>
+<table>
+  <tr><th class="n">lote</th><th>hora (relógio)</th><th>quantas fotos</th><th>quantos toques do "selecionar" até o Fóton</th><th>travou onde? contorno?</th></tr>
+  <tr><td class="n">1</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="n">2</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="n">3</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="n">4</td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<h2>4 · Validar o T1 (3 ou 4 fotos): quando a foto apareceu na galeria do CELULAR</h2>
+<p class="dica" style="margin:0 0 2px">Uma segunda pessoa olha a galeria do celular com o relógio de calibração ao lado e anota a hora (com décimo) em que a miniatura surgiu. O relatório compara com a data do arquivo.</p>
+<table>
+  <tr><th>nº do arquivo</th><th>hora em que apareceu na galeria do celular</th><th>nº do arquivo</th><th>hora em que apareceu na galeria do celular</th></tr>
+  <tr><td>IMG_</td><td></td><td>IMG_</td><td></td></tr>
+  <tr><td>IMG_</td><td></td><td>IMG_</td><td></td></tr>
+</table>
+
+<h2>5 · No fim</h2>
+<div class="duas">
+  <ul class="ck">
+    <li>Nº do último arquivo: IMG_______ · a câmera contou _____ disparos</li>
+    <li>O painel mostra _____ fotos no evento</li>
+    <li>Foto de uma pessoa na galeria de outra? não / sim: quantas ___ , em quem ___</li>
+    <li>Alguém tocou em "Não sou eu"? não / sim: quem ___</li>
+  </ul>
+  <ul class="ck">
+    <li>Painel → "Exportar medidas (JSON)" · arquivo foton-medidas-______.json</li>
+    <li>Mandar ao Claude: o JSON, esta folha (foto) e a foto do relógio como a câmera gravou</li>
+    <li>Não apagar o evento antes de o Claude confirmar que o JSON abriu</li>
+    <li>Convidados: voltaram à galeria? baixaram? pediram ajuda? ______________</li>
+  </ul>
+</div>
+
+<h2>6 · A pergunta do P2</h2>
+<p style="margin:2px 0">Deu para mandar ~20 fotos para o Fóton <b>sem pensar no Fóton</b>? &nbsp; sim &nbsp;/&nbsp; com esforço &nbsp;/&nbsp; não</p>
+<p style="margin:2px 0">Se não, quebrou em: &nbsp; seleção na galeria &nbsp;/&nbsp; menu Compartilhar &nbsp;/&nbsp; Camera Connect &nbsp;/&nbsp; transferência câmera → celular &nbsp;/&nbsp; envio ao Fóton &nbsp;/&nbsp; outro: ________</p>
+
+<h2>7 · Ocorrências (o que aconteceu, em ordem)</h2>
+<table class="livre">
+  <tr><th style="width:62px">hora</th><th>o que aconteceu</th><th style="width:34%">contorno usado</th></tr>
+  <tr><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td></tr>
+</table>
+
+</body>
+</html>

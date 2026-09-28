@@ -117,5 +117,35 @@ checa("o criterio fala da galeria, nao do 'celular'", "aparecer na galeria" in m
 checa("o relatorio diz o que e UNKNOWN", "UNKNOWN" in md and "não observado" in md, True)
 checa("o relatorio nao tem travessao", chr(0x2014) in md or chr(0x2013) in md, False)
 
+print("\n[5] o jeito do P2: lotes pelo Compartilhar, data do arquivo e nome que o Android pode nao passar")
+# Cenarios com verdade conhecida de tests/ensaio_simulado_p2.py (20 fotos, 3 lotes, 2 perdidas)
+import ensaio_simulado_p2 as P
+def _s(modo, sem_nome=False):
+    e, v = P.cenario(modo, sem_nome)
+    d = R.calibra(e, {"p201": "20:00:05.3"}); ls = R.cadeia(e, d, {"p201"})
+    return e, ls, R.resumo(e, ls)
+for modo in ("carimbo", "agora", "exif"):
+    _e, _l, _S = _s(modo)
+    checa(f"T1 '{modo}' marcado suspeito em todas as fotos", _S["t1_suspeito"], _S["fotos"])
+    checa(f"e T1 suspeito nao vira trecho camera -> celular ('{modo}')",
+          [l["trechos"]["camera_celular"] for l in _l if l["trechos"]["camera_celular"] is not None], [])
+_e, _l, _S = _s("honesto")
+checa("T1 honesto continua aceito (nenhum falso suspeito)", _S["t1_suspeito"], 0)
+checa("lotes achados pela entrada no app", [x["n"] for x in _S["lotes"]], [8, 9, 2])
+checa("lote conta a via", _S["lotes"][0]["via"], {"compartilhar": 8})
+checa("--relogio aceita o numero do arquivo da folha", R.calibra(_e, {"IMG_0201": "20:00:05.3"}).keys() == {"Canon EOS R8"}, True)
+checa("chave de relogio com o numero vira o photo_id", R.chaves_relogio(_e, {"IMG_0201": "x", "p205": "y"}), {"p201": "x", "p205": "y"})
+checa("perdas com primeiro e ultimo da folha acham a do fim", R.perdas(_e["fotos"], (201, 221)), (2, [209, 221]))
+checa("sem a folha, so o buraco do meio", R.perdas(_e["fotos"]), (1, [209]))
+_e2, _l2, _S2 = _s("honesto", sem_nome=True)
+checa("sem nome IMG_xxxx, perdas e UNKNOWN (nunca zero)", _S2["perdas_provaveis"], None)
+_g = R.confere_galeria(_e, _l, {"IMG_0205": "20:01:15.15", "IMG_0210": "20:02:40.0"})
+checa("T1 conferido pela hora anotada na galeria do celular", [(g["seq"], round(g["dif"], 1)) for g in _g], [(205, 0.0), (210, -7.0)])
+_md = R.markdown(_e, _l, R.resumo(_e, _l, (201, 221)), _g)
+checa("o relatorio mostra os lotes", "## Lotes" in _md, True)
+checa("o relatorio lista quais arquivos faltam", "IMG_0209" in _md and "IMG_0221" in _md, True)
+checa("o relatorio mostra a conferencia do T1", "## T1 conferido" in _md, True)
+checa("sem travessao no relatorio novo", chr(0x2014) in _md or chr(0x2013) in _md, False)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

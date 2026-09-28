@@ -60,12 +60,60 @@ o tempo, o erro e o contorno usado. Mudar o produto só depois, com o registro n
 4. Fotografar ~20 fotos (rajada e espaçadas), passar pelo Camera Connect e compartilhar
    para o Fóton. Anotar **como** fez (um lote, vários, uma a uma).
 5. Anotar o **número do último arquivo** da câmera (perdas = buracos na sequência).
-6. No fim: **"Exportar medidas (JSON)"** e mandar o arquivo e a foto do relógio para o
-   relatório (`tests/relatorio_evento.py`).
+6. No fim: **"Exportar medidas (JSON)"** e mandar o arquivo, a foto do relógio e a folha de
+   campo preenchida. O relatório roda com o que a folha anota:
+   `python tests/relatorio_evento.py <json> --relogio IMG_0201=HH:MM:SS.d --disparos 201-221 --galeria IMG_0205=HH:MM:SS.d`
 7. **Validar o T1:** comparar, em 3 ou 4 fotos, a data do arquivo com a hora em que a foto
    apareceu na galeria do celular (cronômetro ou gravação de tela). Se o relatório marcar T1
    **suspeito**, o Android não passou a data do arquivo pelo
    Compartilhar: o trecho câmera → celular fica UNKNOWN nesse caminho.
+
+### Preparação do P2 (2026-09-28)
+- **Folha de campo** de uma página: `docs/P2-FOLHA-DE-CAMPO.html` (imprimir em A4). Cada
+  campo alimenta uma pergunta do P2 ou um número que o export não tem.
+- **Ensaio simulado** (`tests/ensaio_simulado_p2.py`, resultado em `docs/BENCHMARKS.md`):
+  o relatório foi posto contra exports no formato do P2, com verdade conhecida, e errava
+  sem avisar em quatro pontos, agora corrigidos e travados no `test_relatorio` [5]: T1 falso
+  aceito (três jeitos de o Android datar o arquivo), perda no fim da sequência invisível,
+  "0 perdas" quando o nome do arquivo some, lotes ausentes.
+- **DEDUÇÃO a olhar no P2 (não é medida):** mandando em lotes, o disparo até a galeria
+  fica maior que o intervalo entre um lote e outro. Lotes de 2 em 2 minutos dão um P95 em
+  torno de 100 s na simulação, e o critério #4 (30 s) cai. O que o P2 mede é o intervalo
+  que a fotógrafa usa de fato; decidir o que fazer com isso só depois do número.
+
+### Antes do P2: o que o dono confere em produção
+**Já conferido pelo Claude (2026-09-28, 19:52, sem conta):** `/health` ok, versão `9cd7d05`,
+motor carregado · `/agora` responde · `relogio.html` 200 · manifest com o alvo de
+compartilhamento (`fotos`, `image/*`) · `/medidas` sem login dá 401.
+
+**Na véspera, no Android do ensaio (uns 15 min):**
+1. `app.foton.app.br` abre no Chrome **sem aviso de "site perigoso"** (B1). Repetir num
+   segundo celular, de preferência de outra marca ou um iPhone.
+2. Fóton **instalado** a partir de `app.foton.app.br`. Se houver um instalado do endereço
+   antigo (`getfoton.duckdns.org`), desinstalar antes: o Compartilhar pertence ao endereço
+   de onde o app foi instalado.
+3. Conta aberta no app instalado (a senha, você mesmo digita).
+4. **Prova do Compartilhar num evento-demonstração** (o de 1 hora, que se apaga sozinho):
+   abrir o evento-demonstração, compartilhar 3 fotos da câmera pela galeria, conferir que
+   entraram, **"Exportar medidas (JSON)"** e me mandar. Esse JSON responde, antes do
+   ensaio: o nome `IMG_xxxx` chega? a data do arquivo chega? a via é `compartilhar`?
+5. Eventos antigos "ao vivo" da conta encerrados: o Compartilhar manda para o **último
+   evento aberto**, e evento esquecido aberto é foto no lugar errado.
+6. Câmera: **data de hoje** e hora mais ou menos certa (a foto do relógio corrige os
+   segundos, não o dia). Camera Connect pareado; anotar se há "envio automático após o
+   disparo".
+7. Data e hora **automáticas** no celular.
+
+**No dia, antes da primeira foto:**
+8. Criar o evento do ensaio e **abri-lo por último** no celular (é para ele que o
+   Compartilhar vai mandar).
+9. Relógio de calibração aberto no segundo aparelho mostrando "hora do servidor · ± N ms",
+   com N abaixo de 150 (acima, recarregar).
+10. Celular na rede que o evento teria (4G, Wi-Fi desligado), e anotar na folha.
+11. Os 3 a 5 convidados sabem que é teste e que o evento é apagado depois da análise;
+    tempo de tela apagada deles em 10 min ou mais.
+12. Folha de campo impressa, caneta, cartaz ou QR na tela.
+13. Pendente de antes: confirmar que o e-mail de teste do UptimeRobot chegou (B5).
 
 ### O que se mede, por trecho (servidor rápido ≠ produto rápido)
 | Trecho | Como | Automático? |

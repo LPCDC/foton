@@ -1,16 +1,23 @@
 """Relatório da cadeia por trecho de um evento (ADR-0046).
 
-    python tests/relatorio_evento.py foton-medidas-XXXX.json --relogio FOTO_ID=14:00:37.5
+    python tests/relatorio_evento.py foton-medidas-XXXX.json --relogio IMG_0201=14:00:37.5 \
+        [--disparos 201-221] [--galeria IMG_0205=14:01:15.2 --galeria IMG_0210=...]
 
 O JSON sai do painel do evento ("Exportar medidas"). `--relogio` diz, para a foto do
-relógio de calibração, que hora a TELA mostrava na foto (lida por quem roda o relatório).
-Com isso, o desvio do relógio de cada câmera sai da conta; sem isso, T0 fica como proxy
-sem calibração.
+relógio de calibração, que hora a TELA mostrava na foto (lida por quem roda o relatório);
+a foto vai pelo número do arquivo (o que a folha de campo anota) ou pelo photo_id. Com
+isso, o desvio do relógio de cada câmera sai da conta; sem isso, T0 fica como proxy sem
+calibração. `--disparos` é o primeiro e o último arquivo da folha de campo (acha perda no
+fim da sequência, que o buraco no meio não mostra). `--galeria` é a hora, no relógio de
+calibração, em que a foto apareceu na galeria do celular: confere o T1 (P2).
 
 O que cada horário é, e o relatório escreve isso ao lado de cada número:
   T0  disparo: EXIF da câmera. PROXY, nunca verdade; corrigido pela foto do relógio.
-  T1  foto no celular: data do arquivo. PROXY; se igual à hora do envio, SUSPEITO
-      (o navegador não sabia a data e usou a hora da escolha).
+  T1  foto no celular: data do arquivo. PROXY. SUSPEITO quando a data não pode ser a da
+      chegada: igual à hora do envio ou da entrada no app (o navegador não sabia a data),
+      igual para o lote inteiro com disparos espalhados (é a hora do Compartilhar) ou
+      igual ao relógio da câmera no lote inteiro (o Android copiou o EXIF). T1 suspeito
+      não vira trecho câmera -> celular.
   T2  envio começa: relógio do celular, levado ao do servidor por /agora.
   T3  Fóton recebe, T4 pronta: relógio do servidor. MEDIDO.
   T5  apareceu na tela do convidado: relógio do celular dele, levado ao do servidor.
@@ -52,11 +59,26 @@ def _exif_epoch(t0):
     return base + (float(frac) if frac else 0.0)
 
 
+def chaves_relogio(export, leituras):
+    """Leituras por photo_id. Aceita o número do arquivo da folha (IMG_0201, 0201, 201),
+    procurado no seq; o que não achar fica como veio."""
+    fotos = export.get("fotos", [])
+    ids = {f["photo_id"] for f in fotos}
+    out = {}
+    for k, v in (leituras or {}).items():
+        if k not in ids:
+            m = re.search(r"(\d+)\D*$", k)
+            achou = [f["photo_id"] for f in fotos if m and f.get("seq") == int(m.group(1))]
+            if len(achou) == 1: k = achou[0]
+        out[k] = v
+    return out
+
+
 def calibra(export, leituras):
     """{camera: desvio_s}, desvio = relógio da câmera - hora real mostrada na tela."""
     por_id = {f["photo_id"]: f for f in export.get("fotos", [])}
     out = {}
-    for pid, lido in (leituras or {}).items():
+    for pid, lido in chaves_relogio(export, leituras).items():
         f, m = por_id.get(pid), _RE_LEITURA.match((lido or "").strip())
         t_cam = _exif_epoch((f or {}).get("t0_exif"))
         if not (f and m and t_cam is not None and f.get("camera")): continue
@@ -71,8 +93,51 @@ def _d(a, b):
     return None if a is None or b is None else a - b
 
 
+def lotes(fotos, folga=2.0):
+    """Lotes = fotos que entraram no app juntas (t_app a menos de `folga` s uma da outra).
+    Cada lote do Compartilhar ou da galeria grava todas as fotos na fila de uma vez."""
+    com = sorted((f for f in fotos if f.get("t_app") is not None), key=lambda f: f["t_app"])
+    out = []
+    for f in com:
+        if out and f["t_app"] - out[-1][-1]["t_app"] <= folga: out[-1].append(f)
+        else: out.append([f])
+    return out
+
+
+def _t1_suspeitos(fotos):
+    """{photo_id: motivo} para a data do arquivo que não pode ser a chegada ao celular."""
+    out = {}
+    for f in fotos:
+        t1, ta, t2 = f.get("t1_arquivo"), f.get("t_app"), f.get("t2_envio")
+        if t1 is None: continue
+        if (t2 is not None and abs(t2 - t1) < 1) or (ta is not None and t1 >= ta - 1):
+            out[f["photo_id"]] = "data do arquivo = hora em que o app leu a foto"
+    # O jeito de datar o arquivo é do aparelho, não do lote: um lote de 3 ou mais prova o
+    # padrão; lote menor só é marcado se o padrão já foi provado e ele não o contradiz.
+    CARIMBO, EXIF = "mesma data no lote inteiro (hora do Compartilhar)", "data do arquivo = relógio da câmera (EXIF)"
+    grupos, provado = [], set()
+    for lote in lotes(fotos):
+        par = [(f, f.get("t1_arquivo"), _exif_epoch(f.get("t0_exif"))) for f in lote]
+        par = [(f, t1, t0) for f, t1, t0 in par if t1 is not None and t0 is not None]
+        if not par: continue
+        t1s, t0s, difs = [p[1] for p in par], [p[2] for p in par], [p[1] - p[2] for p in par]
+        cabe = {CARIMBO: max(t1s) - min(t1s) <= 1,
+                EXIF: max(difs) - min(difs) <= 1 and max(abs(d) for d in difs) <= 2}
+        if len(par) >= 3:
+            if cabe[CARIMBO] and max(t0s) - min(t0s) >= 10: provado.add(CARIMBO)
+            elif cabe[EXIF]: provado.add(EXIF)
+        grupos.append((par, cabe, len(par) >= 3 and max(t0s) - min(t0s) >= 10))
+    for par, cabe, espalhado in grupos:
+        motivo = next((m for m in (CARIMBO, EXIF) if m in provado and cabe[m]
+                       and (m != CARIMBO or espalhado or len(par) < 3)), None)
+        if motivo:
+            for f, _, _ in par: out.setdefault(f["photo_id"], motivo)
+    return out
+
+
 def cadeia(export, desvios, relogios=()):
     selfie = {c["c"]: c.get("t_selfie") for c in export.get("convidados", [])}
+    suspeitos = _t1_suspeitos(export.get("fotos", []))
     linhas = []
     for f in export.get("fotos", []):
         if f["photo_id"] in relogios: continue            # a foto do relógio não é foto do evento
@@ -84,7 +149,8 @@ def cadeia(export, desvios, relogios=()):
         rel = (f.get("relogio_ms") or 0) / 1000
         cel = lambda t: None if t is None else t + rel      # relógio do celular -> do servidor
         t1, tapp, t2 = cel(f.get("t1_arquivo")), cel(f.get("t_app")), cel(f.get("t2_envio"))
-        st1 = "UNKNOWN" if t1 is None else ("suspeito" if t2 is not None and abs(t2 - t1) < 1 else "proxy")
+        st1 = "UNKNOWN" if t1 is None else ("suspeito" if f["photo_id"] in suspeitos else "proxy")
+        t1u = t1 if st1 == "proxy" else None                # T1 suspeito não vira trecho
         t3, t4 = f.get("t3_recebida"), f.get("t4_pronta")
         telas = []
         for t in f.get("telas", []):
@@ -99,30 +165,37 @@ def cadeia(export, desvios, relogios=()):
             "n_faces": f.get("n_faces"), "entregas": f.get("entregas", 0), "recusas": f.get("recusas", 0),
             "duplicatas": f.get("duplicatas", 0), "via": f.get("via"), "tentativa": f.get("tentativa"),
             "instrumentada": f.get("instrumentada", True),
-            "t0": t0, "t0_status": st0, "t1": t1, "t1_status": st1, "t_app": tapp, "t2": t2,
+            "t0": t0, "t0_status": st0, "t1": t1, "t1_status": st1, "t1_motivo": suspeitos.get(f["photo_id"]), "t_app": tapp, "t2": t2,
             "t3": t3, "t4": t4, "t5": t5, "t5_status": "observado" if t5 is not None else "não observado",
             "telas": telas,
-            "trechos": {"camera_celular": _d(t1, t0), "espera_app": _d(tapp, t1), "fila_aparelho": _d(t2, tapp),
-                        "rede": _d(t3, t2), "celular_servidor": _d(t3, t1), "processamento": _d(t4, t3),
+            "trechos": {"camera_celular": _d(t1u, t0), "espera_app": _d(tapp, t1u), "fila_aparelho": _d(t2, tapp),
+                        "rede": _d(t3, t2), "celular_servidor": _d(t3, t1u), "processamento": _d(t4, t3),
                         "servidor_tela": primeira["servidor_tela"] if primeira else None,
                         "ponta_a_ponta": _d(t5, t0)}})
     return linhas
 
 
-def _perdas(fotos):
-    """Buracos na sequência de arquivos da câmera = fotos disparadas que não chegaram
-    (ou que a fotógrafa apagou). Foto sem câmera conhecida entra na única câmera, se só
-    houver uma."""
+def perdas(fotos, faixa=None):
+    """(quantas, [números]) de arquivos da câmera que não chegaram (ou que a fotógrafa
+    apagou): buracos na sequência. `faixa` = (primeiro, último) da folha de campo, que
+    acha também a perda no fim; vale quando há uma câmera só. Sem nenhum número de
+    arquivo (o Compartilhar trocou o nome): (None, None), UNKNOWN, nunca zero. Foto sem
+    câmera conhecida entra na única câmera, se só houver uma."""
     cams = {f.get("camera") for f in fotos if f.get("camera")}
     grupos = {}
     for f in fotos:
         if f.get("seq") is None: continue
         cam = f.get("camera") or (next(iter(cams)) if len(cams) == 1 else None)
         grupos.setdefault(cam, set()).add(f["seq"])
-    return sum((max(s) - min(s) + 1) - len(s) for s in grupos.values() if len(s) > 1)
+    if not grupos: return None, None
+    faltam = []
+    for s in grupos.values():
+        a, b = faixa if faixa and len(grupos) == 1 else (min(s), max(s))
+        faltam += [n for n in range(a, b + 1) if n not in s]
+    return len(faltam), sorted(faltam)
 
 
-def resumo(export, linhas):
+def resumo(export, linhas, faixa=None):
     S = {"fotos": len(linhas), "aberturas": export.get("aberturas", 0),
          "convidados": len(export.get("convidados", [])),
          "com_t0": sum(1 for l in linhas if l["t0"] is not None),
@@ -133,7 +206,12 @@ def resumo(export, linhas):
          "entregas": sum(l["entregas"] or 0 for l in linhas),
          "telas_observadas": sum(len(l["telas"]) for l in linhas),
          "recusas": sum(l["recusas"] or 0 for l in linhas),
-         "perdas_provaveis": _perdas(export.get("fotos", [])),
+         "perdas_provaveis": perdas(export.get("fotos", []), faixa)[0],
+         "faltam": perdas(export.get("fotos", []), faixa)[1], "faixa": faixa,
+         "lotes": [{"n": len(l), "t_app": l[0]["t_app"] + (l[0].get("relogio_ms") or 0) / 1000,
+                    "via": {v: sum(1 for f in l if (f.get("via") or "?") == v) for v in sorted({f.get("via") or "?" for f in l})},
+                    "seq": sorted(f["seq"] for f in l if f.get("seq") is not None)}
+                   for l in lotes(export.get("fotos", []))],
          "trechos": {}}
     for k, _ in TRECHOS:
         v = [l["trechos"][k] for l in linhas if l["trechos"][k] is not None]
@@ -156,6 +234,22 @@ def resumo(export, linhas):
     return S
 
 
+def confere_galeria(export, linhas, anotadas):
+    """Compara o T1 (data do arquivo, no relógio do servidor) com a hora anotada, no
+    relógio de calibração, em que a foto apareceu na galeria do celular. dif = T1 - anotada."""
+    por_id = {l["photo_id"]: l for l in linhas}
+    seq = {f["photo_id"]: f.get("seq") for f in export.get("fotos", [])}
+    out = []
+    for pid, lido in chaves_relogio(export, anotadas).items():
+        l, m = por_id.get(pid), _RE_LEITURA.match((lido or "").strip())
+        if not (l and m and l["t1"] is not None): continue
+        dia = datetime.fromtimestamp(l["t1"], SP)
+        t = datetime(dia.year, dia.month, dia.day, int(m.group(1)), int(m.group(2)), 0, tzinfo=SP).timestamp() + float(m.group(3))
+        out.append({"photo_id": pid, "seq": seq.get(pid), "t1": l["t1"], "anotada": t, "dif": l["t1"] - t,
+                    "t1_status": l["t1_status"]})
+    return sorted(out, key=lambda g: g["anotada"])
+
+
 def _h(t):
     return datetime.fromtimestamp(t, SP).strftime("%H:%M:%S.") + f"{int((t % 1) * 10)}" if t else "(vazio)"
 
@@ -164,7 +258,20 @@ def _s(x):
     return "(vazio)" if x is None else f"{x:.1f} s"
 
 
-def markdown(export, linhas, S):
+def _img(n):
+    return f"IMG_{n:04d}"
+
+
+def markdown(export, linhas, S, galeria=()):
+    if S["perdas_provaveis"] is None:
+        perd = "UNKNOWN (nenhum arquivo chegou com o nome da câmera, IMG_xxxx)"
+    else:
+        onde = f"folha de campo {_img(S['faixa'][0])} a {_img(S['faixa'][1])}" if S.get("faixa") else \
+            "buraco na sequência; perda no fim só aparece com --disparos"
+        perd = f"{S['perdas_provaveis']} ({onde})" + (f": {', '.join(_img(n) for n in S['faltam'])}" if S["faltam"] else "")
+    motivos = {}
+    for l in linhas:
+        if l.get("t1_motivo"): motivos[l["t1_motivo"]] = motivos.get(l["t1_motivo"], 0) + 1
     o = [f"# Cadeia por trecho, evento {export.get('evento')}", "",
          "Legenda: T3 e T4 são **medidos** (relógio do servidor). T0 é o disparo pelo EXIF, "
          "corrigido pela foto do relógio: **proxy**. T1 (data do arquivo) é **proxy da chegada ao "
@@ -173,9 +280,10 @@ def markdown(export, linhas, S):
          "galeria não estava visível ou desenhando); a decisão de entrega do servidor não conta como T5.", "",
          "## Resumo", "",
          f"- Fotos: {S['fotos']} · sem rosto: {S['sem_rosto']} · duplicatas: {S['duplicatas']} · "
-         f"perdas prováveis (buraco na sequência da câmera): {S['perdas_provaveis']}",
+         f"perdas prováveis: {perd}",
          f"- T0: {S['com_t0']} com EXIF, {S['t0_calibrado']} calibradas pela foto do relógio · "
-         f"T1 suspeito: {S['t1_suspeito']}",
+         f"T1 suspeito: {S['t1_suspeito']}" + "".join(f" · {n} por {m}" for m, n in motivos.items())
+         + (" (suspeito não entra em câmera → celular)" if motivos else ""),
          f"- Entregas decididas: {S['entregas']} · vistas na tela: {S['telas_observadas']} · "
          f"recusas (\"não sou eu\"): {S['recusas']}",
          f"- Funil: abriram o evento {S['aberturas']} · fizeram selfie {S['convidados']}", ""]
@@ -192,6 +300,28 @@ def markdown(export, linhas, S):
     for k, nome in TRECHOS:
         t = S["trechos"][k]
         o.append(f"| {nome} | {t['n']} | {_s(t['p50'])} | {_s(t['p95'])} | {_s(t['max'])} |")
+    o += ["", "## Lotes (como as fotos entraram no app)", "",
+          f"{len(S['lotes'])} lote(s). Reenvio da mesma foto não vira linha: conta em duplicatas. "
+          "A foto do relógio entra na contagem do lote em que foi enviada.", "",
+          "| lote | entrou no app | fotos | via | arquivos | desde o lote anterior |", "|---|---|---|---|---|---|"]
+    ant = None
+    for i, lt in enumerate(S["lotes"], 1):
+        arq = f"{_img(lt['seq'][0])} a {_img(lt['seq'][-1])}" if lt["seq"] else "(sem nome IMG_xxxx)"
+        via = ", ".join(f"{v} {n}" for v, n in lt["via"].items())
+        o.append(f"| {i} | {_h(lt['t_app'])} | {lt['n']} | {via} | {arq} | {_s(lt['t_app'] - ant) if ant else ''} |")
+        ant = lt["t_app"]
+    if galeria:
+        o += ["", "## T1 conferido pela galeria do celular", "",
+              "dif = data do arquivo (T1) menos a hora anotada, no relógio de calibração, em que a foto "
+              "apareceu na galeria do celular. Até ±2 s (leitura humana), o T1 vale como chegada ao celular.", "",
+              "| arquivo | T1 | anotada | dif | T1 no relatório |", "|---|---|---|---|---|"]
+        for g in galeria:
+            o.append(f"| {_img(g['seq']) if g['seq'] is not None else g['photo_id']} | {_h(g['t1'])} | {_h(g['anotada'])} "
+                     f"| {g['dif']:+.1f} s | {g['t1_status']} |")
+        ok = sum(1 for g in galeria if abs(g["dif"]) <= 2)
+        o += ["", f"**{ok} de {len(galeria)} dentro de ±2 s.** "
+              + ("O T1 vale como chegada ao celular neste aparelho." if ok == len(galeria)
+                 else "O T1 NÃO vale como chegada ao celular neste aparelho: câmera → celular fica UNKNOWN.")]
     o += ["", "## Foto por foto", "",
           "| foto | T0 | T1 | T2 | T3 | T4 | T5 | câmera → celular | celular → Fóton | proc. | → tela | ponta a ponta |",
           "|---|---|---|---|---|---|---|---|---|---|---|---|"]
@@ -208,17 +338,32 @@ def main(argv):
     if not argv:
         print(__doc__); return 2
     export = json.load(open(argv[0], encoding="utf-8"))
-    leituras = dict(a.split("=", 1) for a in argv[1:] if "=" in a and not a.startswith("--"))
-    for i, a in enumerate(argv):
-        if a == "--relogio" and i + 1 < len(argv) and "=" in argv[i + 1]:
-            k, v = argv[i + 1].split("=", 1); leituras[k] = v
+    leituras, galeria, faixa, i = {}, {}, None, 1
+    while i < len(argv):
+        a = argv[i]
+        prox = argv[i + 1] if i + 1 < len(argv) else ""
+        if a in ("--relogio", "--galeria") and "=" in prox:
+            k, v = prox.split("=", 1); (leituras if a == "--relogio" else galeria)[k] = v; i += 2
+        elif a == "--disparos" and re.match(r"^\D*\d+\s*-\s*\D*\d+$", prox):
+            faixa = tuple(int(x) for x in re.findall(r"\d+", prox)[-2:]); i += 2
+        elif "=" in a and not a.startswith("--"):          # forma antiga: FOTO=HH:MM:SS.d é o relógio
+            k, v = a.split("=", 1); leituras[k] = v; i += 1
+        else:
+            print(f"argumento não entendido: {a}", file=sys.stderr); return 2
+    leituras = chaves_relogio(export, leituras)
+    ids = {f["photo_id"] for f in export.get("fotos", [])}
+    for k in list(leituras) + list(chaves_relogio(export, galeria)):
+        if k not in ids:
+            print(f"<!-- AVISO: foto {k} não achada no export (o Compartilhar trocou o nome do arquivo?). "
+                  f"Use o photo_id. -->")
     desvios = calibra(export, leituras)
     linhas = cadeia(export, desvios, set(leituras))
     for cam, d in desvios.items():
         print(f"<!-- desvio do relógio da câmera {cam}: {d:+.2f} s -->")
-    print(markdown(export, linhas, resumo(export, linhas)))
+    print(markdown(export, linhas, resumo(export, linhas, faixa), confere_galeria(export, linhas, galeria)))
     return 0
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")
     sys.exit(main(sys.argv[1:]))
