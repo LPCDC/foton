@@ -51,7 +51,12 @@ a página está completa.
 ## Leveza (meta, não medição)
 
 Meta para a primeira tela no celular: no máximo **250 KB** transferidos, fontes à parte.
-O número real entra aqui depois de medido; até lá, `UNKNOWN | REQUIRES EXPERIMENT`.
+
+**Calculado (2026-09-28), pelos arquivos que a primeira tela pede:** HTML 11,3 KB e
+design system 4,7 KB (gzip), mais a capa e a selfie na largura que o `srcset` escolhe:
+**55,5 KB** num celular de tela 1x e **95,7 KB** num de tela 3x. É conta sobre os
+arquivos, não medição de rede: o tempo de carregamento real no 4G continua
+`UNKNOWN | REQUIRES EXPERIMENT`.
 Imagens em WebP com largura certa para cada tela, as de baixo da dobra com
 `loading="lazy"`, nenhuma animação rodando fora da tela.
 

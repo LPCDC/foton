@@ -56,5 +56,39 @@ checa("respeita movimento reduzido", "prefers-reduced-motion" in LIMPO, True)
 falso = LIMPO.replace("aria-expanded", "xxx", 1)
 checa("prova do vermelho: sem aria-expanded o teste acusa", "aria-expanded" in falso.split("navbtn")[1][:400] if "navbtn" in falso else False, False)
 
+print("\n[5] site no design system, imagens com procedência (docs/DIRECAO-VISUAL.md)")
+import json
+DS_APP = io.open(os.path.join(RAIZ, "app", "web", "ds", "foton.css"), encoding="utf-8").read()
+DS_SITE = io.open(os.path.join(RAIZ, "site", "ds", "foton.css"), encoding="utf-8").read()
+checa("o site usa a MESMA cópia do design system do app", DS_SITE == DS_APP, True)
+checa("o site carrega o design system", 'href="ds/foton.css?v=' in SITE, True)
+IMG = os.path.join(RAIZ, "site", "img")
+refs = set(re.findall(r'img/([\w.-]+\.(?:webp|jpg|png))', LIMPO))
+checa("toda imagem citada existe", sorted(r for r in refs if not os.path.exists(os.path.join(IMG, r))), [])
+PROC = json.load(io.open(os.path.join(IMG, "PROCEDENCIA.json"), encoding="utf-8"))
+arquivos = sorted(f for f in os.listdir(IMG) if f != "PROCEDENCIA.json")
+checa("toda imagem tem procedência registrada", sorted(set(arquivos) - set(PROC["arquivos"])), [])
+checa("nenhuma procedência sobra sem arquivo", sorted(set(PROC["arquivos"]) - set(arquivos)), [])
+checa("toda pessoa das imagens é fictícia", sorted(k for k, v in PROC["arquivos"].items() if v.get("pessoa") != "ficticia"), [])
+checa("a página diz que as fotos são geradas por IA", "geradas por IA" in LIMPO, True)
+# O número do site sai da medição (tests/site_reconhecimento.py), não de memória.
+rec = PROC["reconhecimento"]
+checa("a medição confirmou a história da página", rec.get("historia_verdadeira"), True)
+def br(x): return f"{x:.2f}".replace(".", ",")
+sem = rec["semelhanca"]
+checa("o número da capa bate com a medição", f"<b>{br(sem['capa-1200.webp'])}</b> de semelhança" in LIMPO, True)
+dela = [v for k, v in sem.items() if k.startswith(("capa", "ela-"))]
+checa("a faixa da galeria bate com a medição", f"de {br(min(dela))} a {br(max(dela))}" in LIMPO, True)
+checa("o limiar citado é o da produção", f"a partir de {br(rec['limiar'])}" in LIMPO, True)
+checa("nenhum script de fora (leveza e CSP)", re.findall(r"<script[^>]+src=", LIMPO), [])
+imgs = re.findall(r"<img\b[^>]*>", LIMPO)
+checa("toda imagem tem alt", [t[:60] for t in imgs if " alt=" not in t], [])
+primeira = [t for t in imgs if "capa-800" in t or ("selfie-240" in t and "sizes=" in t)]
+checa("só a primeira tela carrega na hora; o resto é preguiçoso",
+      [t[:60] for t in imgs if t not in primeira and 'loading="lazy"' not in t], [])
+checa("a abertura só anima sem pedido de menos movimento",
+      LIMPO.find("@media (prefers-reduced-motion: no-preference)") < LIMPO.find(".capa__selfie { animation"), True)
+checa("sem travessão nem meia-risca no site", SITE.count("—") + SITE.count("–"), 0)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

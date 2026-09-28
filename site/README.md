@@ -1,61 +1,28 @@
-# site/ — site de marca do Fóton
+# site/ | o site de vendas do Fóton
 
-Vitrine de marketing, **separada do app** (`app/web/`). Não roda backend, não fala
-com a API — é HTML/CSS/JS autocontido (GSAP + Lenis + ScrollTrigger inline).
+Vitrine, **separada do app** (`app/web/`). HTML, CSS e um pouco de JavaScript próprio,
+sem biblioteca e sem backend. Publicado pelo Cloudflare Pages a partir desta pasta
+(ADR-0032): `git push origin main` publica em `https://foton.app.br`.
 
-- ~~**Ainda não está publicado em lugar nenhum.** `netlify.toml` continua apontando
-  para `app/web` (a demo antiga)~~ — **DESATUALIZADO, ver "Estado real do deploy" abaixo.**
-- Skill usada: `.claude/skills/build-awwwards-quality-sites/` (instalada de
-  https://github.com/MengTo/Skills).
-- Honestidade de conteúdo: sem depoimento inventado, sem preço inventado
-  (ADR-0012 — preço aguarda EXP-10), sem foto de "cliente" fabricada. A prova
-  social é o fato real — primeira parceira piloto, Patrícia Vargas, Santos/SP.
+## Como é feito (2026-09-28)
 
-## Estado real do deploy (verificado em 2026-08-30, com `curl`)
+- **Direção:** `docs/DIRECAO-VISUAL.md`. Skill que guiou: `build-awwwards-quality-sites`.
+- **Design system:** `ds/foton.css` é cópia fiel de `app/web/ds/foton.css`. O
+  `tests/test_site.py` confere que as duas são iguais. Mudou lá: copie para cá e suba o
+  `?v=` no `<link>` do `index.html`.
+- **Movimento:** CSS (a abertura roda uma vez; as linhas de rolagem usam
+  `animation-timeline: view()` onde existe) e JS próprio só para os títulos palavra por
+  palavra e para a galeria ao vivo, que para fora da tela. Com `prefers-reduced-motion`,
+  nada anima. Sem JS, a página está completa. Sem motor de rolagem (ADR-0027).
+- **Imagens:** `img/`, geradas pelo Higgsfield, **pessoas fictícias**, rotuladas na página.
+  Procedência de cada arquivo em `img/PROCEDENCIA.json`.
+- **Os números da página saem de medição:** `tests/site_reconhecimento.py` mede a selfie
+  contra cada foto publicada no motor e limiar da produção e grava em `PROCEDENCIA.json`;
+  o `test_site` confere que o texto da página bate com esse arquivo.
 
-Duas coisas que os documentos diziam errado:
+## Honestidade de conteúdo
 
-1. **`netlify.toml` JÁ publica `site/`**, não `app/web` — mudou no commit `ffc5b1b`
-   ("netlify: publica o site de marca (site/), nao mais a demo antiga do app").
-   O texto riscado acima ficou para trás e enganou pelo menos uma sessão.
-2. **Mesmo assim, `getfoton.netlify.app` ainda serve a demo ANTIGA.** Medido: a
-   página no ar tem 42 KB, título "Fóton", contém a palavra `placeholder` 4× e
-   **nenhum** marcador do site atual (`Sua foto encontra`, `intro-flash`,
-   `entry-card` → 0 ocorrências). Ou seja: o `publish = "site"` está no repo mas
-   **o build do Netlify não rodou desde então**.
-
-**Conclusão:** o deploy automático do Netlify a partir deste repo está
-`UNKNOWN — REQUIRES EXPERIMENT` — provavelmente nunca foi conectado, ou está
-preso num commit antigo. Antes de qualquer conversa sobre apontar `foton.app.br`
-para o Netlify, é preciso **confirmar no painel do Netlify** se o site está
-ligado a `github.com/LPCDC/foton` e em qual branch. Sem isso, mudar DNS levaria
-o domínio raiz para uma página desatualizada.
-
-### Atualização 2026-08-30 (v2)
-
-- **Marca nova:** o wordmark script ("Fóton" cursivo) saiu; entrou o selo real
-  em uso em produção (diafragma de 6 lâminas + hexágono + ponto de luz), com
-  as mesmas coordenadas de `app/web/index.html` (`_LAMINAS`/`_HEX`), no nav e
-  no véu de transição para o app.
-- **Abertura com flash de câmera:** ao carregar, o diafragma da marca "fecha"
-  como um obturador de verdade; no instante do fecho, um flash radial (não um
-  retângulo branco chapado) estoura e decai — aí sim o cabeçalho da hero
-  aparece, saindo de dentro da luz. Roda em GSAP, dentro do mesmo gate
-  `!reduced` do resto do site: sob `prefers-reduced-motion`, não roda nada — a
-  hero já aparece no estado final. Sem JS, `#intro` fica `opacity:0` por CSS
-  (nunca bloqueia o conteúdo) e é sempre `pointer-events:none`.
-- **Seção "Modelo" corrigida:** o texto antigo ("compra créditos, 1 crédito =
-  1 evento") ficou **desatualizado pela ADR-0024** (crédito cortado em
-  2026-08-30 — nesta fase é tudo grátis, só com login). Trocado por copy
-  honesta: grátis nesta fase de piloto, modelo comercial final ainda em
-  aberto — sem inventar preço nem fingir que o crédito continua valendo.
-
-## Para publicar de verdade
-
-1. Ver o rascunho, pedir ajustes.
-2. Decidir: `site/index.html` vira o publish do Netlify (troca `netlify.toml`),
-   ou fica noutro domínio/serviço.
-3. Nesse ponto, também decidir os links de CTA (hoje são `mailto:`) — se
-   quiser um link direto para o app, esperar o domínio próprio resolver
-   primeiro (`foton.app.br`), para não linkar para uma página com aviso de
-   "site perigoso" no duckdns.
+Sem depoimento inventado, sem logo de cliente, sem número sem fonte. O "10 s" é a meta
+do produto (decisão do dono de manter); o "cerca de 1 segundo" é o p50 do servidor de
+produção com uma foto por vez (`docs/BENCHMARKS.md`, carga de 2026-09-23). O trecho
+câmera e 4G do salão ainda não foi medido em campo, e a página diz isso.

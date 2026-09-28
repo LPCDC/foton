@@ -1,0 +1,168 @@
+{
+  "peca": "site de vendas",
+  "gerado_em": "2026-09-28",
+  "observacao": "pessoas geradas por IA, nenhuma real; a página rotula como 'Fotos ilustrativas, geradas por IA'",
+  "reconhecimento": {
+    "o_que": "selfie-480.webp contra cada foto publicada, no motor e limiar da produção",
+    "script": "tests/site_reconhecimento.py",
+    "limiar": 0.4,
+    "adr": "ADR-0034",
+    "semelhanca": {
+      "capa-1200.webp": 0.589,
+      "ela-brinde-800.webp": 0.589,
+      "ela-abraco-800.webp": 0.663,
+      "ela-saida-800.webp": 0.588,
+      "fotografa-800.webp": 0.061,
+      "trilha-800.webp": 0.101,
+      "bar-800.webp": 0.194
+    },
+    "historia_verdadeira": true
+  },
+  "arquivos": {
+    "capa-1200.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "01ebe23c-17bb-48b1-b22c-87e5e84bc68e",
+      "uso": "primeira tela: a foto da festa (retângulo)"
+    },
+    "capa-480.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "01ebe23c-17bb-48b1-b22c-87e5e84bc68e",
+      "uso": "primeira tela: a foto da festa (retângulo)"
+    },
+    "capa-800.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "01ebe23c-17bb-48b1-b22c-87e5e84bc68e",
+      "uso": "primeira tela: a foto da festa (retângulo)"
+    },
+    "selfie-240.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "a1c4b36f-4f48-46b1-b6a9-1b2b5f9df5b8",
+      "uso": "primeira tela: a selfie da MESMA pessoa (círculo), gerada com a foto da festa como referência"
+    },
+    "selfie-480.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "a1c4b36f-4f48-46b1-b6a9-1b2b5f9df5b8",
+      "uso": "primeira tela: a selfie da MESMA pessoa (círculo), gerada com a foto da festa como referência"
+    },
+    "fotografa-480.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "c54d8472-8c5d-4b7a-90b4-04c7a6a4d507",
+      "uso": "para quem: fotógrafa"
+    },
+    "fotografa-800.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "c54d8472-8c5d-4b7a-90b4-04c7a6a4d507",
+      "uso": "para quem: fotógrafa"
+    },
+    "trilha-480.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "672093d1-ca02-49ad-820d-d3f37219127e",
+      "uso": "para quem: empresa e prova esportiva"
+    },
+    "trilha-800.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "672093d1-ca02-49ad-820d-d3f37219127e",
+      "uso": "para quem: empresa e prova esportiva"
+    },
+    "bar-480.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "773a060e-c151-41be-8fa3-32a1d70d257f",
+      "uso": "para quem: festa, bar e balada"
+    },
+    "bar-800.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "773a060e-c151-41be-8fa3-32a1d70d257f",
+      "uso": "para quem: festa, bar e balada"
+    },
+    "ela-brinde-360.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "dcb6f40b-ff55-4ed3-b849-3a61fe1202f2",
+      "referencia": "01ebe23c-17bb-48b1-b22c-87e5e84bc68e",
+      "semelhanca_com_a_selfie": 0.587,
+      "uso": "galeria ao vivo: as fotos da MESMA convidada da capa, ao longo da festa"
+    },
+    "ela-abraco-360.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "a064df1b-96e4-4900-9887-b41d9e7fcc33",
+      "referencia": "01ebe23c-17bb-48b1-b22c-87e5e84bc68e",
+      "semelhanca_com_a_selfie": 0.677,
+      "uso": "galeria ao vivo: as fotos da MESMA convidada da capa, ao longo da festa"
+    },
+    "ela-saida-360.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "beda3e5f-bd97-4e39-97bf-8378f71f669a",
+      "referencia": "01ebe23c-17bb-48b1-b22c-87e5e84bc68e",
+      "semelhanca_com_a_selfie": 0.616,
+      "uso": "galeria ao vivo: as fotos da MESMA convidada da capa, ao longo da festa"
+    },
+    "capa-360.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "01ebe23c-17bb-48b1-b22c-87e5e84bc68e",
+      "uso": "primeira tela: a foto da festa (retângulo)"
+    },
+    "capa-og.jpg": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "01ebe23c-17bb-48b1-b22c-87e5e84bc68e",
+      "uso": "imagem de compartilhamento (og:image)"
+    },
+    "ela-brinde-800.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "dcb6f40b-ff55-4ed3-b849-3a61fe1202f2",
+      "referencia": "01ebe23c-17bb-48b1-b22c-87e5e84bc68e",
+      "semelhanca_com_a_selfie": 0.587,
+      "uso": "medição do reconhecimento (tests/site_reconhecimento.py); a página não carrega"
+    },
+    "ela-abraco-800.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "a064df1b-96e4-4900-9887-b41d9e7fcc33",
+      "referencia": "01ebe23c-17bb-48b1-b22c-87e5e84bc68e",
+      "semelhanca_com_a_selfie": 0.677,
+      "uso": "medição do reconhecimento (tests/site_reconhecimento.py); a página não carrega"
+    },
+    "ela-saida-800.webp": {
+      "origem": "higgsfield",
+      "pessoa": "ficticia",
+      "modelo": "seedream_v5_pro",
+      "job": "beda3e5f-bd97-4e39-97bf-8378f71f669a",
+      "referencia": "01ebe23c-17bb-48b1-b22c-87e5e84bc68e",
+      "semelhanca_com_a_selfie": 0.616,
+      "uso": "medição do reconhecimento (tests/site_reconhecimento.py); a página não carrega"
+    }
+  }
+}

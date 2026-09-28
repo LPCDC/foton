@@ -24,8 +24,10 @@
 ## Falta para o app e o site estarem "terminados"
 
 ### Com o Claude (não depende de ninguém)
-- [ ] **Painel da fotógrafa no design system** (lista de eventos, criar evento, tela do evento, conta). Hoje só a entrada e a jornada do convidado foram migradas; o resto do app ainda é o visual antigo.
-- [ ] **Site de vendas: estrutura e conteúdo** (página mínima de piloto: o produto de verdade, os três passos, privacidade, chamada para piloto). O visual antigo do site continua no ar.
+- [x] **Painel da fotógrafa no design system** | ponte de tokens, `6e66a08` (no ar, `/health` conferido). Achados: reset de botão que apagava o "Criar evento", película escura latente na tela do evento, aba da guia sem marca
+- [x] **Sem travessão no app** (regra do dono) | 81 textos reescritos, trava no test_front [17], `4be85bd`
+- [x] **Site de vendas no design system**, com imagens do Higgsfield (pessoas fictícias) e a história da capa conferida pelo reconhecimento de produção | `tests/site_reconhecimento.py`, test_site [5]
+- [ ] Tela de admin no navegador (a ponte cobre, mas não foi vista: e-mail de admin não se cadastra sozinho, ADR-0025)
 - [ ] **Matriz design system → app** (cada componente, onde aparece, estados) | plano 9
 - [ ] **Validação em celular real** (portão 4): o Claude emula 375 px; aparelho de verdade falta
 
