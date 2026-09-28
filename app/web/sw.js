@@ -62,15 +62,16 @@ async function receberCompartilhadas(req) {
       const id = 'c' + Date.now().toString(36);
       const c = await caches.open(CACHE_SHARE);
       await limparShareVelho(c);
-      const nomes = [], tipos = [];
+      const nomes = [], tipos = [], datas = [];
       for (let i = 0; i < fotos.length; i++) {
         nomes.push(fotos[i].name || ('foto-' + (i + 1) + '.jpg'));
         tipos.push(fotos[i].type || 'image/jpeg');
+        datas.push(fotos[i].lastModified || 0);   // T1: data do arquivo no celular (ADR-0046)
         await c.put(PREFIXO_SHARE + id + '/' + i,
                     new Response(fotos[i], { headers: { 'Content-Type': tipos[i] } }));
       }
       await c.put(PREFIXO_SHARE + id + '/lote',
-                  new Response(JSON.stringify({ n: fotos.length, nomes, tipos }),
+                  new Response(JSON.stringify({ n: fotos.length, nomes, tipos, datas }),
                                { headers: { 'Content-Type': 'application/json' } }));
       destino = new URL('./?compartilhado=' + id, base).href;
     } else {

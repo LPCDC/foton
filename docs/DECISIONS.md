@@ -1668,3 +1668,101 @@ vê a de referência marcada, outra fotógrafa não; a pessoa recebe a própria;
 não conta a de referência; foto normal nasce visível. `test_front` [15].
 
 **Rollback.** A coluna fica inofensiva (0); tirar o parâmetro e o bloco do painel.
+
+---
+
+## ADR-0046 | Instrumentação da cadeia por trecho (P1): servidor rápido não é produto rápido
+
+**Data:** 2026-09-28 · **Estado:** declarada antes do código (regra da casa) · **Pedido:** dono,
+P1 do ciclo de prova de produto (`PRODUCT.md`, `docs/PILOTO-1.md`).
+
+**Contexto.** Para a mesma foto, precisamos reconstruir `T0 disparo → T1 no celular → T2 envio
+começa → T3 Fóton recebe → T4 pronta → T5 na tela do convidado`. Hoje só existem T3/T4
+aproximados (`photo.criado`, `latency_ms` no log) e a decisão de entrega (`match.ts`), que
+**não** é T5. Dois fatos do código mudam o desenho:
+1. `reduzir()` recomprime no canvas toda foto > 1,5 MB (toda foto de câmera). Canvas não
+   carrega EXIF nem a data do arquivo: **o servidor nunca vê o T0 nem o T1**. Os dois têm
+   de ser lidos no aparelho, **antes** de reduzir.
+2. O caminho "Compartilhar" (sw.js) guarda o blob e perde `lastModified` ao remontar o
+   arquivo. É preciso levar a data junto do lote.
+
+### 1-3. O que entra, o que representa, de onde vem o relógio
+
+**Tabela nova `medida_foto`** (uma linha por foto; chave `photo_id`, o id que já existe):
+
+| Coluna | Representa | Relógio / origem |
+|---|---|---|
+| `t0_exif` | disparo, texto cru do EXIF `DateTimeOriginal` [+ `SubSecTimeOriginal`, `OffsetTimeOriginal`] | **câmera**, sem fuso: proxy, nunca verdade. Corrigido pela foto do relógio no relatório |
+| `t0_fonte` | onde foi lido: `aparelho` (antes de reduzir) ou `servidor` (bytes recebidos) | |
+| `camera` | `Make Model` do EXIF, até 64 caracteres (calibração é por câmera) | EXIF |
+| `seq` | número do nome do arquivo da câmera (`IMG_1234.JPG` → 1234): buraco na sequência = perda provável | nome do arquivo; o nome em si **não** é guardado |
+| `t1_arquivo` | foto disponível no celular: `File.lastModified` | **celular**: proxy; se o navegador não souber, vira a hora da escolha (o relatório marca quando T1 ≈ T2) |
+| `t_app` | a foto entrou no Fóton (gravada na fila do aparelho) | celular |
+| `t2_envio` | começo da tentativa que deu certo | celular |
+| `tentativa` | número dessa tentativa (1 = primeira) | celular |
+| `via` | por onde entrou: `compartilhar`, `galeria`, `camera`, `fila`, `ftp` | celular / servidor |
+| `relogio_ms`, `rtt_ms` | diferença servidor − celular e a incerteza (ida e volta) | medida com `/agora`, 3 pings, o de menor ida e volta |
+| `t3_recebida` | upload terminou: entrada do `/ingest` (o multipart já foi lido) | **servidor** |
+| `t4_pronta` | foto salva, entregas decididas e feed acordado | **servidor** |
+| `duplicatas` | quantas vezes os mesmos bytes chegaram de novo depois | servidor |
+| `criado` | quando a linha nasceu | servidor |
+
+**Tabela nova `medida_tela`** (chave `guest_id` + `photo_id`: a **primeira** aparição):
+
+| Coluna | Representa | Relógio / origem |
+|---|---|---|
+| `t5_tela` | a imagem **carregou** na aba "suas fotos", com a galeria na tela e a página visível. Se carregou com a página escondida, conta quando ela volta a ficar visível | **celular do convidado** |
+| `relogio_ms`, `rtt_ms` | diferença servidor − celular do convidado | `/agora` |
+| `t5_recebida` | quando o aviso chegou ao servidor (limite superior do T5) | servidor |
+| `origem` | `ao_vivo` (chegou pelo feed com a galeria aberta), `selfie` (já existia quando ela entrou), `retorno` (reabriu depois) | celular |
+
+**Coluna nova `event.aberturas`**: quantas sessões abriram a tela de entrada do evento. Com
+`guest` dá o funil "abriu × fez selfie". Sem id nenhum: é um contador.
+
+**Rotas novas:** `GET /agora` (hora do servidor, nada mais) · `POST /medida/tela` (só aceita
+convidado do evento e foto **entregue** a ele) · `POST /medida/abriu` (não cria evento) ·
+`GET /medidas?event=` (dona do evento ou admin): exporta a cadeia em JSON para o relatório.
+`/ingest` passa a aceitar campos **opcionais** `m_*`; sem eles, faz exatamente o que fazia.
+
+**Página nova `relogio.html`**: relógio grande sincronizado com o servidor (décimos), para a
+foto de calibração da câmera.
+
+**O que não é T5, e fica escrito para ninguém "arrumar" depois:** `match.ts` é a hora em que
+o servidor **decidiu** entregar. `t5_recebida` é quando o aviso chegou. Nenhum dos dois é
+"apareceu na tela". Sem aviso do aparelho, T5 é **não observado**, e o relatório diz isso.
+Limite conhecido: "carregou com a página visível" ≠ "a pessoa olhou".
+
+### 4. Retenção
+- As linhas morrem com a base, pelas cascatas que já existem: foto apagada, evento apagado
+  (manual, demonstração vencida, conta excluída), expiração de fotos (90 dias), "zerar".
+- `medida_tela` morre com o **convidado** (expiração da biometria, 7 dias por padrão, e o
+  "apagar meus dados"): ela não vive mais que a pessoa.
+- Teto de **30 dias** para as duas tabelas, pela varredura diária `expirar()`. Órfãs entram na
+  varredura de órfãos. O que sobrevive a isso é só o agregado sem id, em `docs/BENCHMARKS.md`.
+
+### 5. LGPD
+- Nenhum dado pessoal novo: ids que já existem, horários, modelo da câmera (equipamento),
+  número de sequência do arquivo. **Não se lê** GPS, número de série, nome do arquivo, selfie,
+  embedding, URL, nome ou e-mail. Nada disto vai para log.
+- O export troca o `guest_id` por apelido do próprio export (`c1`, `c2`...) e **não** traz
+  contatos: senão a dona poderia ligar o nome de um convidado às fotos em que o rosto dele
+  apareceu, um cruzamento que hoje o produto não oferece.
+- O aviso de T5 é comportamento (a pessoa estava com a galeria aberta às tantas): por isso
+  morre com o convidado e tem teto de 30 dias.
+
+### 6. Migração
+Aditiva: `CREATE TABLE IF NOT EXISTS` e `ALTER TABLE event ADD COLUMN aberturas` no padrão
+`try/except` que o `store.conn()` já usa. Sem preenchimento retroativo: foto antiga aparece no
+export como "não instrumentada", com nulos, e nunca com horário inventado.
+
+### 7. Testes (antes do código)
+`test_autorizacao` [40] e `test_front` [18]: cada trecho grava o seu horário; uma foto se
+correlaciona do EXIF até a tela; duplicata não cria segunda cadeia; sem EXIF não há T0; sem
+aviso não há T5 (e `match.ts` não vira T5); retenção (cascatas e teto de 30 dias); sem os
+campos novos o `/ingest` responde igual; export sem `guest_id` e sem contato; o aparelho lê
+o EXIF **antes** de reduzir; o compartilhar leva a data do arquivo.
+
+### 8. Rollback
+Reverter o commit. As tabelas e a coluna ficam inofensivas (ninguém lê); podem ser apagadas
+com `DROP TABLE medida_foto; DROP TABLE medida_tela;`. Os avisos do aparelho são "dispara e
+esquece": se a rota sumir, a galeria não percebe.

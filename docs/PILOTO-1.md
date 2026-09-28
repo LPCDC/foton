@@ -25,6 +25,20 @@ Qual o volume real? Ela paga pelo próximo?
 | P3 | **Risco de entrega errada decidido**: aceitar o risco do piloto com convidados avisados e o "Não sou eu" à vista, ou medir antes numa base maior | dono decide, Claude mede | A amostra rotulada tem 4 selfies (ADR-0034); foto na pessoa errada é o pior erro |
 | P4 | **Fotógrafa e anfitrião de acordo**: ela sabe que é teste; quem contratou a festa autoriza (`docs/CONTRATO-ORGANIZADOR.md`) | dono | O organizador é o controlador dos dados (PRODUTO.md §3b-2) |
 
+### Roteiro do ensaio de mesa (P2), com a instrumentação do P1
+1. No painel: criar o evento e abrir **"Ensaio: medir o caminho da foto"**.
+2. Abrir o **relógio de calibração** num segundo aparelho e **fotografar a tela com a
+   câmera**, nítida. Essa foto entra no Fóton como qualquer outra.
+3. 3 a 5 pessoas escaneiam o QR, fazem a selfie e **ficam com a galeria aberta e a tela
+   acesa**: o T5 só existe quando a foto carrega com a tela ligada.
+4. Fotografar ~20 fotos (rajada e espaçadas), passar pelo Camera Connect e compartilhar
+   para o Fóton. Anotar **como** fez (um lote, vários, uma a uma).
+5. Anotar o **número do último arquivo** da câmera (perdas = buracos na sequência).
+6. No fim: **"Exportar medidas (JSON)"** e mandar o arquivo e a foto do relógio para o
+   relatório (`tests/relatorio_evento.py`).
+7. Se o relatório marcar T1 **suspeito**, o Android não passou a data do arquivo pelo
+   Compartilhar: o trecho câmera → celular fica UNKNOWN nesse caminho.
+
 ### O que se mede, por trecho (servidor rápido ≠ produto rápido)
 | Trecho | Como | Automático? |
 |---|---|---|

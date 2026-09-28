@@ -1120,5 +1120,161 @@ checa("o contador publico de fotos nao conta a de referencia",
       C.get("/stats", params={"event": "REFE"}).json()["photos"], 1)
 checa("foto normal nasce visivel", _s.q("SELECT oculta FROM photo WHERE id=?", (_pnor,), "one")["oculta"], 0)
 
+print("\n[40] instrumentacao por trecho (ADR-0046): T0 disparo ... T5 na tela, sem inventar nada")
+import json as _json, sqlite3 as _sqlite3
+def _jpg_exif(cor, dto="2026:09:28 14:03:21", sub="37", make="Canon", model="Canon EOS R8"):
+    im = Image.new("RGB", (200, 200), cor); ex = Image.Exif()
+    ex[0x010F] = make; ex[0x0110] = model
+    ifd = ex.get_ifd(0x8769); ifd[0x9003] = dto
+    if sub: ifd[0x9291] = sub
+    b = io.BytesIO(); im.save(b, "JPEG", exif=ex.tobytes()); return b.getvalue()
+def _med(pid):
+    r = _s.q("SELECT * FROM medida_foto WHERE photo_id=?", (pid,), "one")
+    return dict(r) if r else None
+
+_ag = C.get("/agora")
+checa("/agora devolve a hora do servidor", _ag.status_code == 200 and abs(_ag.json()["t"] - time.time()) < 5, True)
+
+_md = C.post("/signup", data={"email": "med@t.com", "senha": "senha123", "nome": "Med"}).json()["token"]
+_mo = C.post("/signup", data={"email": "med-outra@t.com", "senha": "senha123", "nome": "Outra"}).json()["token"]
+C.post("/event", data={"code": "MEDE", "brand": "Med"}, headers=h(_md))
+rig._fa = _Detector(_Rosto(_E0, 300)); rig._selfies_por_ip.clear()
+_mg1 = C.post("/selfie", data={"event": "MEDE", "consent": "true", "nome": "Bia", "contato": "11999"},
+              files={"file": ("s.jpg", _jpg((120, 120, 120)), "image/jpeg")}).json()["guest_id"]
+_mg2 = C.post("/selfie", data={"event": "MEDE", "consent": "true"},
+              files={"file": ("s.jpg", _jpg((121, 121, 121)), "image/jpeg")}).json()["guest_id"]
+rig._fa = _Detector(_Rosto(_vet(0.9), 150))            # casa com as duas selfies
+
+# 1) cada trecho grava o seu horario (o aparelho manda T0..T2; o servidor carimba T3 e T4)
+_antes = time.time()
+_r1 = C.post("/ingest", headers=h(_md), data={
+    "event": "MEDE", "m_t0": "2026:09:28 14:03:21.37", "m_camera": "Canon EOS R8",
+    "m_t1": "1790000000.5", "m_tapp": "1790000003.25", "m_t2": "1790000004.0", "m_tentativa": "2",
+    "m_via": "compartilhar", "m_relogio": "-812.5", "m_rtt": "64"},
+    files={"file": ("IMG_1234.JPG", _jpg_exif((130, 130, 130)), "image/jpeg")})
+_p1 = _r1.json()["photo_id"]; _m1 = _med(_p1) or {}
+checa("T0 fica como o EXIF cru, relogio da camera", _m1.get("t0_exif"), "2026:09:28 14:03:21.37")
+checa("T0 lido no aparelho, antes de reduzir", _m1.get("t0_fonte"), "aparelho")
+checa("camera registrada (a calibracao e por camera)", _m1.get("camera"), "Canon EOS R8")
+checa("numero de sequencia sai do nome do arquivo", _m1.get("seq"), 1234)
+checa("T1, entrada no app e T2 ficam como o celular mandou",
+      (_m1.get("t1_arquivo"), _m1.get("t_app"), _m1.get("t2_envio")), (1790000000.5, 1790000003.25, 1790000004.0))
+checa("tentativa, via e relogio do celular", (_m1.get("tentativa"), _m1.get("via"), _m1.get("relogio_ms"), _m1.get("rtt_ms")),
+      (2, "compartilhar", -812.5, 64.0))
+checa("T3 carimbado pelo servidor na chegada", _antes <= (_m1.get("t3_recebida") or 0) <= time.time(), True)
+checa("T4 depois de T3 (pronta: salva, entregue, feed acordado)", (_m1.get("t3_recebida") or 1) <= (_m1.get("t4_pronta") or 0), True)
+checa("o nome do arquivo nao e guardado", "IMG_1234" in _json.dumps(_m1), False)
+
+# 3) EXIF lido no servidor quando o aparelho nao mandou (foto pequena, FTP, app antigo)
+_p2 = C.post("/ingest", headers=h(_md), data={"event": "MEDE"},
+             files={"file": ("x.jpg", _jpg_exif((131, 131, 131), dto="2026:09:28 14:05:00", sub=""), "image/jpeg")}).json()["photo_id"]
+checa("sem m_t0, o servidor le o EXIF dos bytes", (_med(_p2) or {}).get("t0_exif"), "2026:09:28 14:05:00")
+checa("e marca a fonte como servidor", (_med(_p2) or {}).get("t0_fonte"), "servidor")
+
+# 4) sem EXIF e sem m_t0: T0 NAO existe (nunca inventar)
+_p3 = C.post("/ingest", headers=h(_md), data={"event": "MEDE"},
+             files={"file": ("y.jpg", _jpg((132, 132, 132)), "image/jpeg")}).json()["photo_id"]
+checa("ausencia de T0 nao inventa T0", ((_med(_p3) or {}).get("t0_exif"), (_med(_p3) or {}).get("t0_fonte")), (None, None))
+checa("sem os campos do aparelho, T1/T2 ficam vazios", ((_med(_p3) or {}).get("t1_arquivo"), (_med(_p3) or {}).get("t2_envio")), (None, None))
+checa("T3/T4 existem mesmo sem o aparelho mandar nada", bool((_med(_p3) or {}).get("t3_recebida") and (_med(_p3) or {}).get("t4_pronta")), True)
+
+# 7) sem dado novo, o /ingest responde exatamente como antes
+checa("a resposta do /ingest nao mudou de forma",
+      sorted(C.post("/ingest", headers=h(_md), data={"event": "MEDE"},
+                    files={"file": ("z.jpg", _jpg((133, 133, 133)), "image/jpeg")}).json().keys()),
+      sorted(["photo_id", "n_faces", "dims", "duplicada", "processing_ms", "latency_ms", "matched_guests"]))
+_lixo = C.post("/ingest", headers=h(_md), data={"event": "MEDE", "m_t0": "<script>", "m_t2": "abc",
+                                                  "m_camera": "C" * 300, "m_tentativa": "-4", "m_via": "x" * 80},
+               files={"file": ("w.jpg", _jpg((134, 134, 134)), "image/jpeg")})
+_ml = _med(_lixo.json()["photo_id"]) or {}
+checa("campo do aparelho mal formado nao derruba o envio", _lixo.status_code, 200)
+checa("e vira vazio, nao lixo no banco", (_ml.get("t0_exif"), _ml.get("t2_envio"), _ml.get("tentativa")), (None, None, None))
+checa("texto do aparelho tem teto", len(_ml.get("camera") or "") <= 64 and len(_ml.get("via") or "") <= 16, True)
+
+# 2/3) duplicata nao cria segunda cadeia
+_rd = C.post("/ingest", headers=h(_md), data={"event": "MEDE", "m_t2": "1790009999.0", "m_tentativa": "1"},
+             files={"file": ("IMG_1234.JPG", _jpg_exif((130, 130, 130)), "image/jpeg")}).json()
+checa("a mesma foto de novo e duplicata", (_rd["duplicada"], _rd["photo_id"]), (True, _p1))
+checa("duplicata nao cria outra linha de medida",
+      _s.q("SELECT COUNT(*) n FROM medida_foto WHERE photo_id=?", (_p1,), "one")["n"], 1)
+checa("a primeira cadeia fica intacta (T2 da primeira vez)", (_med(_p1) or {}).get("t2_envio"), 1790000004.0)
+checa("e a duplicata fica contada", (_med(_p1) or {}).get("duplicatas"), 1)
+
+# T5: so o aparelho do convidado diz quando a foto apareceu na tela
+_t5 = time.time() - 1.0
+_rt = C.post("/medida/tela", json={"event": "MEDE", "guest_id": _mg1, "photo_id": _p1, "t5": _t5,
+                                   "relogio_ms": 120.0, "rtt_ms": 80.0, "origem": "ao_vivo"})
+checa("aviso de tela aceito para foto entregue a ela", _rt.status_code, 200)
+_tl = dict(_s.q("SELECT * FROM medida_tela WHERE guest_id=? AND photo_id=?", (_mg1, _p1), "one") or {})
+checa("T5 fica como o aparelho mediu", (_tl.get("t5_tela"), _tl.get("origem")), (_t5, "ao_vivo"))
+checa("e a chegada do aviso fica separada (limite superior)", _t5 <= (_tl.get("t5_recebida") or 0) <= time.time(), True)
+C.post("/medida/tela", json={"event": "MEDE", "guest_id": _mg1, "photo_id": _p1, "t5": _t5 + 50, "origem": "retorno"})
+checa("a PRIMEIRA aparicao vale; repetir nao sobrescreve",
+      _s.q("SELECT t5_tela FROM medida_tela WHERE guest_id=? AND photo_id=?", (_mg1, _p1), "one")["t5_tela"], _t5)
+_pnao = C.post("/ingest", headers=h(_md), data={"event": "MEDE"},
+               files={"file": ("n.jpg", _jpg((135, 135, 135)), "image/jpeg")}).json()["photo_id"]
+_s.q("DELETE FROM match WHERE photo_id=?", (_pnao,))                     # foto NAO entregue a ninguem
+checa("aviso de foto que nao foi entregue a ela e recusado",
+      C.post("/medida/tela", json={"event": "MEDE", "guest_id": _mg1, "photo_id": _pnao, "t5": _t5}).status_code, 403)
+checa("aviso de convidado de outro evento e recusado",
+      C.post("/medida/tela", json={"event": "REFE", "guest_id": _mg1, "photo_id": _p1, "t5": _t5}).status_code, 403)
+
+# 5) sem aviso, nao ha entrega na tela (match.ts NAO vira T5)
+_ex = C.get("/medidas", params={"event": "MEDE"}, headers=h(_md))
+checa("export da cadeia para a dona do evento", _ex.status_code, 200)
+_ej = _ex.json(); _f1 = next((f for f in _ej.get("fotos", []) if f["photo_id"] == _p1), {})
+checa("uma foto se correlaciona do EXIF ate a tela",
+      (_f1.get("t0_exif"), _f1.get("t2_envio"), bool(_f1.get("t3_recebida")), bool(_f1.get("t4_pronta")),
+       [t.get("t5_tela") for t in _f1.get("telas", [])]),
+      ("2026:09:28 14:03:21.37", 1790000004.0, True, True, [_t5]))
+checa("entregue a duas pessoas, mas so uma avisou: uma tela so", len(_f1.get("telas", [])), 1)
+checa("sem aviso, a outra entrega fica sem T5", _f1.get("entregas"), 2)
+_ftxt = _json.dumps(_ej)
+checa("export sem guest_id", _mg1 in _ftxt or _mg2 in _ftxt, False)
+checa("export sem contato nem nome", "11999" in _ftxt or "Bia" in _ftxt, False)
+checa("export sem endereco de imagem", "/img/" in _ftxt, False)
+checa("convidado vira apelido do proprio export", sorted(c["c"] for c in _ej.get("convidados", [])), ["c1", "c2"])
+checa("outra fotografa nao exporta o evento dos outros",
+      C.get("/medidas", params={"event": "MEDE"}, headers=h(_mo)).status_code, 403)
+checa("sem login nao exporta", C.get("/medidas", params={"event": "MEDE"}).status_code in (401, 403), True)
+
+# adesao: abriu o link (contador, sem id) x fez selfie
+C.post("/medida/abriu", json={"event": "MEDE"}); C.post("/medida/abriu", json={"event": "MEDE"})
+checa("aberturas contadas no evento", _s.q("SELECT aberturas FROM event WHERE code='MEDE'", (), "one")["aberturas"], 2)
+C.post("/medida/abriu", json={"event": "NAOEXISTE"})
+checa("abrir evento inexistente nao cria evento", _s.evento("NAOEXISTE"), None)
+checa("o export traz o funil abriu x selfie", (_ej.get("aberturas") is not None, len(_ej.get("convidados", []))), (True, 2))
+
+# 6) retencao: morre com a base, e tem teto de 30 dias
+_s.apaga_foto("MEDE", _p3)
+checa("foto apagada leva a medida junto", _med(_p3), None)
+_s.apagar_dados_do_convidado(_mg1)
+checa("'apagar meus dados' leva os avisos de tela do convidado",
+      _s.q("SELECT COUNT(*) n FROM medida_tela WHERE guest_id=?", (_mg1,), "one")["n"], 0)
+_velho = time.time() - 31 * 86400
+_s.q("UPDATE medida_foto SET criado=? WHERE photo_id=?", (_velho, _p2))
+_s.q("INSERT OR IGNORE INTO medida_tela(guest_id,photo_id,event_code,t5_tela,t5_recebida,origem) VALUES('fantasma',?,'MEDE',1,?, 'ao_vivo')", (_p1, time.time()))
+_s.expirar()
+checa("medida com mais de 30 dias sai na varredura", _med(_p2), None)
+checa("medida recente fica", _med(_p1) is not None, True)
+checa("aviso de tela orfao (convidado que nao existe) sai", _s.q("SELECT COUNT(*) n FROM medida_tela WHERE guest_id='fantasma'", (), "one")["n"], 0)
+_s.apaga_evento("MEDE")
+checa("evento apagado leva todas as medidas",
+      (_s.q("SELECT COUNT(*) n FROM medida_foto WHERE event_code='MEDE'", (), "one")["n"],
+       _s.q("SELECT COUNT(*) n FROM medida_tela WHERE event_code='MEDE'", (), "one")["n"]), (0, 0))
+
+# 7) migracao: banco antigo (sem as tabelas novas) ganha as tabelas e nada muda nele
+_velho_db = os.path.join(tempfile.mkdtemp(), "antigo.db")
+_cv = _sqlite3.connect(_velho_db); _cv.executescript(_s.SCHEMA)
+_cv.execute("INSERT INTO photo(id,event_code,bytes,n_faces,criado) VALUES('antiga','OLD',x'00',1,1)"); _cv.commit()
+_s.migra(_cv)
+_tabs = {r[0] for r in _cv.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+checa("migracao cria as tabelas novas num banco antigo", {"medida_foto", "medida_tela"} <= _tabs, True)
+checa("migracao nao inventa medida para foto antiga",
+      _cv.execute("SELECT COUNT(*) FROM medida_foto").fetchone()[0], 0)
+checa("migracao preserva a foto antiga", _cv.execute("SELECT COUNT(*) FROM photo WHERE id='antiga'").fetchone()[0], 1)
+_s.migra(_cv)
+checa("migracao roda duas vezes sem erro", True, True)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

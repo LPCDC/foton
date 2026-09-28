@@ -123,8 +123,33 @@ def conn():
         _conn.execute("""CREATE TABLE IF NOT EXISTS rejeicao(
             guest_id TEXT, photo_id TEXT, score REAL, limiar REAL, modelo TEXT,
             via TEXT, ts_entrega REAL, ts REAL, PRIMARY KEY(guest_id, photo_id))""")
+        migra(_conn)
         _conn.commit()
     return _conn
+
+def migra(c):
+    """INSTRUMENTACAO POR TRECHO (ADR-0046). Aditiva e repetivel: banco antigo ganha as
+    tabelas vazias e nada do que existe muda. Foto anterior a isto fica SEM linha de
+    medida, e o export a mostra como "nao instrumentada", nunca com horario inventado.
+
+    Nenhum dado pessoal novo: ids que ja existem, horarios, modelo da camera e o numero
+    de sequencia do arquivo. Morre com a base (foto, convidado, evento) e tem teto de
+    30 dias (expirar)."""
+    c.execute("""CREATE TABLE IF NOT EXISTS medida_foto(
+        photo_id TEXT PRIMARY KEY, event_code TEXT,
+        t0_exif TEXT, t0_fonte TEXT, camera TEXT, seq INTEGER,
+        t1_arquivo REAL, t_app REAL, t2_envio REAL, tentativa INTEGER, via TEXT,
+        relogio_ms REAL, rtt_ms REAL,
+        t3_recebida REAL, t4_pronta REAL, duplicatas INTEGER DEFAULT 0, criado REAL)""")
+    c.execute("""CREATE TABLE IF NOT EXISTS medida_tela(
+        guest_id TEXT, photo_id TEXT, event_code TEXT,
+        t5_tela REAL, relogio_ms REAL, rtt_ms REAL, t5_recebida REAL, origem TEXT,
+        PRIMARY KEY(guest_id, photo_id))""")
+    c.execute("CREATE INDEX IF NOT EXISTS ix_medida_foto_ev ON medida_foto(event_code)")
+    c.execute("CREATE INDEX IF NOT EXISTS ix_medida_tela_ev ON medida_tela(event_code)")
+    try: c.execute("ALTER TABLE event ADD COLUMN aberturas INTEGER DEFAULT 0")
+    except sqlite3.OperationalError: pass
+    c.commit()
 
 def q(sql, args=(), fetch=None):
     with _lock:
@@ -406,6 +431,7 @@ def expirar(dias_biometria=7, dias_fotos=90):
     for g in gs:
         q("DELETE FROM match WHERE guest_id=?", (g["id"],))
         q("DELETE FROM rejeicao WHERE guest_id=?", (g["id"],))
+        q("DELETE FROM medida_tela WHERE guest_id=?", (g["id"],))   # nao vive mais que a pessoa
         q("DELETE FROM guest WHERE id=?", (g["id"],))
     # 2) contatos deixados voluntariamente seguem a retenção das fotos
     q("DELETE FROM contact WHERE ts < ?", (lim_fot,))
@@ -415,6 +441,8 @@ def expirar(dias_biometria=7, dias_fotos=90):
         q("DELETE FROM face WHERE photo_id=?", (p["id"],))
         q("DELETE FROM match WHERE photo_id=?", (p["id"],))
         q("DELETE FROM rejeicao WHERE photo_id=?", (p["id"],))
+        q("DELETE FROM medida_foto WHERE photo_id=?", (p["id"],))
+        q("DELETE FROM medida_tela WHERE photo_id=?", (p["id"],))
         q("DELETE FROM photo WHERE id=?", (p["id"],))
     # 4) ORFAOS (ADR-0037, autorizado pelo dono em 2026-09-21): dado derivado cuja base
     #    ja nao existe. O defeito antigo de apaga_evento deixou entregas de eventos apagados
@@ -426,11 +454,18 @@ def expirar(dias_biometria=7, dias_fotos=90):
     for tabela, onde in (
             ("match", "guest_id NOT IN (SELECT id FROM guest) OR photo_id NOT IN (SELECT id FROM photo)"),
             ("rejeicao", "guest_id NOT IN (SELECT id FROM guest) OR photo_id NOT IN (SELECT id FROM photo)"),
-            ("face", "photo_id NOT IN (SELECT id FROM photo)")):
+            ("face", "photo_id NOT IN (SELECT id FROM photo)"),
+            ("medida_foto", "photo_id NOT IN (SELECT id FROM photo)"),
+            ("medida_tela", "guest_id NOT IN (SELECT id FROM guest) OR photo_id NOT IN (SELECT id FROM photo)")):
         n = q(f"SELECT COUNT(*) FROM {tabela} WHERE {onde}", (), "one")[0]
         if n:
             q(f"DELETE FROM {tabela} WHERE {onde}")
             orfaos += n
+    # 5) TETO da instrumentacao (ADR-0046): 30 dias, mesmo com a base viva. O que sobra
+    #    disso e so o agregado sem id em docs/BENCHMARKS.md.
+    lim_med = agora - MEDIDA_DIAS * 86400
+    q("DELETE FROM medida_foto WHERE criado < ?", (lim_med,))
+    q("DELETE FROM medida_tela WHERE t5_recebida < ?", (lim_med,))
     return {"convidados": len(gs), "fotos": len(ps), "orfaos": orfaos}
 
 def zerar_dados():
@@ -444,7 +479,7 @@ def zerar_dados():
     antes = tamanho_no_disco()
     contagem = {t: (q("SELECT COUNT(*) FROM " + t, (), "one") or [0])[0]
                 for t in ("photo", "face", "guest", "match", "contact", "event")}
-    for t in ("match", "rejeicao", "face", "photo", "guest", "contact", "event"):
+    for t in ("match", "rejeicao", "medida_tela", "medida_foto", "face", "photo", "guest", "contact", "event"):
         q("DELETE FROM " + t)
     depois = compacta()
     return {**contagem, "bytes_antes": antes, "bytes_depois": depois}
@@ -487,6 +522,7 @@ def apagar_dados_do_convidado(gid):
     achou = bool(q("SELECT 1 FROM guest WHERE id=?", (gid,), "one"))
     q("DELETE FROM match WHERE guest_id=?", (gid,))
     q("DELETE FROM rejeicao WHERE guest_id=?", (gid,))     # score e derivado de biometria
+    q("DELETE FROM medida_tela WHERE guest_id=?", (gid,))  # quando ela viu cada foto
     q("DELETE FROM contact WHERE guest_id=?", (gid,))
     q("DELETE FROM guest WHERE id=?", (gid,))
     return achou
@@ -521,7 +557,7 @@ def apaga_evento(code):
     for t in ("match", "rejeicao"):
         q(f"""DELETE FROM {t} WHERE guest_id IN (SELECT id FROM guest WHERE event_code=?)
                                OR photo_id IN (SELECT id FROM photo WHERE event_code=?)""", (code, code))
-    for t in ("photo", "face", "guest", "contact"):
+    for t in ("photo", "face", "guest", "contact", "medida_foto", "medida_tela"):
         q(f"DELETE FROM {t} WHERE event_code=?", (code,))
     q("DELETE FROM event WHERE code=?", (code,))
 
@@ -595,6 +631,70 @@ def apaga_foto(code, pid):
     q("DELETE FROM face WHERE photo_id=?", (pid,))
     q("DELETE FROM match WHERE photo_id=?", (pid,))
     q("DELETE FROM rejeicao WHERE photo_id=?", (pid,))
+    q("DELETE FROM medida_foto WHERE photo_id=?", (pid,))
+    q("DELETE FROM medida_tela WHERE photo_id=?", (pid,))
+
+# ---------------- instrumentacao por trecho (ADR-0046) ----------------
+MEDIDA_DIAS = 30
+_CAMPOS_FOTO = ("t0_exif", "t0_fonte", "camera", "seq", "t1_arquivo", "t_app", "t2_envio",
+                "tentativa", "via", "relogio_ms", "rtt_ms")
+
+def salva_medida_foto(pid, code, t3, t4, campos):
+    """Uma cadeia por foto. INSERT OR IGNORE: a primeira chegada e a que vale."""
+    v = [campos.get(k) for k in _CAMPOS_FOTO]
+    q(f"""INSERT OR IGNORE INTO medida_foto(photo_id,event_code,{",".join(_CAMPOS_FOTO)},
+            t3_recebida,t4_pronta,duplicatas,criado)
+          VALUES(?,?,{",".join("?" * len(_CAMPOS_FOTO))},?,?,0,?)""",
+      (pid, code, *v, t3, t4, time.time()))
+
+def soma_duplicata(pid):
+    """A mesma foto chegou de novo: conta, sem criar outra cadeia."""
+    q("UPDATE medida_foto SET duplicatas=COALESCE(duplicatas,0)+1 WHERE photo_id=?", (pid,))
+
+def convidado_do_evento(gid, code):
+    return bool(q("SELECT 1 FROM guest WHERE id=? AND event_code=?", (gid, code), "one"))
+
+def foi_entregue(gid, pid):
+    return bool(q("SELECT 1 FROM match WHERE guest_id=? AND photo_id=?", (gid, pid), "one"))
+
+def marca_tela(gid, pid, code, t5, relogio_ms, rtt_ms, origem):
+    """Primeira vez que a foto apareceu na tela do convidado (a primeira vale)."""
+    q("""INSERT OR IGNORE INTO medida_tela(guest_id,photo_id,event_code,t5_tela,relogio_ms,rtt_ms,
+            t5_recebida,origem) VALUES(?,?,?,?,?,?,?,?)""",
+      (gid, pid, code, t5, relogio_ms, rtt_ms, time.time(), origem))
+
+def conta_abertura(code):
+    """Mais uma sessao abriu a entrada do evento. So conta evento que existe."""
+    q("UPDATE event SET aberturas=COALESCE(aberturas,0)+1 WHERE code=?", (code,))
+
+def medidas_do_evento(code):
+    """A cadeia do evento para o relatorio (ADR-0046). O convidado vira apelido do proprio
+    export (c1, c2...), e contato nao entra: senao a dona ligaria o nome de alguem as fotos
+    em que o rosto dele apareceu. Sem bytes, sem endereco de imagem."""
+    ev = evento(code) or {}
+    convs = q("SELECT id, criado FROM guest WHERE event_code=? ORDER BY criado", (code,), "all") or []
+    apelido = {g["id"]: f"c{i + 1}" for i, g in enumerate(convs)}
+    fotos = []
+    for p in q("""SELECT p.id AS pid, p.n_faces AS n_faces_foto, m.* FROM photo p
+                  LEFT JOIN medida_foto m ON m.photo_id=p.id
+                  WHERE p.event_code=? ORDER BY p.criado""", (code,), "all") or []:
+        d = dict(p)
+        linha = {"photo_id": d["pid"], "n_faces": d["n_faces_foto"],
+                 "instrumentada": d.get("photo_id") is not None,
+                 **{k: d.get(k) for k in _CAMPOS_FOTO},
+                 "t3_recebida": d.get("t3_recebida"), "t4_pronta": d.get("t4_pronta"),
+                 "duplicatas": d.get("duplicatas") or 0}
+        linha["entregas"] = q("SELECT COUNT(*) n FROM match WHERE photo_id=?", (d["pid"],), "one")["n"]
+        linha["recusas"] = q("SELECT COUNT(*) n FROM rejeicao WHERE photo_id=?", (d["pid"],), "one")["n"]
+        linha["telas"] = [{"c": apelido.get(t["guest_id"], "c?"), "t5_tela": t["t5_tela"],
+                           "relogio_ms": t["relogio_ms"], "rtt_ms": t["rtt_ms"],
+                           "t5_recebida": t["t5_recebida"], "origem": t["origem"]}
+                          for t in q("SELECT * FROM medida_tela WHERE photo_id=? ORDER BY t5_tela",
+                                     (d["pid"],), "all") or []]
+        fotos.append(linha)
+    return {"evento": code, "criado": ev.get("criado"), "aberturas": ev.get("aberturas") or 0,
+            "convidados": [{"c": apelido[g["id"]], "t_selfie": g["criado"]} for g in convs],
+            "fotos": fotos}
 
 def rostos_de(code):
     rs = q("SELECT photo_id, emb FROM face WHERE event_code=?", (code,), "all")

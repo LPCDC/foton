@@ -766,9 +766,80 @@ def ingerir_bytes(event: str, raw: bytes):
     _marca_latencia(int((time.time() - t0) * 1000))
     return pid, len(faces)
 
+# ---------------- instrumentacao por trecho (ADR-0046) ----------------
+# O aparelho manda o que so ele sabe (T0 do EXIF lido ANTES de reduzir, T1 data do arquivo,
+# entrada no app, T2 inicio do envio, relogio dele); o servidor carimba T3 e T4. Tudo
+# opcional: sem os campos, o /ingest faz exatamente o que fazia. Campo mal formado vira
+# vazio, nunca derruba o envio da foto.
+_RE_T0 = re.compile(r"^\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}(\.\d{1,6})?([+-]\d{2}:\d{2})?$")
+_RE_SEQ = re.compile(r"^[A-Za-z_]{2,5}0?(\d{4})\.jpe?g$", re.I)     # IMG_1234.JPG, _MG_1234, DSC01234
+
+def _num(v, lo=None, hi=None):
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return None
+    if x != x or x in (float("inf"), float("-inf")): return None
+    if (lo is not None and x < lo) or (hi is not None and x > hi): return None
+    return x
+
+def _txt(v, n):
+    if not v: return None
+    v = "".join(ch for ch in str(v) if ch.isprintable()).strip()[:n]
+    return v or None
+
+def _camera(make, model):
+    make, model = _txt(make, 64), _txt(model, 64)
+    if model and make and model.lower().startswith(make.lower()): return model
+    return _txt(" ".join(x for x in (make, model) if x), 64)
+
+def _exif_do_arquivo(raw):
+    """T0 lido dos bytes que chegaram (foto pequena, FTP, app antigo). A foto reduzida no
+    celular chega sem EXIF: por isso o aparelho le antes e manda em m_t0."""
+    try:
+        ex = Image.open(io.BytesIO(raw)).getexif()
+        sub = ex.get_ifd(0x8769)
+        dto = sub.get(0x9003)
+        t0 = None
+        if isinstance(dto, str) and re.match(r"^\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}$", dto.strip()):
+            t0 = dto.strip()
+            ss, of = sub.get(0x9291), sub.get(0x9011)
+            if isinstance(ss, str) and ss.strip().isdigit(): t0 += "." + ss.strip()[:6]
+            if isinstance(of, str) and re.match(r"^[+-]\d{2}:\d{2}$", of.strip()): t0 += of.strip()
+        return t0, _camera(ex.get(0x010F), ex.get(0x0110))
+    except Exception:
+        return None, None
+
+def _campos_medida(nome_arquivo, raw, m):
+    t0 = m.get("t0") if m.get("t0") and _RE_T0.match(m["t0"].strip()) else None
+    fonte = "aparelho" if t0 else None
+    cam = _txt(m.get("camera"), 64)
+    if not t0:
+        t0, cam_srv = _exif_do_arquivo(raw)
+        fonte = "servidor" if t0 else None
+        cam = cam or cam_srv
+    seq = _RE_SEQ.match(os.path.basename(nome_arquivo or ""))
+    tent = _num(m.get("tentativa"), 1, 1000)
+    return {"t0_exif": t0.strip() if t0 else None, "t0_fonte": fonte, "camera": cam,
+            "seq": int(seq.group(1)) if seq else None,
+            "t1_arquivo": _num(m.get("t1"), 1.5e9, 4e9), "t_app": _num(m.get("tapp"), 1.5e9, 4e9),
+            "t2_envio": _num(m.get("t2"), 1.5e9, 4e9), "tentativa": int(tent) if tent else None,
+            "via": _txt(m.get("via"), 16), "relogio_ms": _num(m.get("relogio"), -864e5, 864e5),
+            "rtt_ms": _num(m.get("rtt"), 0, 6e4)}
+
+@app.get("/agora")
+def agora():
+    """Hora do servidor, e nada mais: o aparelho mede a diferenca do relogio dele."""
+    return {"t": time.time()}
+
 @app.post("/ingest")
 async def ingest(event: str = Form(...), file: UploadFile = File(...),
-                 authorization: str = Header(None), referencia: bool = Form(False)):
+                 authorization: str = Header(None), referencia: bool = Form(False),
+                 m_t0: str = Form(None), m_camera: str = Form(None), m_t1: str = Form(None),
+                 m_tapp: str = Form(None), m_t2: str = Form(None), m_tentativa: str = Form(None),
+                 m_via: str = Form(None), m_relogio: str = Form(None), m_rtt: str = Form(None)):
+    # T3 (ADR-0046): o multipart ja foi lido inteiro quando o handler comeca.
+    t3 = time.time()
     # Sem isto, qualquer um com o código do QR injetava imagem na galeria dos convidados.
     c = _pode(event, authorization)
     e = store.evento(event)
@@ -783,6 +854,7 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...),
     sha = store.sha_de(raw)
     ja = store.foto_por_sha(event, sha)
     if ja:
+        store.soma_duplicata(ja)          # a primeira cadeia fica; a repeticao so conta (ADR-0046)
         lat = int((time.time() - t0) * 1000)
         log.info('{"stage":"ingest","photo_id":"%s","latency_ms":%d,"status":"duplicada"}' % (ja, lat))
         return {"photo_id": ja, "n_faces": store.n_faces_de(event, ja), "duplicada": True,
@@ -805,8 +877,51 @@ async def ingest(event: str = Form(...), file: UploadFile = File(...),
              % (pid, len(faces), pms, lat))
     # quem estiver esperando em /feed/espera acorda agora (ADR-0042)
     _versao_evento[event] = _versao_evento.get(event, 0) + 1
+    # T4: salva, entregas decididas e feed acordado. Nao e "apareceu na tela" (isso e T5).
+    store.salva_medida_foto(pid, event, t3, time.time(), _campos_medida(file.filename, raw, {
+        "t0": m_t0, "camera": m_camera, "t1": m_t1, "tapp": m_tapp, "t2": m_t2,
+        "tentativa": m_tentativa, "via": m_via, "relogio": m_relogio, "rtt": m_rtt}))
     return {"photo_id": pid, "n_faces": len(faces), "dims": dims, "duplicada": False,
             "processing_ms": round(pms, 1), "latency_ms": lat, "matched_guests": matched}
+
+@app.post("/medida/tela")
+async def medida_tela(request: Request):
+    """T5 (ADR-0046): o aparelho do convidado avisa que a foto CARREGOU na aba "suas fotos",
+    com a galeria na tela. So vale para foto entregue a ele, no evento dele. A primeira
+    aparicao e a que fica. Nao grava nada alem de ids que ja existem e horarios."""
+    try:
+        j = await request.json()
+    except Exception:
+        raise HTTPException(400, "json")
+    code, gid, pid = str(j.get("event") or ""), str(j.get("guest_id") or ""), str(j.get("photo_id") or "")
+    t5 = _num(j.get("t5"), 1.5e9, 4e9)
+    if not (code and gid and pid and t5):
+        raise HTTPException(400, "campos")
+    if not store.convidado_do_evento(gid, code) or not store.foi_entregue(gid, pid):
+        raise HTTPException(403, "foto nao entregue a este convidado")
+    origem = j.get("origem") if j.get("origem") in ("ao_vivo", "selfie", "retorno") else "retorno"
+    store.marca_tela(gid, pid, code, t5, _num(j.get("relogio_ms"), -864e5, 864e5),
+                     _num(j.get("rtt_ms"), 0, 6e4), origem)
+    return {"ok": True}
+
+@app.post("/medida/abriu")
+async def medida_abriu(request: Request):
+    """Mais uma sessao abriu a entrada do evento (funil: abriu x fez selfie). Contador sem
+    id. Evento inexistente nao e criado."""
+    try:
+        code = str((await request.json()).get("event") or "")
+    except Exception:
+        raise HTTPException(400, "json")
+    if code and store.evento(code):
+        store.conta_abertura(code)
+    return {"ok": True}
+
+@app.get("/medidas")
+def medidas(event: str, authorization: str = Header(None)):
+    """Export da cadeia por trecho, para o relatorio (tests/relatorio_evento.py). So a dona
+    do evento ou admin. Convidado vira apelido; sem contato, sem imagem, sem endereco."""
+    _pode(event, authorization)
+    return store.medidas_do_evento(event)
 
 @app.post("/selfie")
 async def selfie(request: Request, event: str = Form(...), consent: bool = Form(...), file: UploadFile = File(...),

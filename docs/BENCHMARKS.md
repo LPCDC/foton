@@ -948,3 +948,39 @@ cada foto espera a anterior. **O teto do piloto é a vazão, não o número de c
 
 **Sujeira deixada:** o evento `KQRH` apaga-se sozinho; a **conta vazia
 `carga-1790199346@teste.foton`** precisa ser apagada pelo admin no painel.
+
+## Ensaio local da instrumentação por trecho (P1, ADR-0046) | 2026-09-28
+
+**É verificação da ferramenta, não medida do produto.** Rodou o app real, o servidor real
+com o reconhecimento real (buffalo_s, no PC do dono) e um navegador que renderiza de verdade
+(Edge sem janela, pilotado por `scratchpad/convidado_cdp.py`). A câmera e o celular foram
+**simulados** por `scratchpad/camera_simulada.py`, que guarda a verdade de cada disparo.
+Pessoa das fotos: fictícia, gerada por IA. Evento `48CH`, 13 fotos, 2 convidados.
+
+| O que | Real ou simulado |
+|---|---|
+| código do app (EXIF antes de reduzir, fila, envio, galeria, T5 no carregar) | real |
+| servidor, banco, reconhecimento, export, relatório | real |
+| relógio da câmera **83,6 s adiantado**; "transferência" para o celular de 2,0 a 4,1 s; IMG_0103 perdida | simulado, com a verdade guardada |
+| rede | localhost (não diz nada sobre 4G) |
+
+**O que a instrumentação acertou, contra a verdade conhecida:**
+
+| Grandeza | Resultado |
+|---|---|
+| desvio do relógio da câmera, pela foto do relógio lida na imagem que chegou ao Fóton | **+83,62 s** (injetado 83,6; a sobra é o arredondamento do EXIF a centésimos) |
+| T0 estimado − T0 real (n = 12) | **−0,020 a −0,027 s** |
+| T1 medido − T1 real (n = 12) | **+0,001 s** |
+| câmera → celular estimado × real | **2,02 × 2,00 · 3,52 × 3,50 · 2,72 × 2,70 · 4,12 × 4,10 s** |
+| perdas prováveis pelo buraco na sequência | **1** (injetada 1) |
+| EXIF depois da redução do celular (5,97 MB → 464 KB) | **vazio**: confirma por que o T0 é lido antes |
+
+**T5, e o que não foi inventado.** 24 entregas decididas, **12 vistas na tela**, todas do
+convidado que renderizava. O outro convidado (painel do navegador escondido, a imagem
+preguiçosa nunca carregou) ficou com as 12 **não observadas**, como deve ser. Fóton → tela
+nas 4 fotos que chegaram com a galeria aberta: **0,8 a 0,9 s** (localhost e PC); nas 8 que já
+existiam quando ele fez a selfie, 0,0 s depois da selfie.
+
+**O que estes números NÃO dizem:** nada sobre 4G, câmera de verdade, a VM (foi o PC) ou a
+espera humana (os 36 a 69 s "no celular até entrar no Fóton" são o tempo do meu script). A
+amostra com câmera e celular reais sai do ensaio de mesa (P2).

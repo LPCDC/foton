@@ -283,7 +283,7 @@ print("")
 print("[12] nada de app velho servido junto (decisao L do plano da Fiesta)")
 checa("artifact.html nao existe mais", os.path.exists(os.path.join(WEB, "artifact.html")), False)
 _sobrando = [n for n in os.listdir(WEB)
-             if n.endswith(".html") and n not in ("index.html", "cartaz.html") and not n.startswith("_")]
+             if n.endswith(".html") and n not in ("index.html", "cartaz.html", "relogio.html") and not n.startswith("_")]
 checa("nenhum outro html solto em app/web", _sobrando, [])
 
 print("")
@@ -348,6 +348,75 @@ checa("so a foto ampliada usa a classe lb", HTML.count('class="lb"'), 1)
 checa("o perfil chega ao sistema por html[data-perfil]", "document.documentElement.dataset.perfil = p" in HTML, True)
 checa("sem emoji no lugar da logo", "🖼️" in HTML, False)
 checa("a guia marca a aba certa ao abrir", "if(!btn) btn=document.querySelector(`.guia-tabs .tab[onclick*=" in HTML, True)
+
+print("")
+print("[18] instrumentacao no aparelho (ADR-0046): T0/T1 antes de reduzir, T5 onde a foto aparece")
+def _corpo(nome):
+    i = js.find(nome)
+    if i < 0: return ""
+    f = js.find("\n}\n", i)
+    return js[i:f if f > 0 else len(js)]
+_ue = _corpo("async function enviarUma(")
+checa("enviarUma le o EXIF ANTES de reduzir (o canvas apaga o EXIF)",
+      0 <= _ue.find("lerExif(") < _ue.find("reduzir(") if "lerExif(" in _ue else False, True)
+checa("enviarUma le a data do arquivo ANTES de reduzir",
+      0 <= _ue.find("lastModified") < _ue.find("reduzir(") if "lastModified" in _ue else False, True)
+checa("enviarUma continua mandando evento e arquivo",
+      "fd.append('event',ev.code)" in _ue and "fd.append('file',file)" in _ue, True)
+checa("a hora do envio sai no momento da tentativa", "medidasEnvio(" in _ue, True)
+checa("relogio do celular: /agora, o menor ida e volta vence",
+      "/agora" in _corpo("async function relogioServidor(") and "rtt<melhor.rtt" in _corpo("async function relogioServidor("), True)
+checa("o envio NAO espera o relogio (nao atrasa a foto)", "await relogioServidor(" in _ue, False)
+_ret = _corpo("async function retomarFila(")
+checa("a fila reenvia com a data ORIGINAL do arquivo", "lastModified" in _ret, True)
+checa("a fila manda a hora em que a foto entrou no app", "tApp:it.ts" in _ret.replace(" ", ""), True)
+_sw = io.open(os.path.join(WEB, "sw.js"), encoding="utf-8").read()
+checa("o compartilhar guarda a data de cada arquivo", "lastModified" in _sw, True)
+checa("e a pagina remonta o arquivo com ela", "lastModified" in _corpo("async function lerCompartilhadas("), True)
+_grid = _corpo("function renderGuestGrid(")
+checa("T5 e marcado quando a imagem CARREGA na galeria", "marcarTela(" in _grid and "onload" in _grid, True)
+checa("so na aba 'suas fotos' (entrega), nao em 'todas'", "!todasAba" in _grid[_grid.find("marcarTela(") - 200:_grid.find("marcarTela(") + 50], True)
+_mt = _corpo("function marcarTela(")
+checa("T5 so conta com a galeria na tela e a pagina visivel",
+      "visibilityState" in _mt and "s-g-gallery" in _mt, True)
+checa("T5 uma vez por foto", "_telaMarcada" in _mt, True)
+checa("o aviso de T5 nao trava nada (dispara e esquece)", "/medida/tela" in _mt and ".catch(" in _mt, True)
+checa("foto carregada com a pagina escondida conta quando ela volta", "_telaPendente" in js, True)
+checa("aviso de T5 nao leva nome, contato nem selfie",
+      any(k in _mt for k in ("contato", "nome:", "selfie.jpg")), False)
+checa("abertura do evento contada uma vez por sessao",
+      "/medida/abriu" in js and "sessionStorage" in _corpo("function marcarAbertura("), True)
+checa("o painel do evento exporta as medidas", 'onclick="exportarMedidas()"' in html, True)
+checa("o painel do evento abre o relogio de calibracao", 'href="relogio.html"' in html, True)
+_rel = os.path.join(WEB, "relogio.html")
+_relh = io.open(_rel, encoding="utf-8").read() if os.path.exists(_rel) else ""
+checa("relogio de calibracao existe e usa a hora do servidor", "/agora" in _relh, True)
+checa("relogio mostra decimos (a foto do relogio calibra a camera)", "decimos" in _relh, True)
+
+# O leitor de EXIF roda de verdade (Node), num JPEG com EXIF de camera.
+_ex = _corpo("async function lerExif(") + "\n}\n" + _corpo("function exifTiff(") + "\n}\n"
+try:
+    from PIL import Image as _Img
+    import base64 as _b64
+    _im = _Img.new("RGB", (64, 64), (80, 80, 80)); _e = _Img.Exif()
+    _e[0x010F] = "Canon"; _e[0x0110] = "Canon EOS R8"
+    _ifd = _e.get_ifd(0x8769); _ifd[0x9003] = "2026:09:28 14:03:21"; _ifd[0x9291] = "37"
+    _bb = io.BytesIO(); _im.save(_bb, "JPEG", exif=_e.tobytes())
+    _sem = io.BytesIO(); _im.save(_sem, "JPEG")
+    _prog = _ex + f"""
+const b1=Buffer.from('{_b64.b64encode(_bb.getvalue()).decode()}','base64');
+const b2=Buffer.from('{_b64.b64encode(_sem.getvalue()).decode()}','base64');
+(async()=>{{ const a=await lerExif(new Blob([b1])); const b=await lerExif(new Blob([b2]));
+  const c=await lerExif(new Blob([Buffer.from('nao e jpeg')])); console.log(JSON.stringify([a,b,c])); }})();"""
+    _f = tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8"); _f.write(_prog); _f.close()
+    _r = subprocess.run(["node", _f.name], capture_output=True, text=True); os.unlink(_f.name)
+    _out = json.loads(_r.stdout.strip() or "null") if _r.returncode == 0 else _r.stderr.strip()[-120:]
+except FileNotFoundError:
+    _out = "node ausente"
+checa("lerExif acha o disparo e a camera num JPEG real",
+      _out[0] if isinstance(_out, list) else _out, {"t0": "2026:09:28 14:03:21.37", "camera": "Canon EOS R8"})
+checa("sem EXIF, lerExif nao inventa T0", _out[1] if isinstance(_out, list) else _out, {})
+checa("arquivo que nao e JPEG nao quebra", _out[2] if isinstance(_out, list) else _out, {})
 
 print("")
 print("[17] sem travessao no app (regra permanente do dono, desde 11/08/2026)")
