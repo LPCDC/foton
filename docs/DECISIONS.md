@@ -1696,7 +1696,7 @@ aproximados (`photo.criado`, `latency_ms` no log) e a decisão de entrega (`matc
 | `t0_fonte` | onde foi lido: `aparelho` (antes de reduzir) ou `servidor` (bytes recebidos) | |
 | `camera` | `Make Model` do EXIF, até 64 caracteres (calibração é por câmera) | EXIF |
 | `seq` | número do nome do arquivo da câmera (`IMG_1234.JPG` → 1234): buraco na sequência = perda provável | nome do arquivo; o nome em si **não** é guardado |
-| `t1_arquivo` | foto disponível no celular: `File.lastModified` | **celular**: proxy; se o navegador não souber, vira a hora da escolha (o relatório marca quando T1 ≈ T2) |
+| `t1_arquivo` | **proxy** da chegada ao celular: `File.lastModified`. "Data do arquivo" e "chegou ao celular" podem não coincidir; fica proxy até ser validado no Android real (P2) | **celular**; se o navegador não souber, vira a hora da escolha (o relatório marca quando T1 ≈ T2) |
 | `t_app` | a foto entrou no Fóton (gravada na fila do aparelho) | celular |
 | `t2_envio` | começo da tentativa que deu certo | celular |
 | `tentativa` | número dessa tentativa (1 = primeira) | celular |

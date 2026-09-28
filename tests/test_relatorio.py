@@ -97,7 +97,23 @@ checa("entregas decididas x vistas na tela", (S["entregas"], S["telas_observadas
 checa("funil: abriu x selfie", (S["aberturas"], S["convidados"]), (5, 2))
 checa("recusas ('nao sou eu')", S["recusas"], 1)
 checa("percentil pelo posto mais proximo", R.pct([1, 2, 3, 4, 100], 95), 100)
+print("\n[4] criterio #4 do piloto: disparo ate a GALERIA do convidado, so o que foi observado")
+C4 = S["criterio4"]
+# A (13,0 s) e C (17,0 s) chegaram com a galeria aberta e tem T0; D ja existia quando a
+# pessoa entrou (tempo de espera dela, nao do produto); B nao foi observada.
+checa("so conta entrega observada AO VIVO e com T0", (C4["n"], round(C4["p95"], 3)), (2, 17.0))
+checa("entrega nao observada fica fora da conta, contada a parte", C4["nao_observadas"], 2)
+checa("dentro do limite de 30 s", C4["dentro"], True)
+checa("T0 usado estava calibrado", C4["t0_calibrado"], True)
+checa("sem calibracao, o criterio avisa", R.resumo(EXPORT, R.cadeia(EXPORT, {}, {"K"}))["criterio4"]["t0_calibrado"], False)
+_vazio = dict(EXPORT, fotos=[dict(f, telas=[]) for f in EXPORT["fotos"]])
+_c4v = R.resumo(_vazio, R.cadeia(_vazio, off, {"K"}))["criterio4"]
+checa("sem nenhuma observacao, o criterio nao tem numero (nem zero, nem atraso)", (_c4v["p95"], _c4v["dentro"]), (None, None))
+
 md = R.markdown(EXPORT, R.cadeia(EXPORT, off, {"K"}), S)
+checa("o relatorio diz que nao observado nao e atraso", "não é atraso" in md, True)
+checa("T1 escrito como proxy da chegada ao celular, ainda nao validado", "proxy da chegada ao celular" in md, True)
+checa("o criterio fala da galeria, nao do 'celular'", "aparecer na galeria" in md, True)
 checa("o relatorio diz o que e UNKNOWN", "UNKNOWN" in md and "não observado" in md, True)
 checa("o relatorio nao tem travessao", chr(0x2014) in md or chr(0x2013) in md, False)
 

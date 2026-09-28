@@ -19,8 +19,8 @@ que se promete e o que não sabemos: `PRODUCT.md`. O experimento: `docs/PILOTO-1
 - [x] Site: saíram "com fotógrafa real", "eventos de verdade", o "~1 s" e o modo Empresa; trava no test_site [6]
 
 ### Próximo bloco (para chegar ao primeiro evento e ao primeiro pagamento)
-- [~] **P1 · Instrumentar a cadeia por trecho** (Claude) | ADR-0046, testes [40]/[18]/test_relatorio. **Verificado num ensaio local** com câmera simulada (BENCHMARKS, 2026-09-28): desvio recuperado +83,62 s de 83,6; T0 a 0,03 s do real; T5 só onde a tela renderizou. **Falta a amostra com câmera e celular reais**, que sai do P2: pelo critério do dono, só então o P1 fecha.
-- [ ] **P2 · Ensaio de mesa** (dono, roteiro do Claude): celular Android do dono, a câmera que houver, 3 a 5 pessoas. Responde se o Fóton aparece no Compartilhar e se a galeria seleciona por arrasto
+- [x] **P1 · Instrumentação da cadeia por trecho: concluída como infraestrutura de medição, validada em ensaio controlado** (dono, 2026-09-28) | ADR-0046, `571450e` no ar; testes [40]/[18]/test_relatorio. Ensaio com câmera simulada (BENCHMARKS): desvio recuperado +83,62 s de 83,6; T0 a 0,03 s do real; perda deliberada achada; T5 só onde a galeria desenhou. Validar a instrumentação com Android e câmera reais é do P2, outro portão.
+- [ ] **P2 · Ensaio de mesa** (dono, roteiro em `docs/PILOTO-1.md`): câmera real → Android real → galeria → Compartilhar → Fóton em produção → convidado com a tela acesa. Pergunta: a fotógrafa manda 20 fotos para o Fóton sem pensar no Fóton? Valida também o T1 no Android. Regra: não corrigir nada durante o ensaio
 - [ ] **P3 · Risco de entrega errada** (dono decide): aceitar no piloto com convidados avisados, ou medir antes numa base maior
 - [ ] **Recrutar uma fotógrafa** para um evento nas próximas semanas (dono; convite e briefing de uma página pelo Claude)
 - [ ] **Preço do próximo evento pago** e como receber (PIX manual) (dono)

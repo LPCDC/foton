@@ -25,7 +25,33 @@ Qual o volume real? Ela paga pelo próximo?
 | P3 | **Risco de entrega errada decidido**: aceitar o risco do piloto com convidados avisados e o "Não sou eu" à vista, ou medir antes numa base maior | dono decide, Claude mede | A amostra rotulada tem 4 selfies (ADR-0034); foto na pessoa errada é o pior erro |
 | P4 | **Fotógrafa e anfitrião de acordo**: ela sabe que é teste; quem contratou a festa autoriza (`docs/CONTRATO-ORGANIZADOR.md`) | dono | O organizador é o controlador dos dados (PRODUTO.md §3b-2) |
 
+### Os horários, com o que cada um é (fechado em 2026-09-28)
+| | O que é | Estado |
+|---|---|---|
+| T0 | disparo, derivado do EXIF + calibração pela foto do relógio | proxy calibrado |
+| T1 | **proxy da chegada ao celular** (data do arquivo). "Data do arquivo" e "chegou ao celular" podem não ser a mesma coisa | **a validar no Android real (P2)** |
+| T2 | início do envio para o Fóton | celular, levado ao relógio do servidor |
+| T3 | recebimento pelo servidor | medido |
+| T4 | processamento terminado (salva, entregas decididas, feed acordado) | medido |
+| T5 | imagem **efetivamente carregada na galeria** do convidado | observado, ou **não observado** (a galeria não estava visível ou desenhando). Não observado nunca vira atraso nem falha de entrega |
+
+### A pergunta do P2 (não é "o código funciona?")
+> Uma fotógrafa consegue fazer 20 fotos com a câmera, receber essas fotos no Android,
+> selecionar um lote e mandar para o Fóton **sem pensar no Fóton**?
+
+Se sim, a arquitetura atual ganha uma evidência valiosa e se adia muita engenharia. Se não,
+o ensaio mostra onde quebra: seleção, Compartilhar, Camera Connect ou transferência. Por
+isso, **nada de app Android nativo nem pasta vigiada antes do P2** (dono, 2026-09-28).
+
+**Hipótese a testar (não é evidência do P1):** o gargalo operacional está na ponte câmera →
+celular → Compartilhar e no comportamento da fotógrafa, mais do que no servidor. Apoio que
+existe: a seleção na galeria é humana (dedução, acima) e 30 selfies ao mesmo tempo deram P95
+de 8,2 s (medição de 2026-08-29, B3). O ensaio do P1 **não** mediu isso: os 36 a 69 s "no
+celular até entrar no Fóton" dele eram o tempo do script de simulação.
+
 ### Roteiro do ensaio de mesa (P2), com a instrumentação do P1
+**Regra: não corrigir nada durante o ensaio.** Se uma etapa parecer ruim, registrar o gesto,
+o tempo, o erro e o contorno usado. Mudar o produto só depois, com o registro na mão.
 1. No painel: criar o evento e abrir **"Ensaio: medir o caminho da foto"**.
 2. Abrir o **relógio de calibração** num segundo aparelho e **fotografar a tela com a
    câmera**, nítida. Essa foto entra no Fóton como qualquer outra.
@@ -36,7 +62,9 @@ Qual o volume real? Ela paga pelo próximo?
 5. Anotar o **número do último arquivo** da câmera (perdas = buracos na sequência).
 6. No fim: **"Exportar medidas (JSON)"** e mandar o arquivo e a foto do relógio para o
    relatório (`tests/relatorio_evento.py`).
-7. Se o relatório marcar T1 **suspeito**, o Android não passou a data do arquivo pelo
+7. **Validar o T1:** comparar, em 3 ou 4 fotos, a data do arquivo com a hora em que a foto
+   apareceu na galeria do celular (cronômetro ou gravação de tela). Se o relatório marcar T1
+   **suspeito**, o Android não passou a data do arquivo pelo
    Compartilhar: o trecho câmera → celular fica UNKNOWN nesse caminho.
 
 ### O que se mede, por trecho (servidor rápido ≠ produto rápido)
@@ -83,7 +111,7 @@ O piloto **passa** se, com evidência medida no evento:
 | 1 | **Zero foto entregue à pessoa errada** | É a falha que destrói confiança. Pior que atrasar. |
 | 2 | **Zero foto perdida** — toda foto disparada chegou ao servidor | Se some foto, a fotógrafa não pode confiar no sistema. |
 | 3 | ≥ 90% dos convidados que fizeram selfie receberam ao menos 1 foto correta | É a promessa do produto. |
-| 4 | **P95 do disparo até aparecer no celular ≤ 30 s** | O SLA de projeto é 10 s; num piloto com rajada, 30 s ainda é "na hora". Medir o número real, não o desejado. |
+| 4 | **P95 do disparo até a foto aparecer na galeria do convidado ≤ 30 s** | O SLA de projeto é 10 s; num piloto com rajada, 30 s ainda é "na hora". Medir o número real, não o desejado. **Só conta entrega observada** (houve T5, com a galeria aberta); a não observada é contada à parte e **não é atraso** (redação corrigida em 2026-09-28, ver definições acima). |
 | 5 | A fotógrafa operou **sozinha**, sem o desenvolvedor no ombro | É produto, não demonstração. |
 | 6 | O convidado abriu o link **sem aviso de segurança** do navegador | Ver bloqueador B1. |
 
@@ -193,7 +221,7 @@ elimina uma classe inteira de confusão.
 
 ## O que medir e onde anotar
 
-`docs/BENCHMARKS.md`: disparadas, recebidas, perdidas, P50/P95 do disparo→celular,
+`docs/BENCHMARKS.md`: disparadas, recebidas, perdidas, P50/P95 do disparo→galeria do convidado (só entregas observadas),
 entregas corretas, entregas erradas, convidados que não foram reconhecidos.
 
 ## Decisões do dono

@@ -138,6 +138,21 @@ def resumo(export, linhas):
     for k, _ in TRECHOS:
         v = [l["trechos"][k] for l in linhas if l["trechos"][k] is not None]
         S["trechos"][k] = {"n": len(v), "p50": pct(v, 50), "p95": pct(v, 95), "max": max(v) if v else None}
+    # Criterio #4 do PILOTO-1: disparo ate a foto APARECER NA GALERIA do convidado. So entra
+    # entrega observada (houve T5) que chegou com a galeria aberta (ao vivo) e tem T0. Foto
+    # que ja existia quando a pessoa entrou mede a espera dela, nao o produto. Entrega nao
+    # observada fica fora da conta e contada a parte: nao observado NAO e atraso.
+    obs, sem_t0, calib = [], 0, True
+    for l in linhas:
+        for t in l["telas"]:
+            if t["origem"] != "ao_vivo": continue
+            if l["t0"] is None: sem_t0 += 1; continue
+            obs.append(t["t5"] - l["t0"])
+            if l["t0_status"] != "proxy calibrado": calib = False
+    p = pct(obs, 95)
+    S["criterio4"] = {"limite_s": 30.0, "n": len(obs), "p95": p, "dentro": (p <= 30.0) if p is not None else None,
+                      "nao_observadas": S["entregas"] - S["telas_observadas"], "ao_vivo_sem_t0": sem_t0,
+                      "t0_calibrado": calib if obs else None}
     return S
 
 
@@ -151,9 +166,11 @@ def _s(x):
 
 def markdown(export, linhas, S):
     o = [f"# Cadeia por trecho, evento {export.get('evento')}", "",
-         "Legenda: T3 e T4 são **medidos** (relógio do servidor). T0 (EXIF) e T1 (data do arquivo) "
-         "são **proxy**. **UNKNOWN**: não há dado. **não observado**: nenhum aviso de tela chegou; "
-         "a decisão de entrega do servidor não conta como T5.", "",
+         "Legenda: T3 e T4 são **medidos** (relógio do servidor). T0 é o disparo pelo EXIF, "
+         "corrigido pela foto do relógio: **proxy**. T1 (data do arquivo) é **proxy da chegada ao "
+         "celular**, ainda não validado em Android real. T5 é a imagem **carregada na galeria** do "
+         "convidado. **UNKNOWN**: não há dado. **não observado**: nenhum aviso de tela chegou (a "
+         "galeria não estava visível ou desenhando); a decisão de entrega do servidor não conta como T5.", "",
          "## Resumo", "",
          f"- Fotos: {S['fotos']} · sem rosto: {S['sem_rosto']} · duplicatas: {S['duplicatas']} · "
          f"perdas prováveis (buraco na sequência da câmera): {S['perdas_provaveis']}",
@@ -161,8 +178,17 @@ def markdown(export, linhas, S):
          f"T1 suspeito: {S['t1_suspeito']}",
          f"- Entregas decididas: {S['entregas']} · vistas na tela: {S['telas_observadas']} · "
          f"recusas (\"não sou eu\"): {S['recusas']}",
-         f"- Funil: abriram o evento {S['aberturas']} · fizeram selfie {S['convidados']}", "",
-         "| Trecho | n | p50 | p95 | máx |", "|---|---|---|---|---|"]
+         f"- Funil: abriram o evento {S['aberturas']} · fizeram selfie {S['convidados']}", ""]
+    c4 = S["criterio4"]
+    veredito = "sem número (nenhuma entrega observada ao vivo)" if c4["p95"] is None else \
+        (f"{_s(c4['p95'])}: {'dentro' if c4['dentro'] else 'FORA'} do limite de 30 s")
+    o += ["## Critério #4 do piloto", "",
+          f"P95 do disparo até a foto aparecer na galeria do convidado, em {c4['n']} entrega(s) "
+          f"observada(s) ao vivo e com T0: **{veredito}**.",
+          f"- Entregas não observadas: {c4['nao_observadas']}, fora da conta: não observado não é atraso.",
+          f"- Ao vivo, mas sem T0: {c4['ao_vivo_sem_t0']}.",
+          f"- T0 usado calibrado pela foto do relógio: {'sim' if c4['t0_calibrado'] else ('não' if c4['t0_calibrado'] is False else '(vazio)')}.",
+          "", "| Trecho | n | p50 | p95 | máx |", "|---|---|---|---|---|"]
     for k, nome in TRECHOS:
         t = S["trechos"][k]
         o.append(f"| {nome} | {t['n']} | {_s(t['p50'])} | {_s(t['p95'])} | {_s(t['max'])} |")

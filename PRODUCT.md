@@ -113,6 +113,8 @@ Por evento real, com o protocolo de `docs/PILOTO-1.md`.
 - WhatsApp: investigar e desenhar antes de construir (`docs/WHATSAPP.md`).
 - Câmera: assumir que não tem FTP; achar a melhor ponte sem equipamento novo.
 - Oracle A1: não migrar antes de medir o fluxo real.
+- Nada de app Android nativo nem pasta vigiada antes do ensaio real (P2) dizer onde a ponte
+  câmera → celular → Fóton quebra.
 - Filtros: primeiro o acabamento da fotógrafa, e só depois do evento; filtros do
   convidado, mais tarde.
 - Cada modo terá experiência e visual próprios, com um condutor comum; a ADR-0030 é
