@@ -27,6 +27,8 @@ decisões e o que não pode se perder. Pergunta que guia tudo:
    próximos passos em ordem · o que não pode se perder. Não é resumo da conversa: é o pacote
    mínimo para continuar. Não copie o que já está em arquivo do projeto; aponte o arquivo.
 4. `python ~/.claude/rollover/rollover.py validar` até dar `ok`.
+   Em repositório git: **commit do handoff** (`git add .claude/HANDOFF.md`), porque a sessão
+   seguinte pode abrir numa worktree ou na nuvem, sem o disco desta máquina.
 5. Diga ao dono, exatamente:
    > O contexto desta sessão está chegando à zona de rollover. Já preservei o estado.
    > Antes de abrir a próxima sessão, qual é o objetivo que você quer continuar daqui?
