@@ -1,6 +1,6 @@
 # HANDOFF | Menir ClickPal
 
-estado: pendente
+estado: retomado (2026-09-28T19:03:33-03:00)
 gerado: 2026-09-28T18:13:29-03:00
 
 ## Fatos mecânicos (gerados pelo script)
@@ -75,4 +75,4 @@ Rollover (fora do repo): `~/.claude/rollover/rollover.py`, `~/.claude/rollover/e
 
 ## Próximo objetivo (definido pelo dono)
 
-(preencher)
+Preparar o P2 (ensaio de mesa com câmera e Android reais): folha de campo de uma página, ensaio simulado com tests/relatorio_evento.py, lista do que o dono confere em produção antes do ensaio
