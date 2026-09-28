@@ -23,6 +23,6 @@ sem biblioteca e sem backend. Publicado pelo Cloudflare Pages a partir desta pas
 ## Honestidade de conteúdo
 
 Sem depoimento inventado, sem logo de cliente, sem número sem fonte. O "10 s" é a meta
-do produto (decisão do dono de manter); o "cerca de 1 segundo" é o p50 do servidor de
-produção com uma foto por vez (`docs/BENCHMARKS.md`, carga de 2026-09-23). O trecho
-câmera e 4G do salão ainda não foi medido em campo, e a página diz isso.
+do produto (decisão do dono de manter). O tempo do servidor (~1 s por foto) **não** entra
+na página: é servidor rápido, não produto rápido, e o caminho inteiro nunca foi medido
+num evento real (`PRODUCT.md`, orientação de 2026-09-28).

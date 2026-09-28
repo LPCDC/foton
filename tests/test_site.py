@@ -90,5 +90,13 @@ checa("a abertura só anima sem pedido de menos movimento",
       LIMPO.find("@media (prefers-reduced-motion: no-preference)") < LIMPO.find(".capa__selfie { animation"), True)
 checa("sem travessão nem meia-risca no site", SITE.count("—") + SITE.count("–"), 0)
 
+print("\n[6] o site não promete o que não foi provado (PRODUCT.md, 2026-09-28)")
+# Servidor rápido não é produto rápido: o tempo do servidor não vira promessa até o
+# caminho câmera → celular → Fóton ser medido num evento real.
+checa("o tempo do servidor não aparece como promessa", re.search(r"1 segundo|~ ?1 s\b", LIMPO) is None, True)
+# Nunca houve evento real (dono, 2026-09-28): nada pode sugerir uso que não aconteceu.
+checa("não diz que há fotógrafa usando", re.search(r"com fotógrafa real|eventos de verdade", LIMPO) is None, True)
+checa("o modo empresa saiu do site", "Empresa e esporte" in LIMPO, False)
+
 print("\n" + ("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}"))
 sys.exit(1 if FALHAS else 0)

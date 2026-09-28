@@ -4,6 +4,25 @@
 > concorrente (site, release) está marcado como **alegado**; só é **medido** o que nós
 > medimos. Nenhum número de concorrente foi conferido por nós.
 
+## 0. Correção de 2026-09-28 (vale sobre o resto deste arquivo)
+
+**Premissa errada, retirada:** "reconhecimento facial + convidado enviando foto + entrega
+ao vivo" seria diferencial nosso. Não é. Numa segunda pesquisa (fontes no fim), vários
+concorrentes **anunciam** partes relevantes desse conjunto:
+
+| Quem | O que anuncia (alegado, não conferido por nós) |
+|---|---|
+| FotoOwl | câmera direto para a nuvem ("Beam"), busca por rosto, entrega por WhatsApp, vídeo automático, venda de fotos |
+| Kamero | FTP de até 10 câmeras ("Kam-Sync"), reconhecimento, envio do convidado, app com a marca do estúdio |
+| PhotoMea | entrega por rosto durante o evento, "cerca de 2 s" |
+| Samaro | reconhecimento, envio do convidado, robô de WhatsApp |
+| Kwikpic, Waldo, Cam-Shot | reconhecimento e envio do convidado; Waldo avisa por SMS |
+
+Parte dessas fontes é blog do próprio concorrente: é o que eles dizem, não benchmark.
+**Conclusão (dono, 2026-09-28):** não competimos por quantidade de funções. O que o Fóton
+é, e para quem, está em `PRODUCT.md`. As seções abaixo ficam como registro de 22/09; onde
+elas dizem que algo é só nosso, vale esta correção.
+
 ## 1. Quem são, em três grupos
 
 | Grupo | Quem | O que vendem |
@@ -89,3 +108,9 @@ exigem instalar aplicativo (alegado, não medido por nós). O Fóton não pede i
 - Pic-Time × Pixieset: [comparativo picflow](https://picflow.com/compare/pic-time-vs-pixieset) · [Pic-Time 2.0](https://blog.pic-time.com/features/pic-time-2-0-client-gallery-experience/)
 - Convidado que fotografa: [POV](https://pov.camera/blog/the-10-best-wedding-photo-apps) · [Kululu](https://www.kululu.com/wedding-photo-sharing-app) · [GuestPix](https://guestpix.com/weddings/)
 - Participação navegador × aplicativo: [comparativo 2026](https://easyweddingalbum.com/blog/wedding-photo-sharing-comparison)
+
+## Fontes da correção (consultadas em 2026-09-28)
+
+- FotoOwl: [site](https://fotoowl.ai/) · [WhatsApp](https://www.openpr.com/news/4626823/fotoowl-pairs-face-search-with-whatsapp-delivery-for-event)
+- Comparativos (blogs de concorrentes, portanto alegação): [Cam-Shot 2026](https://www.cam-shot.ai/blog/best-event-photography-software-in-2026) · [PhotoMea](https://photomea.com/blog/best-face-recognition-photo-sharing-apps/)
+- [Samaro](https://samaro.ai/) · [Kwikpic](https://www.kwikpic.in/) · [Waldo](https://waldophotos.com/)

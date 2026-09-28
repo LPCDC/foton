@@ -5,6 +5,54 @@
 > freemium ou escala** — seria otimizar uma máquina que ninguém provou que vende.
 > Aberto em 2026-08-28.
 
+## O experimento deste ciclo (2026-09-28)
+
+> Reaberto pela orientação do dono de 2026-09-28 (`PRODUCT.md`): o evento real é o
+> principal experimento do ciclo. Não é mais a Patrícia (dono, 2026-09-27); é **uma
+> fotógrafa** que aceite usar o Fóton num evento nas próximas semanas. O critério de
+> aceite de 2026-08-28 (abaixo) continua valendo, com o que este bloco acrescenta.
+
+### O que ele precisa responder
+Os UNKNOWNs de `PRODUCT.md`: a ponte câmera → celular → Fóton aguenta a festa? Quantas
+fotos vão para a pessoa errada? Quantos convidados aderem? Quanto tempo leva cada trecho?
+Qual o volume real? Ela paga pelo próximo?
+
+### Portões antes do evento (sem eles, não se expõe convidado real)
+| # | Portão | Quem | Por quê |
+|---|---|---|---|
+| P1 | **Instrumentação por trecho** no ar e testada: hora do disparo (EXIF + foto de calibração do relógio), hora do envio no celular, primeira vez que a foto chegou à tela do convidado, e "abriu o link sem fazer selfie" (contagem, sem dado pessoal) | Claude | Sem isso o evento produz impressão, não número |
+| P2 | **Ensaio de mesa** pelo dono: celular Android dele, a câmera que houver, 3 a 5 pessoas, o roteiro abaixo inteiro | dono | Responde o B2 (o Fóton aparece no Compartilhar? a galeria seleciona por arrasto?) sem gastar a paciência de uma fotógrafa |
+| P3 | **Risco de entrega errada decidido**: aceitar o risco do piloto com convidados avisados e o "Não sou eu" à vista, ou medir antes numa base maior | dono decide, Claude mede | A amostra rotulada tem 4 selfies (ADR-0034); foto na pessoa errada é o pior erro |
+| P4 | **Fotógrafa e anfitrião de acordo**: ela sabe que é teste; quem contratou a festa autoriza (`docs/CONTRATO-ORGANIZADOR.md`) | dono | O organizador é o controlador dos dados (PRODUTO.md §3b-2) |
+
+### O que se mede, por trecho (servidor rápido ≠ produto rápido)
+| Trecho | Como | Automático? |
+|---|---|---|
+| câmera → celular | EXIF da foto × hora do envio no celular, corrigido pela foto do relógio | sim, depois do P1 |
+| celular → Fóton | hora do envio no celular × chegada ao servidor | sim, depois do P1 |
+| processamento | `latency_ms` do `/ingest` (já existe) | sim |
+| Fóton → tela do convidado | pronta × primeira entrega pelo feed | sim, depois do P1 |
+| perdas | contador de disparos da câmera × fotos recebidas | manual, no fim |
+| duplicatas | recusas por `photo.sha` (já existe) | sim |
+| entregas e recusas | `match` e `rejeicao` (já existem) | sim |
+| adesão do convidado | abriu o link × fez selfie × recebeu ≥ 1 foto | sim, depois do P1 |
+| comportamento da fotógrafa | quantos lotes, de quanto em quanto tempo, onde travou, o que perguntou | observação e entrevista de 10 min |
+| comportamento do convidado | voltou à galeria? baixou? pediu ajuda? | parcial; o resto, observação |
+
+### Três testes sem construir nada (fazer como se existisse)
+1. **Relatório para os noivos:** depois do evento, gerar à mão (script) uma página com o
+   que aconteceu e entregar à fotógrafa. **Medida:** ela encaminha aos noivos ou não.
+2. **WhatsApp:** quem deixou contato recebe o link da galeria pelo WhatsApp **da própria
+   fotógrafa**, depois do evento. **Medida:** quantos voltam à galeria. Nenhuma conta Meta
+   para isso.
+3. **Pagamento:** ao fim, oferecer o próximo evento pago, por PIX, no preço que o dono
+   decidir. **Medida:** paga ou não paga. Opinião sobre preço não conta.
+
+### Sucesso
+Os seis critérios de 2026-08-28 (abaixo), mais: a fotógrafa **pagou** ou **marcou** o
+próximo evento pago. Falhou qualquer um: registrar onde a cadeia quebrou, consertar só
+aquilo e repetir.
+
 ## Por que este marco
 
 O ativo não é o código. É a combinação **foto → reconhecimento → entrega
@@ -31,7 +79,7 @@ Falhou qualquer um → **no-go**, conserta e repete. Sem negociar critério depo
 
 | | Bloqueador | Estado (2026-08-28) |
 |---|---|---|
-| **B1** | **Chrome mostra "Site perigoso"** no celular do convidado (reputação do domínio `duckdns.org`, não é o certificado). Correção: **domínio próprio**. | **EM ANDAMENTO** — `foton.app.br` registrado no Registro.br; DNS em propagação; script `infra/dominio.sh` pronto e commitado (mantém o duckdns funcionando em paralelo). Falta: propagação terminar + rodar o script no Cloud Shell. |
+| **B1** | **Chrome mostra "Site perigoso"** no celular do convidado (reputação do domínio `duckdns.org`, não é o certificado). Correção: **domínio próprio**. | **RESOLVIDO no domínio (2026-09-28):** `app.foton.app.br` e `foton.app.br` no ar, certificado até 2026-12-21 (`STATUS.md`). Falta só ver, no ensaio de mesa (P2), que o celular de um convidado abre sem aviso. |
 | **B2** | **Como a foto sai da câmera dela.** A premissa "R8 tem FTP nativo" **estava errada**: nem a R8 nem a T6s têm FTP. | **CAMINHO ENTREGUE, FALTA O ENSAIO.** O elo celular → Fóton foi construído e está em produção: menu "Compartilhar" do Android → Fóton, **zero gesto dentro do app** (ADR-0018, medido em `docs/BENCHMARKS.md`). Falta com hardware real: (a) o Fóton aparece no menu Compartilhar do celular dela? (b) a galeria dela seleciona por arrasto? (c) a T6s tem envio automático após o disparo? Os três são `UNKNOWN — REQUIRES EXPERIMENT` (`docs/ROTEIRO-CAMERAS.md`). |
 | **B3** | **Rajada**: 1 vCPU, foto de câmera grande domina o tempo. | **MEDIDO E RESOLVIDO para o critério do piloto** (2026-08-29). Rajada de **50 fotos de 2,1 MB: 55,6 s, P95 de 1,9 s por foto, zero perdida**. Com o poll do convidado dá ~4,5 s até aparecer no celular — folgado nos 30 s do critério #4. A extrapolação antiga (~46 s para 20 fotos) era **pessimista**: foi feita antes do `reduzir()` e do `Image.draft()`. **O gargalo mudou de lugar:** agora é a **selfie** — 30 convidados escaneando o QR ao mesmo tempo dão **P95 de 8,2 s** para o último. Não quebra, mas é o pior momento da experiência. Ver `docs/BENCHMARKS.md`. |
 | **B4** | **Disco**: fotos são BLOB no SQLite × 7 backups completos. | **MEDIDO, rebaixado.** 40,5 GB livres de 48,3 GB, banco de 3,3 MB — folga real, não é risco imediato. `/admin/saude` expõe o número e alerta se passar de 80%. |

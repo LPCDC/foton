@@ -1,5 +1,10 @@
 # Fóton — o produto, e o que ainda não foi decidido
 
+> **Desde 2026-09-28 este arquivo é o cardápio de ideias, não a autoridade de produto.**
+> Para quem é o Fóton, o que ele promete e o que ainda não sabemos: `PRODUCT.md` (raiz).
+> Muita coisa abaixo foi escrita para três públicos; neste ciclo o cliente é só a
+> fotógrafa, o modo empresa saiu do desenho e a Fiesta está em segundo plano.
+
 > Onde moram as ideias trazidas pelo dono que ainda **não viraram código**.
 > Cada item tem: o que é, o que muda, o que custa, e o que precisa ser decidido.
 > Aberto em 2026-08-30.

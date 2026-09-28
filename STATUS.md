@@ -1,12 +1,44 @@
 # STATUS.md | o que está pronto e o que falta no Fóton
 
-> Checklist vivo (regra global do dono: "fechado" = congelado em arquivo). Atualizado em
-> 2026-09-27 a partir de `docs/plans/2026-09-22-lista-de-planos.md`, `docs/CASAS.md`, das
-> ADRs e dos commits. Cada item fechado aponta a prova. Antes de declarar qualquer coisa
-> pronta, este arquivo é a lista.
+> Checklist vivo (regra global do dono: "fechado" = congelado em arquivo). Cada item
+> fechado aponta a prova. Antes de declarar qualquer coisa pronta, este arquivo é a lista.
+> **Pronto é quando o dono aprova**, não quando o teste passa: tela se mostra no desktop e
+> no celular antes do [x] (dono, 2026-09-28).
+
+## Ciclo atual: prova de produto (orientação do dono, 2026-09-28)
+
+O próximo marco é **um evento real** com uma fotógrafa, não uma função nova. Para quem, o
+que se promete e o que não sabemos: `PRODUCT.md`. O experimento: `docs/PILOTO-1.md`.
+
+### Reconciliação (feito em 2026-09-28)
+- [x] `PRODUCT.md`: autoridade de produto, curta, com FATO / DEDUÇÃO / HIPÓTESE / UNKNOWN
+- [x] `docs/PILOTO-1.md`: o experimento do ciclo, com portões, medidas por trecho e três testes sem construir nada
+- [x] `docs/CONCORRENCIA.md`: premissa errada retirada ("reconhecimento + convidado envia + ao vivo" não é diferencial)
+- [x] `docs/PRODUTO.md` marcado como cardápio de ideias, não autoridade
+- [x] `docs/WHATSAPP.md`: o que precisa acontecer antes de construir
+- [x] Site: saíram "com fotógrafa real", "eventos de verdade", o "~1 s" e o modo Empresa; trava no test_site [6]
+
+### Próximo bloco (para chegar ao primeiro evento e ao primeiro pagamento)
+- [ ] **P1 · Instrumentar a cadeia por trecho** (Claude): hora do disparo (EXIF + foto de calibração do relógio), hora do envio no celular, primeira entrega na tela do convidado, "abriu o link sem selfie" (contagem sem dado pessoal), e um script que monta a tabela do evento. Mudança de dados declarada antes do código.
+- [ ] **P2 · Ensaio de mesa** (dono, roteiro do Claude): celular Android do dono, a câmera que houver, 3 a 5 pessoas. Responde se o Fóton aparece no Compartilhar e se a galeria seleciona por arrasto
+- [ ] **P3 · Risco de entrega errada** (dono decide): aceitar no piloto com convidados avisados, ou medir antes numa base maior
+- [ ] **Recrutar uma fotógrafa** para um evento nas próximas semanas (dono; convite e briefing de uma página pelo Claude)
+- [ ] **Preço do próximo evento pago** e como receber (PIX manual) (dono)
+
+### Parado de propósito neste ciclo
+- Redesenho do painel. O que existe é repintura (`6e66a08`); o dono o considera ainda
+  ruim, sobretudo no desktop. Antes de redesenhar, o evento diz que informação importa
+  (`PRODUCT.md`, "Como mediremos valor").
+- Filtros: primeiro o acabamento da fotógrafa, depois do evento. Os do convidado, mais tarde.
+- WhatsApp integrado: só depois do teste sem construir (`docs/WHATSAPP.md`).
+- Fiesta, casas, créditos para casas (`docs/CASAS.md`): segundo plano até o fluxo da
+  fotógrafa ser provado.
+- Oracle A1: não migrar antes de medir o fluxo real.
+- Ajustes finais pelo Higgsfield, matriz design system → app, apresentação e vídeo.
+- Skills PM Skills e Impeccable: autorizadas no texto de orientação; instalação espera o
+  "pode instalar" do dono, porque baixa e executa código de terceiros.
 
 ## Pronto e no ar (com prova)
-
 - [x] Certificado HTTPS até 2026-12-21 | `docs/DNS-MIGRACAO.md` §5, commit `79ed8b6`
 - [x] Design system Bauhaus com contraste testado, ouro como marca | ADR-0038, `7469c74`
 - [x] Esteira da pintura (Higgsfield) com alfândega | ADR-0039
@@ -14,41 +46,17 @@
 - [x] Entrada do app por papel | ADR-0040, `64bd571`
 - [x] Jornada do convidado no design system (entrar, selfie, galeria) | `3b2a561`, `80677a6`
 - [x] Limites de tamanho e tipo, freio na selfie, fim do `artifact.html` | ADR-0041, `312decd`
-- [x] Espera longa: a foto aparece ~0,1 s depois de chegar ao servidor | ADR-0042, `52c0b00`
-- [x] Cartaz A4 do evento, assinado pela fotógrafa (ou pelo Fóton no modo festa) | `fcaa4b4`
+- [x] Espera longa: a foto aparece ~0,1 s depois de pronta no servidor | ADR-0042, `52c0b00`
+- [x] Cartaz A4 do evento, assinado pela fotógrafa | `fcaa4b4`
 - [x] Evento-demonstração de 1 hora que se apaga sozinho | ADR-0043, `3782065`
 - [x] Reconhecimento na foto original; look e marca d'água depois | ADR-0044, `2f57018`
 - [x] Foto de referência do roteiro da porta | ADR-0045, `ba49d44`
-- [x] Medições: recebida → entregue e carga da VM (35 a 45 fotos/min) | BENCHMARKS
+- [x] Medições de servidor: recebida → entregue e carga da VM (35 a 45 fotos/min) | BENCHMARKS
+- [x] Sem travessão no app, com trava | `4be85bd`
+- [x] Site de vendas no design system, com a história da capa medida no reconhecimento | `cb986f7`
+- [~] Painel no design system: **repintado, não resolvido** (`6e66a08`). Consertou três defeitos reais (botão sem fundo, película latente, aba sem marca); a cara profissional continua faltando
 
-## Falta para o app e o site estarem "terminados"
-
-### Com o Claude (não depende de ninguém)
-- [x] **Painel da fotógrafa no design system** | ponte de tokens, `6e66a08` (no ar, `/health` conferido). Achados: reset de botão que apagava o "Criar evento", película escura latente na tela do evento, aba da guia sem marca
-- [x] **Sem travessão no app** (regra do dono) | 81 textos reescritos, trava no test_front [17], `4be85bd`
-- [x] **Site de vendas no design system**, com imagens do Higgsfield (pessoas fictícias) e a história da capa conferida pelo reconhecimento de produção | `tests/site_reconhecimento.py`, test_site [5]
-- [ ] Tela de admin no navegador (a ponte cobre, mas não foi vista: e-mail de admin não se cadastra sozinho, ADR-0025)
-- [ ] **Matriz design system → app** (cada componente, onde aparece, estados) | plano 9
-- [ ] **Validação em celular real** (portão 4): o Claude emula 375 px; aparelho de verdade falta
-
-> **Decisão do dono, 2026-09-28:** o Higgsfield fica para os ajustes finais. O Claude
-> migra painel e site para o design system e gera as imagens pelo Higgsfield daqui do
-> chat, com a skill `build-awwwards-quality-sites`: "surpreender pela beleza, efeitos,
-> mas leveza". Direção de arte em `docs/DIRECAO-VISUAL.md`.
-
-### Com o dono
-- [ ] **Ajustes finais pelo Higgsfield** (depois do painel e do site no design system)
-- [ ] **Preço**: o dono propôs R$ 89,90 (§12 de CASAS.md); falta o preço do crédito para a casa e para a fotógrafa
+## Com o dono, fora do ciclo
 - [ ] Apagar pelo painel: conta GLAMON; conta de teste `carga-1790199346@teste.foton`
-
-## Falta para vender às casas (CASAS.md, degrau 1)
-- [ ] Fiesta: o convidado fotografa, com moderação (cascata aprovada) | FIESTA-IMPLEMENTACAO
-- [ ] Conta do tipo casa e "mesa da noite" (reuso do evento com prazo)
-- [ ] Créditos religados + cobrança na comanda (PIX manual, ativação pelo admin)
-- [ ] Parecer jurídico **antes** de restaurante de família (ECA Digital em vigor)
-
-## Adiado de propósito
-- WhatsApp (conta Meta e número do dono) | `docs/WHATSAPP.md`
-- Máquina maior (Oracle A1 grátis, a testar em ARM) | só quando a vazão apertar
-- Backup cifrado e região do R2 | decisão do dono: depois
-- Apresentação e vídeo para as casas | **só depois do app e do site terminados** (dono, 2026-09-27)
+- [ ] Parecer jurídico antes de qualquer restaurante de família (ECA Digital), quando a Fiesta voltar
+- Backup cifrado e região do R2: decisão do dono, depois

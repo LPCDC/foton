@@ -221,7 +221,7 @@ h3 { font: 600 var(--t2)/1.1 var(--f-display); letter-spacing: -.015em; }
 
 /* ---------- para quem ---------- */
 .perfis { display: grid; gap: 24px; margin-top: 56px; }
-@media (min-width: 900px) { .perfis { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 900px) { .perfis { grid-template-columns: repeat(2, 1fr); max-width: 880px; } }
 .perfil { border: var(--borda) solid var(--tinta); display: grid; align-content: start; }
 .perfil .foto { aspect-ratio: 4 / 3; border-bottom: 8px solid var(--cor); }
 .perfil__corpo { padding: 24px; display: grid; gap: 12px; }
@@ -304,7 +304,7 @@ h3 { font: 600 var(--t2)/1.1 var(--f-display); letter-spacing: -.015em; }
         <a class="botao botao--marca" href="https://wa.me/5511945518801?text=Oi!%20Quero%20testar%20o%20F%C3%B3ton%20no%20meu%20evento." target="_blank" rel="noopener">Testar no meu próximo evento</a>
         <a class="botao botao--texto" href="https://app.foton.app.br">Entrar no app</a>
       </div>
-      <p class="selo"><span class="glifo glifo--entregue" aria-hidden="true"></span><span><b>Em produção, com fotógrafa real.</b> Piloto sem custo.</span></p>
+      <p class="selo"><span class="glifo glifo--entregue" aria-hidden="true"></span><span><b>No ar e funcionando.</b> Procurando a primeira fotógrafa para um evento real.</span></p>
     </div>
 
     <figure class="cena" aria-describedby="legenda-capa">
@@ -375,7 +375,6 @@ h3 { font: 600 var(--t2)/1.1 var(--f-display); letter-spacing: -.015em; }
       <div>
         <b>Do clique ao celular dele</b>
         <p>É a meta que o produto persegue: menos de dez segundos entre o disparo e a foto no celular de quem aparece nela. Não é “no dia seguinte”. É antes de a música mudar.</p>
-        <p>Medido no servidor de produção, com uma foto por vez: depois que a foto chega, ela fica pronta para o convidado em cerca de 1 segundo. O trecho da câmera e do 4G do salão ainda não foi medido em campo.</p>
       </div>
     </div>
   </div>
@@ -414,8 +413,8 @@ h3 { font: 600 var(--t2)/1.1 var(--f-display); letter-spacing: -.015em; }
 <section id="quem" class="secao secao--borda" aria-labelledby="t-quem">
   <div class="faixa">
     <p class="sobre">Para quem</p>
-    <h2 id="t-quem" data-palavras>Uma ferramenta, três jeitos de usar.</h2>
-    <p class="lide">O mesmo motor, com a cor e as palavras de cada tipo de trabalho.</p>
+    <h2 id="t-quem" data-palavras>Feito primeiro para a fotógrafa.</h2>
+    <p class="lide">Um foco de cada vez. A festa em que todo mundo fotografa vem depois.</p>
     <div class="perfis">
       <article class="perfil" style="--cor:#E8D9B0">
         <figure class="foto"><img src="img/fotografa-480.webp" srcset="img/fotografa-480.webp 480w, img/fotografa-800.webp 800w" sizes="(min-width: 900px) 360px, 100vw" width="480" height="641" loading="lazy" alt="Fotógrafa com flash registrando a pista de dança de um casamento."></figure>
@@ -423,14 +422,6 @@ h3 { font: 600 var(--t2)/1.1 var(--f-display); letter-spacing: -.015em; }
           <p class="perfil__tag">Profissional</p>
           <h3>Fotógrafa de evento</h3>
           <p>Casamento, aniversário, formatura, corporativo. Você entrega durante a festa e sai do evento <b>com o trabalho entregue</b>, não com ele começando. A marca d’água é a sua.</p>
-        </div>
-      </article>
-      <article class="perfil" style="--cor:#FFFFFF">
-        <figure class="foto"><img src="img/trilha-480.webp" srcset="img/trilha-480.webp 480w, img/trilha-800.webp 800w" sizes="(min-width: 900px) 360px, 100vw" width="480" height="641" loading="lazy" alt="Corredor de trilha comemorando na chegada, ao pôr do sol."></figure>
-        <div class="perfil__corpo">
-          <p class="perfil__tag">Empresa e esporte</p>
-          <h3>Corrida, convenção, equipe</h3>
-          <p>Cada participante recebe as fotos em que aparece, com a marca da organização. <b>Ninguém procura a si mesmo</b> numa pasta sem fim.</p>
         </div>
       </article>
       <article class="perfil" style="--cor:#F2542D">
@@ -467,13 +458,13 @@ h3 { font: 600 var(--t2)/1.1 var(--f-display); letter-spacing: -.015em; }
     <h2 id="t-verdade" data-palavras>Sem promessa que eu não possa cumprir hoje.</h2>
     <div class="verdade">
       <blockquote class="citacao">
-        <p>“Não é maquete e não é apresentação. É o produto rodando, com uma fotógrafa de verdade, em eventos de verdade. E é assim que eu quero que você o conheça.”</p>
+        <p>“Não é maquete: o Fóton está no ar e funciona. O que falta é o que só um evento de verdade prova, e é isso que eu quero fazer com você.”</p>
         <cite>Luiz, quem faz o Fóton</cite>
       </blockquote>
       <div class="honesto">
         <div>
           <h3>O que já funciona hoje</h3>
-          <p>O convidado entra pelo QR, tira a selfie e recebe as fotos dele ao vivo. A marca d’água e o tratamento da fotógrafa entram sozinhos. A galeria baixa tudo de uma vez. Há um cartaz com o QR para imprimir e um evento de demonstração de uma hora que se apaga sozinho.</p>
+          <p>Em teste, ainda não num evento real: o convidado entra pelo QR, tira a selfie e recebe as fotos dele ao vivo. A marca d’água e o tratamento da fotógrafa entram sozinhos. A galeria baixa tudo de uma vez. Há um cartaz com o QR para imprimir e um evento de demonstração de uma hora que se apaga sozinho.</p>
         </div>
         <div>
           <h3>O que ainda estou construindo</h3>

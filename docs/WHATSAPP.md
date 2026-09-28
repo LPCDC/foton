@@ -45,6 +45,22 @@ Como a regra da casa é "foto errada é pior que foto perdida":
 | Tempo do servidor até o celular pelo WhatsApp | `UNKNOWN — REQUIRES EXPERIMENT` |
 | Custo por mensagem em reais, e se o CNPJ se enquadra | `UNKNOWN` |
 
+## Antes de construir (orientação do dono, 2026-09-28)
+
+Nada de código até estes itens terem resposta. A ordem importa:
+
+1. **Testar sem construir, no evento real** (`docs/PILOTO-1.md`): quem deixou contato
+   recebe o link da galeria pelo WhatsApp **da própria fotógrafa**. Se ninguém volta pela
+   mensagem, a integração com a Meta não é a próxima coisa a fazer.
+2. **O que só o dono pode fazer:** conta empresarial na Meta, número dedicado, aceitar os
+   termos, dizer se o CNPJ serve. Sem isso, não há o que integrar.
+3. **Custo em reais:** dentro da janela de 24 h, mensagem comum é grátis; fora dela, só
+   modelo pago. O valor por mensagem para o nosso caso é `UNKNOWN` até a conta existir.
+4. **Formato:** aviso com link (reversível) ou a foto (irreversível). Recomendação
+   mantida: aviso com link na v1.
+5. **Só então** a rota que recebe mensagens e a fila de envio, sem abstração para "outros
+   canais" que ninguém pediu.
+
 ## LGPD
 
 As fotos passam por servidores da Meta: **transferência internacional**, como o backup no R2.
