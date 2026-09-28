@@ -68,7 +68,8 @@ Fóton, P2 (ensaio de mesa com câmera e Android reais, `docs/PILOTO-1.md`). A p
 
 ## Próximos passos (em ordem)
 
-1. Explicar o P2 ao dono em linguagem simples, em 3 passos: (a) na véspera, 15 min de conferência + mandar 3 fotos pelo Compartilhar para um evento-demonstração e exportar o JSON; (b) o ensaio com a folha impressa; (c) mandar JSON + foto do relógio + foto da folha.
+0. P2 ADIADO pelo dono em 2026-09-28: não cobrar; a explicação simples já foi dada (3 passos). Só retomar se ele pedir.
+1. (quando ele retomar o P2) Explicar o P2 ao dono em linguagem simples, em 3 passos: (a) na véspera, 15 min de conferência + mandar 3 fotos pelo Compartilhar para um evento-demonstração e exportar o JSON; (b) o ensaio com a folha impressa; (c) mandar JSON + foto do relógio + foto da folha.
 2. Perguntar se ele quer push de `01f7943` e `77fdb3c`.
 3. Ao receber o JSON do evento-demonstração: conferir seq, t1_arquivo e via; rodar o relatório.
 4. Ao receber o JSON do P2: `python tests/relatorio_evento.py <json> --relogio IMG_xxxx=HH:MM:SS.d --disparos A-B --galeria IMG_xxxx=HH:MM:SS.d` e registrar em BENCHMARKS.
@@ -83,4 +84,4 @@ Fóton, P2 (ensaio de mesa com câmera e Android reais, `docs/PILOTO-1.md`). A p
 
 ## Próximo objetivo (definido pelo dono)
 
-(preencher)
+P2 ADIADO pelo dono (sem data, registrado no STATUS). Próximo objetivo: investigar por que o claude-mem parou de gravar em 2026-09-23 21:37 (274 observações, nenhuma depois). Não mexe no Fóton.
