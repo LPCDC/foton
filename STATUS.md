@@ -24,9 +24,10 @@ que se promete e o que não sabemos: `PRODUCT.md`. O experimento: `docs/PILOTO-1
   - [x] Preparação pelo Claude (2026-09-28): folha de campo `docs/P2-FOLHA-DE-CAMPO.html`; ensaio simulado `tests/ensaio_simulado_p2.py` (quatro erros do relatório achados e travados no test_relatorio [5], BENCHMARKS); conferência em produção em `docs/PILOTO-1.md`, "Antes do P2"
   - [ ] Dono: conferência da véspera, com a prova do Compartilhar num evento-demonstração (JSON para o Claude)
   - **ADIADO pelo dono (2026-09-28), sem data.** A preparação fica pronta e guardada; não cobrar o ensaio até ele retomar.
-- [ ] **P3 · Risco de entrega errada** (dono decide): aceitar no piloto com convidados avisados, ou medir antes numa base maior
+- [x] **P3 · Risco de entrega errada** (dono decide): aceitar no piloto com convidados avisados, ou medir antes numa base maior
   - [x] Decisão do dono (2026-09-29): **A**, aceitar no piloto com proteção (evento de 30 a 50 convidados, aviso na galeria, "Não sou eu", revisão pós-evento pelo Claude) | ADR-0047
-  - [ ] Aviso na galeria e link "Nenhuma foto é sua? Tire outra selfie": aprovados pelo dono nas telas (2026-09-29), `test_front` [19]; falta o deploy e a conferência em produção
+  - [x] Aviso na galeria e link "Nenhuma foto é sua? Tire outra selfie": aprovados pelo dono nas telas (2026-09-29), `test_front` [19]; no ar em `2e25265` (`/health` ~70 s após o push; a página servida tem o aviso e o link novo, e não tem mais o texto antigo)
+  - Condições 1 e 4 da ADR-0047 (evento de 30 a 50 convidados; revisão pós-evento pelo Claude) valem no dia do piloto
 - [ ] **Recrutar uma fotógrafa** para um evento nas próximas semanas (dono; convite e briefing de uma página pelo Claude)
 - [ ] **Preço do próximo evento pago** e como receber (PIX manual) (dono)
 
