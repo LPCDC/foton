@@ -1,6 +1,6 @@
 # HANDOFF | Menir ClickPal
 
-estado: pendente
+estado: retomado (2026-09-29T06:25:15-03:00)
 gerado: 2026-09-28T19:28:29-03:00
 
 ## Fatos mecânicos (gerados pelo script)

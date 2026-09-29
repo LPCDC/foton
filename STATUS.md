@@ -25,6 +25,8 @@ que se promete e o que não sabemos: `PRODUCT.md`. O experimento: `docs/PILOTO-1
   - [ ] Dono: conferência da véspera, com a prova do Compartilhar num evento-demonstração (JSON para o Claude)
   - **ADIADO pelo dono (2026-09-28), sem data.** A preparação fica pronta e guardada; não cobrar o ensaio até ele retomar.
 - [ ] **P3 · Risco de entrega errada** (dono decide): aceitar no piloto com convidados avisados, ou medir antes numa base maior
+  - [x] Decisão do dono (2026-09-29): **A**, aceitar no piloto com proteção (evento de 30 a 50 convidados, aviso na galeria, "Não sou eu", revisão pós-evento pelo Claude) | ADR-0047
+  - [ ] Aviso na galeria e link "Nenhuma foto é sua? Tire outra selfie": aprovados pelo dono nas telas (2026-09-29), `test_front` [19]; falta o deploy e a conferência em produção
 - [ ] **Recrutar uma fotógrafa** para um evento nas próximas semanas (dono; convite e briefing de uma página pelo Claude)
 - [ ] **Preço do próximo evento pago** e como receber (PIX manual) (dono)
 

@@ -425,5 +425,16 @@ for _arq in ("index.html", "cartaz.html", "ds/index.html", "manifest.webmanifest
     checa(f"{_arq}: nenhum travessao nem meia-risca", _t.count("—") + _t.count("–"), 0)
 
 print("")
+print("[19] aviso de entrega errada na galeria (ADR-0047, condicao 2)")
+_aviso = "O reconhecimento pode errar: se aparecer foto de outra pessoa, abra a foto e toque em <b>Não sou eu</b>."
+checa("o aviso esta na galeria ao abrir", 'id="g-hint"' in html and _aviso in html[html.find('id="g-hint"'):html.find('id="g-grid2"')], True)
+checa("voltar para a aba Minhas mostra o aviso de novo", _aviso in html[html.find("function trocarAba"):html.find("async function carregarTodas")], True)
+# "Nao sou eu" e so a correcao de UMA foto (grava o erro). Refazer a selfie nao grava
+# nada: se o link dela tambem dissesse "Nao sou eu", o convidado tocaria nele e o erro
+# nao seria contado na revisao pos-evento.
+checa("refazer a selfie nao se chama mais Nao sou eu",
+      'onclick="refazerSelfie()">Nenhuma foto é sua? Tire outra selfie</button>' in html and "Não sou eu, tirar outra selfie" not in html, True)
+
+print("")
 print("TODOS OS TESTES PASSARAM" if not FALHAS else f"{len(FALHAS)} FALHA(S): {FALHAS}")
 sys.exit(1 if FALHAS else 0)

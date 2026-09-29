@@ -1357,7 +1357,7 @@ body{background:var(--papel)}
       <button class="tab" id="tab-todas" onclick="trocarAba('todas')">Todas da festa</button>
     </div>
     <p class="note aviso-demo" hidden style="border:2px solid var(--tinta);padding:10px 12px;text-align:left;margin-top:12px"></p>
-    <p class="subtitle" id="g-hint" style="margin:12px 0 14px">Novas fotos entram sozinhas enquanto a festa acontece.</p>
+    <p class="subtitle" id="g-hint" style="margin:12px 0 14px">Novas fotos entram sozinhas enquanto a festa acontece. O reconhecimento pode errar: se aparecer foto de outra pessoa, abra a foto e toque em <b>Não sou eu</b>.</p>
     <div class="grid" id="g-grid2"></div>
     <div class="sticky">
       <button class="botao botao--marca botao--bloco" id="g-download" onclick="shareSheet('todas')">Baixar todas as fotos</button>
@@ -1366,7 +1366,7 @@ body{background:var(--papel)}
     <p class="note" style="margin-top:12px">
       <button class="link btn-instalar" style="display:none" onclick="instalarApp()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.8" width="11" height="18.4" rx="2"/><path d="M12 7.5v6.4m0 0l-2.4-2.4M12 13.9l2.4-2.4"/></svg> Guardar na tela inicial</button>
     </p>
-    <p class="note" style="margin-top:6px"><button class="link" onclick="refazerSelfie()">Não sou eu, tirar outra selfie</button></p>
+    <p class="note" style="margin-top:6px"><button class="link" onclick="refazerSelfie()">Nenhuma foto é sua? Tire outra selfie</button></p>
     <!-- A SAIDA. Ela e a condicao do desenho onde o dono do evento cadastra nome e
          Instagram da convidada: se a convidada nao consegue sair sozinha, "reclame
          com o dono" deixa de ser resposta. Fica na galeria, onde ela esta, nao
@@ -3259,8 +3259,8 @@ function trocarAba(qual){
   guestState.limite[qual]=50;   // ao entrar na aba, recomeca do teto (nao pinta 2000 de uma vez)
   document.getElementById('tab-minhas').classList.toggle('on',qual==='minhas');
   document.getElementById('tab-todas').classList.toggle('on',qual==='todas');
-  document.getElementById('g-hint').textContent = qual==='minhas'
-    ? 'Novas fotos entram sozinhas enquanto a festa acontece.'
+  document.getElementById('g-hint').innerHTML = qual==='minhas'
+    ? 'Novas fotos entram sozinhas enquanto a festa acontece. O reconhecimento pode errar: se aparecer foto de outra pessoa, abra a foto e toque em <b>Não sou eu</b>.'
     : 'Todas as fotos do evento. As suas aparecem na primeira aba.';
   if(qual==='todas') carregarTodas(); else renderGuestGrid();
 }

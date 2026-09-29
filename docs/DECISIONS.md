@@ -1766,3 +1766,45 @@ o EXIF **antes** de reduzir; o compartilhar leva a data do arquivo.
 Reverter o commit. As tabelas e a coluna ficam inofensivas (ninguém lê); podem ser apagadas
 com `DROP TABLE medida_foto; DROP TABLE medida_tela;`. Os avisos do aparelho são "dispara e
 esquece": se a rota sumir, a galeria não percebe.
+
+---
+
+## ADR-0047 | P3: o risco de foto na pessoa errada é aceito no piloto, com proteção
+
+**Data:** 2026-09-29 · **Estado:** decidida pelo dono (opção A); aviso e troca do link aprovados
+pelo dono nas telas (celular e computador) em 2026-09-29 · **Pedido:** portão P3 de `docs/PILOTO-1.md`.
+
+**Contexto.** O limiar de entrega 0,40 (ADR-0034) foi escolhido com 4 selfies rotuladas, de
+um mesmo círculo social. Nelas: 0 de 22 fotos erradas, 1 de 43 certas perdida. Entre rostos
+de pessoas diferentes, 1 em 736 passou de 0,40. Num evento de 100 convidados o sistema faz
+mais de cem mil comparações; com essa amostra, a conta vai de poucas a centenas de fotos
+erradas por evento (DEDUÇÃO, intervalo largo demais para decidir). A taxa real em escala é
+`UNKNOWN — REQUIRES EXPERIMENT` (`PRODUCT.md`, UNKNOWN 2).
+
+**Opções apresentadas ao dono.**
+- **A) Aceitar no piloto, com proteção**, e deixar o próprio evento ser a medição maior.
+- **B) Medir antes numa base maior:** fotos de vários eventos reais rotuladas por quem conhece
+  os convidados, com autorização das pessoas fotografadas (dado biométrico). Semanas de
+  atraso, e ainda longe dos milhares de rostos de um evento grande.
+
+**Decisão: A**, com quatro condições, todas obrigatórias:
+1. **Evento pequeno** no piloto: 30 a 50 convidados.
+2. **Convidado avisado** na galeria (aba "Minhas fotos"), quando a primeira foto chega: o
+   reconhecimento pode errar e o "Não sou eu" corrige. Único item a construir.
+3. **"Não sou eu" à vista** (ADR-0037, já no ar): cada toque grava o score do erro.
+4. **Revisão depois do evento** pelo Claude, em `/admin/entregas`: toda entrega entre 0,40 e
+   0,50 e toda recusa, com o resultado em `docs/BENCHMARKS.md`.
+
+**Os dois "Não sou eu" (achado na tela, aprovado pelo dono).** A galeria tinha também o link
+"Não sou eu, tirar outra selfie", que refaz a selfie e **não grava erro nenhum**. Com o aviso
+mandando tocar em "Não sou eu", o convidado tocaria nele e a foto errada não seria contada. O
+link passou a "Nenhuma foto é sua? Tire outra selfie"; "Não sou eu" fica só para corrigir uma
+foto. Travado em `test_front` [19].
+
+**O que não muda.** O critério nº 1 do piloto continua "zero foto entregue à pessoa errada".
+Uma recusa confirmada como erro real é **no-go**: conserta e repete. O limiar continua 0,40;
+subir para 0,45 custaria 16% das fotos certas (BENCHMARKS, 2026-09-11) sem dado que o
+justifique.
+
+**Consequência.** O piloto passa a medir também a entrega errada, em escala maior que a
+amostra de setembro. A revisão pós-evento entra no roteiro do piloto.

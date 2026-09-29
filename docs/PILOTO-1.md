@@ -22,7 +22,7 @@ Qual o volume real? Ela paga pelo próximo?
 |---|---|---|---|
 | P1 | **Instrumentação por trecho** no ar e testada: hora do disparo (EXIF + foto de calibração do relógio), hora do envio no celular, primeira vez que a foto chegou à tela do convidado, e "abriu o link sem fazer selfie" (contagem, sem dado pessoal) | Claude | Sem isso o evento produz impressão, não número |
 | P2 | **Ensaio de mesa** pelo dono: celular Android dele, a câmera que houver, 3 a 5 pessoas, o roteiro abaixo inteiro | dono | Responde o B2 (o Fóton aparece no Compartilhar? a galeria seleciona por arrasto?) sem gastar a paciência de uma fotógrafa |
-| P3 | **Risco de entrega errada decidido**: aceitar o risco do piloto com convidados avisados e o "Não sou eu" à vista, ou medir antes numa base maior | dono decide, Claude mede | A amostra rotulada tem 4 selfies (ADR-0034); foto na pessoa errada é o pior erro |
+| P3 | **Risco de entrega errada decidido**: aceitar o risco do piloto com convidados avisados e o "Não sou eu" à vista, ou medir antes numa base maior | dono decide, Claude mede | A amostra rotulada tem 4 selfies (ADR-0034); foto na pessoa errada é o pior erro. **Decidido em 2026-09-29: aceitar, com proteção (ADR-0047)** |
 | P4 | **Fotógrafa e anfitrião de acordo**: ela sabe que é teste; quem contratou a festa autoriza (`docs/CONTRATO-ORGANIZADOR.md`) | dono | O organizador é o controlador dos dados (PRODUTO.md §3b-2) |
 
 ### Os horários, com o que cada um é (fechado em 2026-09-28)
