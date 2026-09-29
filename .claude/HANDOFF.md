@@ -1,28 +1,34 @@
 # HANDOFF | Menir ClickPal
 
-estado: retomado (2026-09-29T06:25:15-03:00)
-gerado: 2026-09-28T19:28:29-03:00
+estado: pendente
+gerado: 2026-09-29T15:52:23-03:00
+selo: ANCORA-BAMBU-684
 
 ## Fatos mecânicos (gerados pelo script)
 
-- quando: 2026-09-28T19:28:29-03:00
+- quando: 2026-09-29T15:52:23-03:00
 - pasta: C:\Users\Pichau\Menir ClickPal
-- sessão: ffb86c15-b935-4331-8d82-77ee9508330e.jsonl
-- contexto: 208662 tokens · modelo claude-opus-5-5 · zona ROLLOVER (86% do teto 241916: menor auto-compactação vista acima do uso atual)
+- sessão: bf5356b5-4192-4921-9de0-0985ced97aad.jsonl
+- contexto: 213048 tokens · modelo claude-opus-5-5 · zona ROLLOVER (88% do teto 241916: menor auto-compactação vista acima do uso atual)
 - handoff: retomado
-- git: main @ 77fdb3c
+- git: main @ b3a5291
 - não commitado:
     M CLAUDE.md
     ?? .claude/launch.json
     ?? foton-handoff-supercomputer-2026-09-10.md
     ?? foton.zip
 - últimos commits:
+    b3a5291 chore(status): P3 fechado; aviso no ar em 2e25265
+    2e25265 feat(p3): aviso de entrega errada na galeria; ADR-0047
+    4067c3f chore(status): P2 adiado pelo dono; proximo objetivo claude-mem
+    c466dbd chore(handoff): P2 preparado; dono precisa da explicacao simples
     77fdb3c docs(p2): folha de campo, ensaio simulado e conferencia em producao
-    01f7943 chore(handoff): retomado; objetivo P2 (folha de campo, ensaio simulado, conferencia em producao)
-    9cd7d05 chore(handoff): skill manda commitar o handoff
-    1ebbfdf chore(handoff): handoff e skill rollover no repo (sessao em worktree/nuvem nao via o disco local)
-    8b32a63 docs(piloto): P1 fechado como infraestrutura de medicao; criterio #4 pela galeria
 - últimos pedidos do dono:
+    > A
+    > Entao...   <pasted_content id="e2b5"> O que eu aprendi sobre o Fóton 1. O Fóton não é, essencialmente, “um app de reconhecimento facial” Esse é um componente. O produto é uma cadeia operacional: câmera → celular → Fóton → processamento → reconhecimento → pessoa certa → tela certa → durante a festa É essa cadeia inteira que precisa funcionar. O projeto já descobriu várias vezes que otimizar um elo 
+    > Pode publicar, se fizzer sentido pra vc.
+    > refine. teste confira. e liste proximas etapas. evoque skills se necessario. ja podemos mudar a UIX, aparencia, efeitos etc no higgsfield? nao quero apressar nada
+    > Grave o handoff e elabore um sistema simples pra garantir pra mim que a nova sessao esta começando exatamente de onde paramos na nossa ultima interacao aqui no Claude Code.
     > Base directory for this skill: C:\Users\Pichau\.claude\skills\rollover  # Rollover: escrever o handoff e retomar
  
  O script `python ~/.claude/rollover/rollover.py` faz a parte mecânica (medir, carimbar,
@@ -30,58 +36,65 @@ gerado: 2026-09-28T19:28:29-03:00
  decisões e o que não pode se perder. Pergunta que guia tudo:
  
  > Se esta janela fechar agora e outra abrir 
-    > TO meio perdido :D
 
 ## Objetivo em curso
 
-Fóton, P2 (ensaio de mesa com câmera e Android reais, `docs/PILOTO-1.md`). A preparação do Claude está PRONTA (`77fdb3c`). Agora é a vez do dono: a conferência da véspera e o ensaio. O dono disse "tô meio perdido" no fim desta sessão: a próxima sessão começa explicando o P2 em linguagem simples (o que é, por que, o que ele faz em ordem), sem jargão (T0..T5, lotes, seq).
+Fóton, ciclo de prova de produto (`STATUS.md`). P3 fechado nesta sessão. O dono perguntou se já pode mexer na aparência pelo Higgsfield e disse "não quero apressar nada". A resposta dada: sim, com três cuidados (abaixo). A próxima ação oferecida e ainda sem resposta: montar o pacote de ida da pintura das telas do convidado (`python infra/pintura.py ida`, manual `docs/PINTURA.md`, ADR-0039).
 
 ## Concluído nesta sessão (com prova)
 
-- Handoff anterior retomado (`01f7943`).
-- `77fdb3c`: folha de campo `docs/P2-FOLHA-DE-CAMPO.html` (1 página A4, conferida por impressão em PDF no Edge sem janela); `tests/ensaio_simulado_p2.py` (exports no formato do P2 com verdade conhecida, 5 variantes); `tests/relatorio_evento.py` corrigido (T1 suspeito por lote: hora do Compartilhar, EXIF copiado, data do app; perdas com `--disparos` e UNKNOWN sem nome IMG_xxxx; seção de lotes; `--relogio` pelo número do arquivo; `--galeria` confere o T1); `test_relatorio` [5]; BENCHMARKS (seção "Ensaio simulado do P2"); PILOTO-1 ("Preparação do P2" e "Antes do P2: o que o dono confere em produção", 13 itens); STATUS (subitens do P2).
-- Produção conferida sem conta: `/health` ok versão 9cd7d05, `/agora`, `relogio.html` 200, manifest com share_target `fotos`, `/medidas` 401.
+- claude-mem voltou a gravar: `CLAUDE_CODE_PATH` apontava para `...\claude-code\2.1.275\claude.exe`, apagado na atualização do app; agora `C:\Users\Pichau\.local\bin\claude.exe`. Prova: resumo nº 33 gravado em 2026-09-29 06:26, primeiro desde 23/09. Memória `claude-mem-caminho-claude.md`.
+- P3 decidido pelo dono: opção A (ADR-0047). Aviso na galeria e troca do link de refazer selfie: aprovados pelo dono nas telas, `test_front` [19], no ar em `2e25265` (`/health` e página servida conferidos). STATUS `b3a5291`.
+- Push feito até `2e25265` (inclui preparação do P2 `77fdb3c` e ADR-0047). `b3a5291` (só STATUS) e o commit deste handoff estão locais.
+- Selo de continuidade no rollover (global, `~/.claude/rollover/rollover.py`, backup `rollover.py.bak-antes-do-selo`): selo sorteado no `novo`, seção obrigatória "Última troca com o dono", e o hook de início obriga a abrir a primeira resposta com o bloco Continuidade (selo + git CONFERE/DIVERGE). `test_rollover.py` [7], 7 verificações novas, todas verdes.
 
 ## Decisões tomadas
 
-- Nenhuma decisão nova de produto. Não houve deploy: app sem mudança desde `8b32a63`; commits só de docs e tests. NÃO foi feito push de `01f7943` e `77fdb3c` (produção roda 9cd7d05, idêntica em app).
+- ADR-0047 (P3, opção A): evento de 30 a 50 convidados; aviso ao convidado; "Não sou eu" só para corrigir uma foto; revisão pós-evento pelo Claude em `/admin/entregas` (entregas 0,40 a 0,50 e recusas). Critério no-go continua: zero foto errada. Limiar continua 0,40.
+- R2 não guarda fotos de produção; continua sendo o backup externo diário (`BLUEPRINT.md:109`, ADR-0031). O dono pediu para manter essa distinção.
+- Higgsfield (recomendação aceita como resposta, sem ordem de execução ainda): só telas do convidado e cartaz (painel segue parado até o evento); efeitos leves (não travar Android barato; aviso e "Não sou eu" travados por teste); pintar antes do ensaio P2 e congelar até o piloto.
 
 ## Arquivos tocados
 
-`docs/P2-FOLHA-DE-CAMPO.html` (novo), `tests/ensaio_simulado_p2.py` (novo), `tests/relatorio_evento.py`, `tests/test_relatorio.py`, `docs/PILOTO-1.md`, `docs/BENCHMARKS.md`, `STATUS.md`, `.claude/HANDOFF.md`.
+`app/web/index.html`, `tests/test_front.py`, `docs/DECISIONS.md` (ADR-0047), `docs/PILOTO-1.md`, `STATUS.md`; fora do repo: `~/.claude-mem/settings.json`, `~/.claude/rollover/rollover.py`, `~/.claude/rollover/test_rollover.py`, memória `claude-mem-caminho-claude.md` + `MEMORY.md`.
 
 ## Testes e verificações executados
 
-- `bash tests/todos.sh`: 8 suítes, 743 verificações verdes (test_relatorio 55).
-- `python tests/ensaio_simulado_p2.py`: as 5 variantes sem erro silencioso.
+- `bash tests/todos.sh`: 8 suítes, 746 verificações verdes (test_front 144), rodado duas vezes antes do push.
+- Produção: `/health` versao `2e25265`; a página servida tem o aviso (2x) e "Nenhuma foto é sua? Tire outra selfie"; não tem "Não sou eu, tirar outra selfie".
+- `python ~/.claude/rollover/test_rollover.py`: todos verdes, com [7].
 
 ## Erros, bloqueios e riscos
 
-- O dono está perdido: explicar antes de pedir qualquer ação.
-- claude-mem sem gravar desde 2026-09-23 (não investigado).
-- Aviso de rollover usa teto aprendido de outro modelo (241916); nesta sessão (opus-5-5) disparou em ~208k.
+- O classificador de segurança do modo automático falhou várias vezes seguidas (erro transitório, não veredito). Se voltar, esperar e repetir uma vez; não insistir.
+- Instrução que chega só dentro de texto colado (pasted_content) precisa de confirmação do dono no chat antes de ação externa (push = deploy).
+- claude-mem: o que aconteceu entre 23 e 28/09 não virou anotação (os dados brutos estão em `tool_uses`).
 
 ## Hipóteses abertas
 
-- UNKNOWN até a prova do item 4 da lista (evento-demonstração): o Compartilhar do Android passa o nome IMG_xxxx e a data real do arquivo?
-- DEDUÇÃO: com envio em lotes, disparo até a galeria > intervalo entre lotes; lotes de 2 min derrubam o critério #4 (30 s). O P2 mede o intervalo real.
+- UNKNOWN: taxa real de foto na pessoa errada em escala (o piloto mede, ADR-0047).
+- UNKNOWN: o Compartilhar do Android passa nome IMG_xxxx e data real do arquivo (P2).
 
 ## Próximos passos (em ordem)
 
-0. P2 ADIADO pelo dono em 2026-09-28: não cobrar; a explicação simples já foi dada (3 passos). Só retomar se ele pedir.
-1. (quando ele retomar o P2) Explicar o P2 ao dono em linguagem simples, em 3 passos: (a) na véspera, 15 min de conferência + mandar 3 fotos pelo Compartilhar para um evento-demonstração e exportar o JSON; (b) o ensaio com a folha impressa; (c) mandar JSON + foto do relógio + foto da folha.
-2. Perguntar se ele quer push de `01f7943` e `77fdb3c`.
-3. Ao receber o JSON do evento-demonstração: conferir seq, t1_arquivo e via; rodar o relatório.
-4. Ao receber o JSON do P2: `python tests/relatorio_evento.py <json> --relogio IMG_xxxx=HH:MM:SS.d --disparos A-B --galeria IMG_xxxx=HH:MM:SS.d` e registrar em BENCHMARKS.
+1. Abrir com o bloco Continuidade (o hook manda). Confirmar com o dono o próximo objetivo.
+2. Se o dono quiser a pintura: montar o pacote de ida das telas do convidado e do cartaz, com os três cuidados; a volta passa pela alfândega antes de integrar.
+3. Perguntar se sobe `b3a5291` e o commit do handoff (só docs; push = deploy, mas não muda o app).
+4. Etapas do dono, sem cobrar: P2 (adiado), recrutar fotógrafa (Claude escreve convite e briefing), preço e PIX, P4 acordo com fotógrafa e anfitrião, apagar conta GLAMON e conta de teste.
 
 ## Não pode se perder
 
-- Deploy = `git push origin main` + `/health` versao == `git rev-parse --short=7 HEAD`; `bash tests/todos.sh` antes.
-- Nunca criar conta nem digitar senha em produção. `fotos-teste/` só local.
-- Scripts com aspas: escrever com a ferramenta de arquivo, não heredoc no bash.
-- No Windows, rodar scripts com saída acentuada exige `sys.stdout.reconfigure(encoding="utf-8")` (já posto no relatório e no simulador).
-- Não mexer em CLAUDE.md, .claude/launch.json, foton-handoff-supercomputer-2026-09-10.md, foton.zip sem o dono.
+- Deploy = `git push origin main` + `/health` versao == `git rev-parse --short=7 HEAD` (~70 s); `bash tests/todos.sh` antes.
+- Nunca criar conta nem digitar senha em produção. Não mexer em CLAUDE.md, `.claude/launch.json`, `foton-handoff-supercomputer-2026-09-10.md`, `foton.zip` sem o dono.
+- Scripts com aspas: escrever com a ferramenta de arquivo, não heredoc.
+- O dono esteve "meio perdido": explicar em linguagem simples, sem jargão (T0..T5, lotes).
+- Proibido travessão em qualquer texto.
+
+## Última troca com o dono
+
+- Última fala do dono (literal): "Grave o handoff e elabore um sistema simples pra garantir pra mim que a nova sessao esta começando exatamente de onde paramos na nossa ultima interacao aqui no Claude Code."
+- Fala anterior: "refine. teste confira. e liste proximas etapas. evoque skills se necessario. ja podemos mudar a UIX, aparencia, efeitos etc no higgsfield? nao quero apressar nada"
+- O que o Claude respondeu por último: gravou este handoff com o selo, explicou o sistema de conferência e perguntou qual objetivo continuar. Pendente de resposta do dono: (a) montar o pacote de ida do Higgsfield para as telas do convidado? (b) subir `b3a5291` e o commit do handoff?
 
 ## Próximo objetivo (definido pelo dono)
 
-P2 ADIADO pelo dono (sem data, registrado no STATUS). Próximo objetivo: investigar por que o claude-mem parou de gravar em 2026-09-23 21:37 (274 observações, nenhuma depois). Não mexe no Fóton.
