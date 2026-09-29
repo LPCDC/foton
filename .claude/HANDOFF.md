@@ -84,6 +84,7 @@ Fóton, ciclo de prova de produto (`STATUS.md`). P3 fechado nesta sessão. O don
 
 ## Não pode se perder
 
+- Sessão na nuvem não tem `~/.claude` desta máquina (hook do rollover, auto-memória, claude-mem): lá, ler `.claude/HANDOFF.md` à mão e abrir com o bloco Continuidade.
 - Deploy = `git push origin main` + `/health` versao == `git rev-parse --short=7 HEAD` (~70 s); `bash tests/todos.sh` antes.
 - Nunca criar conta nem digitar senha em produção. Não mexer em CLAUDE.md, `.claude/launch.json`, `foton-handoff-supercomputer-2026-09-10.md`, `foton.zip` sem o dono.
 - Scripts com aspas: escrever com a ferramenta de arquivo, não heredoc.
@@ -92,9 +93,10 @@ Fóton, ciclo de prova de produto (`STATUS.md`). P3 fechado nesta sessão. O don
 
 ## Última troca com o dono
 
-- Última fala do dono (literal): "Grave o handoff e elabore um sistema simples pra garantir pra mim que a nova sessao esta começando exatamente de onde paramos na nossa ultima interacao aqui no Claude Code."
-- Fala anterior: "refine. teste confira. e liste proximas etapas. evoque skills se necessario. ja podemos mudar a UIX, aparencia, efeitos etc no higgsfield? nao quero apressar nada"
-- O que o Claude respondeu por último: gravou este handoff com o selo, explicou o sistema de conferência e perguntou qual objetivo continuar. Pendente de resposta do dono: (a) montar o pacote de ida do Higgsfield para as telas do convidado? (b) subir `b3a5291` e o commit do handoff?
+- Última fala do dono (literal): "Antes, eprgunta... estou confuso estamos usando o ambiente do github aproveitando os creditos que ganhei, sim? ele ehe spelaho com a pasta do MenirCLickPal, certo? certo. se na proxima nova sessao eu mudar para o ambiente local e nao nuvem, vc continua entendendo? e sim, deixe o git no estado mais recente logo antes de eu mudar de sessao."
+- O que o Claude respondeu: esta sessão NÃO era nuvem. Rodou LOCAL, no PC do dono (máquina GTFO, pasta `C:\Users\Pichau\Menir ClickPal`); "foton main" no app é só o nome do repositório (`github.com/LPCDC/foton`) e a branch. A pasta e o GitHub não são espelho automático: sincronizam por push/pull. Sessão nova local: tudo funciona (hook, selo, memórias). Sessão na nuvem: só vê o que está no GitHub; não tem o hook nem as memórias desta máquina, então o dono precisa pedir "leia .claude/HANDOFF.md e abra com o bloco Continuidade".
+- A pedido do dono, o git foi deixado no estado mais recente: push feito com este handoff.
+- Pendente de resposta do dono: montar o pacote de ida do Higgsfield para as telas do convidado?
 
 ## Próximo objetivo (definido pelo dono)
 
